@@ -1,10 +1,10 @@
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 
 from models import Branding, Page_Heading, Service, Slide, db
-from app import mail
+from flask_mail import Message
 
 main_bp = Blueprint("main", __name__)
-
+from app import mail
 
 @main_bp.route("/")
 def home():
@@ -51,6 +51,8 @@ def enquire():
 @main_bp.route("/contact", methods=["POST"])
 def contact():
     name = (request.form.get("name") or "").strip()
+    email = request.form.get('email')
+    message_body = request.form.get('message')  
     service_id = request.form.get("service")
 
     if service_id and service_id != "0":
@@ -62,12 +64,32 @@ def contact():
         service_name = interested_service.title if interested_service else "General Inquiry"
     else:
         service_name = "General Inquiry"
-
-    current_app.logger.info("Lead captured: name=%s interest=%s", name, service_name)
     flash(
         f"Thank you, {name or 'there'}. We will contact you regarding '{service_name}'.",
         "success",
     )
+    
+    msg = Message(
+        subject=f"New Lead: {name}",
+        recipients=['shingai.mushonga@elf-ai.co.za'] # Or use app.config['MAIL_USERNAME']
+    )
+        
+        # This creates the email body
+    msg.body = f"""
+        Name: {name}
+        Email: {email}
+        Service Interest: {service_name}
+        
+        Message:
+        {message_body}
+    """
+    msg.reply_to = email 
+    try:
+        mail.send(msg) # <--- This actually sends it!
+        flash(f"Thank you, {name}. We will contact you regarding '{service_name}'.", "success")
+    except Exception as e:
+        print(f"EMAIL ERROR: {e}")
+        flash("Message saved, but we couldn't send the email confirmation.", "warning")
     return redirect(url_for("main.home", _anchor="contact"))
 
 
