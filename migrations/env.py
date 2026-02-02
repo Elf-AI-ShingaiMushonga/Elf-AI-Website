@@ -15,7 +15,7 @@ config.set_main_option(
     os.getenv("DATABASE_URL", "sqlite:///elf.db"),
 )
 
-target_metadata = current_app.extensions["migrate"].db.metadata
+target_metadata = current_app.extension["migrate"].db.metadata
 
 
 def run_migrations_offline() -> None:
@@ -33,7 +33,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    connectable = current_app.extensions["migrate"].db.engine
+    connectable = current_app.extension["migrate"].db.engine
 
     with connectable.connect() as connection:
         context.configure(
