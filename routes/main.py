@@ -2,7 +2,7 @@ from flask import Blueprint, current_app, flash, redirect, render_template, requ
 
 from flask_mail import Message
 
-from extensions import mail
+from extension import mail
 from models import Branding, Page_Heading, Service, Slide, db
 
 main_bp = Blueprint("main", __name__)

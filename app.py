@@ -11,9 +11,8 @@ from flask_migrate import Migrate
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from flask_mail import Mail
-
+from extension import mail
 from models import db, setup_database
-from extensions import mail
 
 
 def _normalize_db_url(url: str) -> str:
