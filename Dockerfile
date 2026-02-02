@@ -6,6 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+ARG APP_UID=1000
+ARG APP_GID=1000
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -15,7 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app/
 
-RUN adduser --disabled-password --gecos "" appuser \
+RUN addgroup --gid ${APP_GID} appuser \
+    && adduser --disabled-password --gecos "" --uid ${APP_UID} --gid ${APP_GID} appuser \
     && mkdir -p /app/data /app/instance \
     && chown -R appuser:appuser /app
 

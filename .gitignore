@@ -1,6 +1,8 @@
 __pycache__/
 *.pyc
 *.db
+*.pem
+*.key
 .env
 logs/
 data/

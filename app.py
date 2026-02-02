@@ -10,9 +10,10 @@ from flask import Flask
 from flask_migrate import Migrate
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from flask_mail import Mail
+
 from models import db, setup_database
-from routes import main_bp
-from flask_mail import Mail, Message
+from extensions import mail
 
 
 def _normalize_db_url(url: str) -> str:
@@ -67,7 +68,7 @@ def create_app(config_name: str | None = None) -> Flask:
     app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
     app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
     app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
-    mail = Mail(app)
+    mail.init_app(app)
 
     basedir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(basedir, "elf.db")
@@ -81,6 +82,7 @@ def create_app(config_name: str | None = None) -> Flask:
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
     configure_logging(app)
+    from routes import main_bp
     app.register_blueprint(main_bp)
 
     @app.cli.command("init-db")

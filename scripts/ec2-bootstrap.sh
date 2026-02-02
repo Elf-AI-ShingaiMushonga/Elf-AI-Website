@@ -3,6 +3,8 @@ set -euo pipefail
 
 DOMAIN="elf-ai.co.za"
 COMPOSE_FILE="docker-compose.prod.yml"
+APP_UID="${APP_UID:-1000}"
+APP_GID="${APP_GID:-1000}"
 
 if [[ ! -f "$COMPOSE_FILE" ]]; then
   echo "Missing $COMPOSE_FILE. Run from the repo root." >&2
@@ -10,14 +12,22 @@ if [[ ! -f "$COMPOSE_FILE" ]]; then
 fi
 
 mkdir -p data certbot/www certbot/conf
-sudo chown -R 1000:1000 data
+sudo chown -R "${APP_UID}:${APP_GID}" data
 
 if [[ ! -f .env ]]; then
   cp .env.example .env
 fi
 
 if grep -Eq "^SECRET_KEY=(change-me|)$" .env; then
-  SECRET_KEY="$(python - <<'PY'
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+  else
+    echo "Python is required to generate SECRET_KEY." >&2
+    exit 1
+  fi
+  SECRET_KEY="$($PYTHON_BIN - <<'PY'
 import secrets
 print(secrets.token_hex(32))
 PY

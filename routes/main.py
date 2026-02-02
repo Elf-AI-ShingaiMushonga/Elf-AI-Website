@@ -1,10 +1,11 @@
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 
-from models import Branding, Page_Heading, Service, Slide, db
 from flask_mail import Message
 
+from extensions import mail
+from models import Branding, Page_Heading, Service, Slide, db
+
 main_bp = Blueprint("main", __name__)
-from app import mail
 
 @main_bp.route("/")
 def home():
