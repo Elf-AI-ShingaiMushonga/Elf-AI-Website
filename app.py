@@ -95,8 +95,6 @@ def create_app(config_name: str | None = None) -> Flask:
 
 
 app = create_app()
-
-
 if __name__ == "__main__":
     auto_init = os.getenv("AUTO_INIT_DB", "false").lower() in ("1", "true", "yes")
     if auto_init:
