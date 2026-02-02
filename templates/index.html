@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> {{ title }} </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
+
+    <nav class="fixed w-full z-50 glass border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold tracking-tighter text-white hover:text-blue-400 transition">ELF<span class="text-blue-500">.AI</span></a>
+            
+            <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
+                <a href="/about" class="hover:text-blue-400 transition">About Us</a>
+                <a href="/solutions" class="hover:text-blue-400 transition">Solutions</a>
+                
+                <a href="/enquire" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition shadow-lg shadow-blue-900/20">Modernise</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="fixed top-24 right-6 z-50 w-full max-w-md">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="bg-teal-600 text-white px-6 py-4 rounded-lg shadow-lg mb-4 flex items-center justify-between animate-fade-in-down border-l-4 border-teal-300">
+                <div><i class="fa-solid fa-check-circle mr-2"></i> {{ message }}</div>
+                <button onclick="this.parentElement.style.display='none'"><i class="fa-solid fa-times"></i></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+    </div>
+
+    <header class="relative h-[74vh] w-full overflow-hidden border-b border-slate-800">
+        
+        <div id="carousel-container" class="absolute inset-0 w-full h-full z-0">
+            {% for image in carousel_images %}
+            <div class="carousel-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0"
+                style="background-image: url('{{url_for('static', filename='images/' + image) }}');">
+            </div>
+            {% endfor %}
+            <div class="absolute inset-0 bg-slate-950/70"></div>
+        </div>
+
+        <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-6">
+            <div class="max-w-5xl mx-auto">
+                <h1 class="text-7xl md:text-9xl font-black text-white mb-4 tracking-tighter">
+                    {{ branding.Title }}<span class="text-blue-600">.AI</span>
+                </h1>
+                
+                <h2 class="text-3xl md:text-5xl font-bold opacity-75 text-white bg-clip-text bg-gradient-to-r from-slate-200 to-slate-400 mb-8 leading-tight">
+                    {{ branding.Slogan }}
+                </h2>
+                
+                <p class="text-xl text-slate-300 mb-12 max-w-2xl mx-auto drop-shadow-md">
+                    {{ branding.Tagline }}
+                </p>
+                
+                <div class="flex flex-col sm:flex-row justify-center gap-5">
+                    <a href="#solutions-scroll" class="px-10 py-4 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-900/30 backdrop-blur-sm">Explore Solutions</a>
+                    <a href="/enquire" class="px-10 py-4 border border-slate-400 text-white font-medium rounded-full hover:bg-white hover:text-slate-900 transition backdrop-blur-sm">Book Analysis</a>
+                </div>
+            </div>
+        </div>
+        <div id="scroll-indicator" class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 transition-opacity duration-75">
+            <a href="#solutions-scroll" class="text-slate-400 hover:text-white transition duration-300">
+                <i class="fa-solid fa-chevron-down text-2xl animate-bounce"></i>
+            </a>
+        </div>
+    </header>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const slides = document.querySelectorAll('.carousel-slide');
+            let currentSlide = 0;
+            
+            // Show the first slide immediately
+            if(slides.length > 0) {
+                slides[0].classList.remove('opacity-0');
+            }
+
+            // Cycle images every 5 seconds
+            setInterval(() => {
+                // Fade OUT current slide
+                slides[currentSlide].classList.add('opacity-0');
+                
+                // Calculate next slide index
+                currentSlide = (currentSlide + 1) % slides.length;
+                
+                // Fade IN next slide
+                slides[currentSlide].classList.remove('opacity-0');
+            }, 5000); // 5000ms = 5 seconds
+        });
+    </script>
+    <script>
+        // Scroll Fade Logic
+        window.addEventListener('scroll', function() {
+            const scrollElement = document.getElementById('scroll-indicator');
+            if (!scrollElement) return;
+
+            // "Halfway down the home page" usually means half the viewport height
+            const fadeOutPoint = window.innerHeight / 2;
+            
+            // Calculate opacity: 1 at top, 0 at fadeOutPoint
+            let currentOpacity = 1 - (window.scrollY / fadeOutPoint);
+
+            // Ensure opacity stays between 0 and 1
+            if (currentOpacity < 0) currentOpacity = 0;
+            
+            // Apply the new opacity
+            scrollElement.style.opacity = currentOpacity;
+        });
+    </script>
+
+    <section id="solutions-scroll" class="py-20 bg-slate-900">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-white">Novel Integrations</h2>
+                <p class="text-slate-400 mt-2">From transcription automation to custom purpose AI development and deployment.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                {% for service in services %}
+                <a href="{{ url_for('main.enquire', service=service.id) }}" class="block h-full">
+                    <div class="p-8 rounded-2xl bg-slate-800 border border-slate-700 hover:border-blue-500 transition group flex flex-col h-full cursor-pointer relative">
+                        
+                        <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition text-blue-500">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </div>
+
+                        <div class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center mb-6 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition">
+                            <i class="fa-solid {{ service.icon }} text-xl"></i>
+                        </div>
+                        
+                        <h3 class="text-xl font-bold text-white mb-3">{{ service.title }}</h3>
+                        <p class="text-slate-400 mb-4 text-sm leading-relaxed flex-grow">
+                            {{ service.description }}
+                        </p>
+                        
+                        <ul class="text-sm text-slate-300 space-y-2 mt-4">
+                            {% for feature in service.features %}
+                            <li class="flex items-center">
+                                <i class="fa-solid fa-check text-blue-500 mr-2"></i> 
+                                {{ feature.text }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            <div class="mt-12 text-center">
+                <a href="/solutions" class="inline-block text-blue-400 hover:text-white font-semibold transition">View Detailed Technical Specs <i class="fa-solid fa-arrow-right ml-2"></i></a>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="py-24 border-t border-slate-800 bg-slate-900">
+        <div class="max-w-3xl mx-auto px-6 text-center">
+            <h2 class="text-4xl font-bold text-white mb-6">Ready to Modernize?</h2>
+            <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-left">
+                <form action="/contact" method="POST" class="space-y-4">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <input type="text" name="name" required placeholder="Name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
+                        <input type="email" name="email" required placeholder="Work Email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
+                    </div>
+                    <select name="service" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-400 focus:outline-none focus:border-blue-500 transition">
+                        <option value="0">General Inquiry</option>
+                        {% for service in services %}
+                            <option value= "{{ service.id }}" >{{ service.title }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg transition shadow-lg shadow-blue-900/50">
+                        Request Consultation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>

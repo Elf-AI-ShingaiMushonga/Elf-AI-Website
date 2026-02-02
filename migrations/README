@@ -1,0 +1,4 @@
+Run migrations with:
+- flask --app app.py db init (first time only)
+- flask --app app.py db migrate -m "message"
+- flask --app app.py db upgrade

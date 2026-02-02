@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us | ELF-AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
+
+    <nav class="fixed w-full z-50 glass border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold tracking-tighter text-white hover:text-blue-400 transition">ELF<span class="text-blue-500">.AI</span></a>
+            
+            <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
+                <a href="/about" class="hover:text-blue-400 transition">About Us</a>
+                <a href="/solutions" class="hover:text-blue-400 transition">Solutions</a>
+                
+                <a href="/enquire" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition shadow-lg shadow-blue-900/20">Modernise</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="pt-32 pb-16 px-6 text-center bg-slate-900 border-b border-slate-800">
+        <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">{{about_us.Slogan_1}} <br> <span class="text-blue-500">{{about_us.Slogan_2}}</span></h1>
+        <p class="text-xl text-slate-400 max-w-1xl mx-auto leading-relaxed">
+            {{about_us.Tagline}}
+        </p>
+    </header>
+
+    <section class="py-20 px-6 max-w-7xl mx-auto">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl font-bold text-white">The Pragmatic Approach</h2>
+            <p class="text-slate-400 mt-2">We research, tinker and improvise to find practical solutions that work for you.</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            {% for service in about_us_slide %}
+            <div class="p-8 rounded-2xl bg-slate-800 border border-slate-700 hover:border-blue-500 transition group flex flex-col h-full">
+                <div class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center mb-6 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition">
+                    <i class="fa-solid {{ service.icon }} text-xl"></i>
+                </div>
+                
+                <h3 class="text-xl font-bold text-white mb-3">{{ service.title }}</h3>
+                <p class="text-slate-400 mb-4 text-sm text-white leading-relaxed flex-grow">
+                    {{ service.description }}
+                </p>
+                
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="py-20 bg-slate-900 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-3xl font-bold text-white mb-6">Our Methodology</h2>
+                    <p class="text-slate-400 mb-8">
+                        We don't sell software and walk away. We operate as your technical partners.
+                    </p>
+                    
+                    <div class="space-y-8">
+                        {% for about in about_us_slide_mini %}
+                        <div class="flex">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">{{loop.index}}</div>
+                            <div class="ml-6">
+                                <h4 class="text-white font-bold">{{about.title}}</h4>
+                                <p class="text-slate-400 text-sm mt-1">{{about.description}}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="relative group">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-teal-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                    
+                    <div class="relative rounded-2xl overflow-hidden border border-slate-700 shadow-2xl">
+                        <img src="{{ url_for('static', filename='images/' + picture) }}" 
+                             alt="ELF Consulting Workflow" 
+                             class="w-full h-auto object-cover transform transition duration-500 hover:scale-105">
+                    </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-20 px-6 max-w-4xl mx-auto text-center">
+        <div class="py-16 px-6 max-w-4xl mx-auto text-center">
+            <i class="fa-solid fa-dna text-5xl text-blue-500 mb-6 opacity-50"></i>
+            <blockquote class="text-2xl md:text-4xl font-serif text-white leading-tight mb-6">
+                "It is not the strongest of the species that survives, nor the most intelligent that survives. It is the one that is <span class="text-blue-500">most adaptable to change."</span>
+            </blockquote>
+            <p class="text-slate-400 font-medium uppercase tracking-widest text-sm">— Leon C. Megginson</p>
+        </div>
+    </section>
+
+</body>
+</html>
