@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 
 from models import Branding, Page_Heading, Service, Slide, db
+from app import mail
 
 main_bp = Blueprint("main", __name__)
 

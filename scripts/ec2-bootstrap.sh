@@ -16,7 +16,7 @@ if [[ ! -f .env ]]; then
   cp .env.example .env
 fi
 
-if grep -q "^SECRET_KEY=change-me" .env; then
+if grep -Eq "^SECRET_KEY=(change-me|)$" .env; then
   SECRET_KEY="$(python - <<'PY'
 import secrets
 print(secrets.token_hex(32))

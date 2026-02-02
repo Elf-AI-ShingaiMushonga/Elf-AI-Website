@@ -12,6 +12,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from models import db, setup_database
 from routes import main_bp
+from flask_mail import Mail, Message
 
 
 def _normalize_db_url(url: str) -> str:
@@ -56,6 +57,18 @@ def create_app(config_name: str | None = None) -> Flask:
         raise RuntimeError("SECRET_KEY must be set to a secure value in production.")
     app.config["SECRET_KEY"] = secret_key or secrets.token_hex(32)
 
+    app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER')
+    app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 465))
+
+    # WorkMail uses SSL, not TLS
+    app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'True') == 'True'
+    app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'False') == 'True'
+
+    app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+    app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+    mail = Mail(app)
+
     basedir = os.path.abspath(os.path.dirname(__file__))
     db_path = os.path.join(basedir, "elf.db")
     db_url = os.getenv("DATABASE_URL", f"sqlite:///{db_path}")
@@ -89,4 +102,3 @@ if __name__ == "__main__":
         seed = os.getenv("SEED_DB", "false").lower() in ("1", "true", "yes")
         with app.app_context():
             setup_database(seed=seed)
-    app.run()
