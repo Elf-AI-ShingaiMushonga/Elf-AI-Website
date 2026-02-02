@@ -11,6 +11,7 @@ from flask_migrate import Migrate
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from flask_mail import Mail
+
 from extension import mail
 from models import db, setup_database
 
@@ -80,6 +81,11 @@ def create_app(config_name: str | None = None) -> Flask:
     if os.getenv("USE_PROXY_FIX", "true").lower() in ("1", "true", "yes"):
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
+    if os.getenv("AUTO_INIT_DB", "false").lower() in ("1", "true", "yes"):
+        seed = os.getenv("SEED_DB", "false").lower() in ("1", "true", "yes")
+        with app.app_context():
+            setup_database(seed=seed)
+
     configure_logging(app)
     from routes import main_bp
     app.register_blueprint(main_bp)
@@ -96,8 +102,4 @@ def create_app(config_name: str | None = None) -> Flask:
 
 app = create_app()
 if __name__ == "__main__":
-    auto_init = os.getenv("AUTO_INIT_DB", "false").lower() in ("1", "true", "yes")
-    if auto_init:
-        seed = os.getenv("SEED_DB", "false").lower() in ("1", "true", "yes")
-        with app.app_context():
-            setup_database(seed=seed)
+    app.run()
