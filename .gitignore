@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 *.db
 *.key
+*.pem
 .env
 logs/
 data/
