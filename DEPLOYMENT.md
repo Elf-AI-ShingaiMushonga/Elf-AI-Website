@@ -30,19 +30,21 @@ AWS EC2 (Docker + SQLite + Nginx)
 - Open inbound port 80 in the EC2 Security Group.
 
 HTTPS (Let's Encrypt + Nginx)
-- Point your domain's DNS A record to the EC2 public IP.
+- Point your domain's DNS A record to the EC2 public IP (elf-ai.co.za, www.elf-ai.co.za).
 - Temporarily use the HTTP-only config for the initial cert:
   - Edit `docker-compose.prod.yml` to mount `./nginx/elf-ai-http.conf` as `default.conf`.
   - `docker compose -f docker-compose.prod.yml up -d`
 - Request the cert (replace values):
-  - `docker compose -f docker-compose.prod.yml run --rm certbot certonly --webroot -w /var/www/certbot -d your-domain.com -d www.your-domain.com --email you@example.com --agree-tos --no-eff-email`
+  - `docker compose -f docker-compose.prod.yml run --rm certbot certonly --webroot -w /var/www/certbot -d elf-ai.co.za -d www.elf-ai.co.za --email you@example.com --agree-tos --no-eff-email`
 - Switch back to the SSL config:
   - Edit `docker-compose.prod.yml` to mount `./nginx/elf-ai.conf` as `default.conf`.
-  - Update `nginx/elf-ai.conf` to use your domain in the cert paths.
   - `docker compose -f docker-compose.prod.yml up -d`
 - Renewal (run monthly via cron):
   - `docker compose -f docker-compose.prod.yml run --rm certbot renew --webroot -w /var/www/certbot`
   - `docker compose -f docker-compose.prod.yml exec nginx nginx -s reload`
+
+EC2 Bootstrap Script
+- `EMAIL=you@example.com bash scripts/ec2-bootstrap.sh`
 
 GitHub Quickstart
 - `git init`
