@@ -1,10 +1,12 @@
 alembic==1.18.3
 blinker==1.9.0
 click==8.3.1
+extensions==0.4
 Flask==3.0.3
 Flask-Mail==0.10.0
 Flask-Migrate==4.0.7
 Flask-SQLAlchemy==3.1.1
+greenlet==3.3.1
 gunicorn==22.0.0
 iniconfig==2.3.0
 itsdangerous==2.2.0
