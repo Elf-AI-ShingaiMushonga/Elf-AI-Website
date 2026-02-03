@@ -12,7 +12,7 @@ services:
     environment:
       DATABASE_URL: sqlite:////app/instance/elf.db
       AUTO_INIT_DB: "true"
-      SEED_DB: "false"
+      SEED_DB: "true"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz', timeout=2)"]
