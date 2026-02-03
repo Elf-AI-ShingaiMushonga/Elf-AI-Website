@@ -46,9 +46,10 @@ class Page_Heading(db.Model):
 
 def setup_database(seed: bool = False) -> None:
     """Creates tables and optionally seeds data."""
-    db.drop_all()
     db.create_all()
-    if not seed or Service.query.first():
+    if not seed:
+        return
+    if Service.query.first() or Slide.query.first() or Branding.query.first() or Page_Heading.query.first():
         return
     print("--- Seeding Database with ELF Pitch Deck Data ---")
 
