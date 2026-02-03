@@ -146,7 +146,7 @@ def setup_database(seed: bool = False) -> None:
         icon="fa-terminal",
     )
 
-    s4 = Service(
+    service_4 = Service(
         title="ELF Consultation",
         description=(
             "Book a free meeting to discuss your companies processes. Elf will "
@@ -154,20 +154,20 @@ def setup_database(seed: bool = False) -> None:
         ),
         icon="fa-handshake",
     )
-    f4_2 = Feature(text="Data-Driven Objectives: Elf provides measurable results.", service=s4)
+    f4_2 = Feature(text="Data-Driven Objectives: Elf provides measurable results.", service=service_4)
     f4_3 = Feature(
         text="Technical: Every project is accompanied with an in-depth technical report",
-        service=s4,
+        service=service_4,
     )
     f4_1 = Feature(
         text=(
             "Adaptable: There is no standard solution for all firms. "
             "We have the ability to quickly adjust strategies, recommendations and solutions"
         ),
-        service=s4,
+        service=service_4,
     )
 
-    s1 = Service(
+    service_1 = Service(
         title="ELF Hybrid Transcription",
         description=(
             'A "Certificate of Veracity" compliant system. We leverage '
@@ -176,14 +176,14 @@ def setup_database(seed: bool = False) -> None:
         ),
         icon="fa-microphone-lines",
     )
-    f1_1 = Feature(text="Advanced Technology: Plaud Note Pro Hardware", service=s1)
-    f1_2 = Feature(text="High Fidelity: Advanced AI Concensus Model", service=s1)
+    f1_1 = Feature(text="Advanced Technology: Plaud Note Pro Hardware", service=service_1)
+    f1_2 = Feature(text="High Fidelity: Advanced AI Concensus Model", service=service_1)
     f1_3 = Feature(
         text="High Savings: 93% Cost Reduction on purely human subscription",
-        service=s1,
+        service=service_1,
     )
 
-    s2 = Service(
+    service_2 = Service(
         title="ELF Law LLM",
         description=(
             "A locally deployed Large Language Model (LLM) hosted on an in-house server. "
@@ -193,18 +193,18 @@ def setup_database(seed: bool = False) -> None:
     )
     f2_1 = Feature(
         text="High Data Security: Local deployment ensures sensitive data stays in-house.",
-        service=s2,
+        service=service_2,
     )
     f2_2 = Feature(
         text="No Hallucination Risk: Citation is forced, meaning cases cited will be real.",
-        service=s2,
+        service=service_2,
     )
     f2_3 = Feature(
         text="High Control: Your lawyers likely use AI, this provides an avenue to manage it,",
-        service=s2,
+        service=service_2,
     )
 
-    s3 = Service(
+    service_3 = Service(
         title="ELF Education Audio-AI",
         description=(
             "An integrated AI solution based on utilising ceiling mounted microphone arrays to "
@@ -214,15 +214,15 @@ def setup_database(seed: bool = False) -> None:
     )
     f3_1 = Feature(
         text="High Fidelity: Audio is captured accurately by ceiling mounted microphone arrays.",
-        service=s3,
+        service=service_3,
     )
     f3_2 = Feature(
         text="POPIA compliant: Through Voice Identification and audio deletion, we ensure privacy.",
-        service=s3,
+        service=service_3,
     )
     f3_3 = Feature(
         text="Insightful: Provides early detection, social insights and academic profiles.",
-        service=s3,
+        service=service_3,
     )
 
     db.session.add_all(
@@ -238,19 +238,19 @@ def setup_database(seed: bool = False) -> None:
             mini_slide_about_us_2,
             mini_slide_about_us_3,
             mini_slide_about_us_4,
-            s4,
+            service_4,
             f4_2,
             f4_3,
             f4_1,
-            s1,
+            service_1,
             f1_1,
             f1_2,
             f1_3,
-            s2,
+            service_2,
             f2_1,
             f2_2,
             f2_3,
-            s3,
+            service_3,
             f3_1,
             f3_2,
             f3_3,
