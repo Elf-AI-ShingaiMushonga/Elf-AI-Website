@@ -199,7 +199,7 @@ def setup_database(seed: bool = False) -> None:
                 text="Insightful: Provides early detection, social insights and academic profiles.",
                 service=s3,
             )
-        if not Page_Heading.query.first()
+        if not Page_Heading.query.first():
             about_us_page = Page_Heading(
                 Title="about_us",
                 Slogan_1="Dynamic",
