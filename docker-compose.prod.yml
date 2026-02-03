@@ -10,8 +10,8 @@ services:
     volumes:
       - /home/ubuntu/Elf-AI-Website:/home/ubuntu/Elf-AI-Website
     environment:
-      DATABASE_URL: sqlite:////app/data/elf.db
-      AUTO_INIT_DB: "false"
+      DATABASE_URL: sqlite:////app/instance/elf.db
+      AUTO_INIT_DB: "true"
       SEED_DB: "false"
     restart: unless-stopped
     healthcheck:
