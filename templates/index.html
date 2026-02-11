@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title or 'ELF-AI | Implementation-First AI Solutions' }}</title>
+    <title>{{ title or 'ELF-AI | Problem-Solving AI Consultancy' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -15,19 +15,28 @@
 <body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
 
     <nav class="fixed w-full z-50 glass border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
             <a href="/" class="text-2xl font-bold tracking-tighter text-white hover:text-blue-400 transition">ELF<span class="text-blue-500">.AI</span></a>
 
             <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
                 <a href="/about" class="hover:text-blue-400 transition">About Us</a>
                 <a href="/solutions" class="hover:text-blue-400 transition">Solutions</a>
                 <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-5 py-2 border border-teal-400 text-teal-300 rounded-full hover:bg-teal-400 hover:text-slate-950 transition">Current Demo</a>
-                <a href="/enquire" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition shadow-lg shadow-blue-900/20">Book Session</a>
+                <a href="/enquire" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition shadow-lg shadow-blue-900/20">Talk to ELF-AI</a>
+            </div>
+        </div>
+
+        <div class="md:hidden border-t border-slate-800/80 px-4 py-3">
+            <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-semibold">
+                <a href="/about" class="px-3 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition">About</a>
+                <a href="/solutions" class="px-3 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition">Solutions</a>
+                <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-full border border-teal-400 text-teal-300">Current Demo</a>
+                <a href="/enquire" class="px-3 py-2 rounded-full bg-blue-600 text-white">Talk to ELF-AI</a>
             </div>
         </div>
     </nav>
 
-    <div class="fixed top-24 right-6 z-50 w-full max-w-md">
+    <div class="fixed top-24 right-4 sm:right-6 z-50 w-full max-w-md">
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -40,136 +49,132 @@
         {% endwith %}
     </div>
 
-    <header class="relative h-[82vh] w-full overflow-hidden border-b border-slate-800">
+    <header class="relative min-h-[90vh] w-full overflow-hidden border-b border-slate-800 pt-28 md:pt-20">
         <div id="carousel-container" class="absolute inset-0 w-full h-full z-0">
             {% for image in carousel_images %}
             <div class="carousel-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0"
                 style="background-image: url('{{ url_for('static', filename='images/' + image) }}');">
             </div>
             {% endfor %}
-            <div class="absolute inset-0 bg-slate-950/75"></div>
+            <div class="absolute inset-0 bg-slate-950/80"></div>
         </div>
 
-        <div class="relative z-10 h-full flex flex-col justify-center items-center text-center px-6">
+        <div class="relative z-10 min-h-[90vh] flex flex-col justify-center items-center text-center px-4 sm:px-6 py-20">
             <div class="max-w-5xl mx-auto">
                 <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-teal-300 bg-teal-500/10 border border-teal-500/20 rounded-full px-4 py-2 mb-8">
-                    <i class="fa-solid fa-gears"></i>
-                    Implementation-first consultancy for SMEs
+                    <i class="fa-solid fa-screwdriver-wrench"></i>
+                    Problem-Solving AI Consultancy
                 </p>
 
-                <h1 class="text-4xl sm:text-6xl md:text-8xl font-black text-white mb-6 tracking-tighter leading-tight">
-                    Start With One AI Wedge.<br>
-                    <span class="text-blue-500">Scale Through Reusable Modules.</span>
+                <h1 class="text-4xl sm:text-5xl md:text-7xl font-black text-white mb-6 tracking-tight leading-tight">
+                    You Bring the Problem.<br>
+                    <span class="text-blue-500">We Deliver the Tested Solution.</span>
                 </h1>
 
-                <p class="text-lg md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto drop-shadow-md">
-                    ELF-AI builds secure, low-cost automation pipelines that remove repetitive work, prove ROI, and evolve into a reusable delivery system for your industry.
+                <p class="text-base sm:text-lg md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto">
+                    ELF-AI builds practical AI and automation solutions for real business bottlenecks. Every solution is validated before deployment, integrated into your workflow, and supported after go-live.
                 </p>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-10 py-4 bg-teal-500 text-slate-950 font-bold rounded-full hover:bg-teal-400 transition shadow-lg shadow-teal-900/30">Current Demo</a>
-                    <a href="/enquire" class="px-10 py-4 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-900/30">Book Observational Session</a>
-                    <a href="#strategy" class="px-10 py-4 border border-slate-400 text-white font-medium rounded-full hover:bg-white hover:text-slate-900 transition">View Strategy</a>
+                    <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-8 sm:px-10 py-4 bg-teal-500 text-slate-950 font-bold rounded-full hover:bg-teal-400 transition shadow-lg shadow-teal-900/30">View Current Demo</a>
+                    <a href="/enquire" class="px-8 sm:px-10 py-4 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-900/30">Get a Solution Plan</a>
+                    <a href="#how-we-work" class="px-8 sm:px-10 py-4 border border-slate-400 text-white font-medium rounded-full hover:bg-white hover:text-slate-900 transition">How We Work</a>
                 </div>
             </div>
         </div>
 
         <div id="scroll-indicator" class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 transition-opacity duration-75">
-            <a href="#strategy" class="text-slate-400 hover:text-white transition duration-300">
+            <a href="#how-we-work" class="text-slate-400 hover:text-white transition duration-300">
                 <i class="fa-solid fa-chevron-down text-2xl animate-bounce"></i>
             </a>
         </div>
     </header>
 
-    <section id="strategy" class="py-20 bg-slate-900 border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-6">
+    <section id="how-we-work" class="py-20 bg-slate-900 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="text-center mb-14">
-                <h2 class="text-3xl md:text-5xl font-bold text-white">Grand Strategy in Plain Terms</h2>
-                <p class="text-slate-400 mt-4 max-w-3xl mx-auto">We enter with one narrow, high-value deployment. That wedge earns trust and operational access, then each custom project becomes a reusable module we can redeploy across similar clients.</p>
+                <h2 class="text-3xl md:text-5xl font-bold text-white">A Solution-Focused Delivery Model</h2>
+                <p class="text-slate-400 mt-4 max-w-3xl mx-auto">We are not selling hype. We solve operational problems with systems that are practical, measurable, and tested before they reach your team.</p>
             </div>
 
             <div class="grid md:grid-cols-3 gap-8">
                 <div class="p-8 rounded-2xl bg-slate-800 border border-slate-700">
                     <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-6 text-blue-400">
-                        <i class="fa-solid fa-bullseye"></i>
+                        <i class="fa-solid fa-magnifying-glass"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Wedge First</h3>
-                    <p class="text-slate-300 text-sm leading-relaxed">We target one painful, repetitive process with high ROI potential and deliver an end-to-end AI implementation at an irresistible price point.</p>
+                    <h3 class="text-xl font-bold text-white mb-3">Problem Diagnosis</h3>
+                    <p class="text-slate-300 text-sm leading-relaxed">We map your process, isolate the bottleneck, and define a solution target that improves speed, cost, or accuracy.</p>
                 </div>
 
                 <div class="p-8 rounded-2xl bg-slate-800 border border-slate-700">
                     <div class="w-12 h-12 bg-teal-600/20 rounded-lg flex items-center justify-center mb-6 text-teal-400">
-                        <i class="fa-solid fa-handshake"></i>
+                        <i class="fa-solid fa-flask-vial"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Access and Upsell</h3>
-                    <p class="text-slate-300 text-sm leading-relaxed">Implementation gives us visibility into workflow bottlenecks. We design additional modules from these insights and expand into adjacent problems.</p>
+                    <h3 class="text-xl font-bold text-white mb-3">Tested Before Deployment</h3>
+                    <p class="text-slate-300 text-sm leading-relaxed">Every solution is tested in controlled scenarios, stress-checked with real-world edge cases, and verified before production rollout.</p>
                 </div>
 
                 <div class="p-8 rounded-2xl bg-slate-800 border border-slate-700">
                     <div class="w-12 h-12 bg-indigo-600/20 rounded-lg flex items-center justify-center mb-6 text-indigo-400">
-                        <i class="fa-solid fa-rotate"></i>
+                        <i class="fa-solid fa-gears"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Productization Flywheel</h3>
-                    <p class="text-slate-300 text-sm leading-relaxed">Every deployment strengthens our module library, reducing delivery cost over time, improving margins, and accelerating future rollouts across the same sector.</p>
+                    <h3 class="text-xl font-bold text-white mb-3">Live Integration and Support</h3>
+                    <p class="text-slate-300 text-sm leading-relaxed">We integrate into your existing operations, train your team, and provide ongoing support so performance stays strong over time.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <section class="py-20 bg-slate-950 border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="grid lg:grid-cols-2 gap-12 items-start">
                 <div>
-                    <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Execution Playbook</h2>
-                    <p class="text-slate-400 mb-8">This sequence drives every engagement, from sector discovery to scalable deployment.</p>
+                    <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">How ELF-AI Turns Problems Into Results</h2>
+                    <p class="text-slate-400 mb-8">Our project flow is designed for speed without sacrificing quality and reliability.</p>
 
                     <ol class="space-y-4">
                         <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
                             <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">1</span>
-                            <span class="text-slate-300 text-sm">Choose an industry with clear pain points, repetitive workflows, and high repeatability.</span>
+                            <span class="text-slate-300 text-sm">Discovery session to define the core business problem and success criteria.</span>
                         </li>
                         <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
                             <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">2</span>
-                            <span class="text-slate-300 text-sm">Define one solvable, industry-wide problem and design the wedge pipeline around it.</span>
+                            <span class="text-slate-300 text-sm">Solution architecture and rapid prototype aligned to your current workflow.</span>
                         </li>
                         <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
                             <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">3</span>
-                            <span class="text-slate-300 text-sm">Deliver fast, gain trust, and identify additional module opportunities inside the client workflow.</span>
+                            <span class="text-slate-300 text-sm">Structured testing: functional checks, exception handling, and user validation.</span>
                         </li>
                         <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
                             <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">4</span>
-                            <span class="text-slate-300 text-sm">Expand with reusable modules and repeat the same architecture across similar clients.</span>
+                            <span class="text-slate-300 text-sm">Deployment, team enablement, monitoring, and continuous improvement.</span>
                         </li>
                     </ol>
                 </div>
 
                 <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800">
-                    <h3 class="text-2xl font-bold text-white mb-6">Phase 1: Legal Industry</h3>
+                    <h3 class="text-2xl font-bold text-white mb-6">Built for Businesses That Need Practical AI</h3>
                     <div class="space-y-5 text-sm">
                         <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-scale-balanced text-blue-400 mt-1"></i>
-                            <p class="text-slate-300"><strong class="text-white">Target Vertical:</strong> Small to medium law firms.</p>
+                            <i class="fa-solid fa-building text-blue-400 mt-1"></i>
+                            <p class="text-slate-300"><strong class="text-white">SME-first approach:</strong> Solutions designed for teams that need impact quickly, without enterprise complexity.</p>
                         </div>
                         <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-wave-square text-blue-400 mt-1"></i>
-                            <p class="text-slate-300"><strong class="text-white">Wedge Problem:</strong> Human audio transcription is costly and slow.</p>
+                            <i class="fa-solid fa-shield-check text-blue-400 mt-1"></i>
+                            <p class="text-slate-300"><strong class="text-white">Risk-aware delivery:</strong> We validate performance and reliability before launch.</p>
                         </div>
                         <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-shield-halved text-blue-400 mt-1"></i>
-                            <p class="text-slate-300"><strong class="text-white">Wedge Solution:</strong> Adversarial check transcription workflow with human verification only when needed.</p>
+                            <i class="fa-solid fa-chart-line text-blue-400 mt-1"></i>
+                            <p class="text-slate-300"><strong class="text-white">Measurable ROI:</strong> We track outcomes through cost savings, speed gains, and adoption metrics.</p>
                         </div>
                         <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-lock text-blue-400 mt-1"></i>
-                            <p class="text-slate-300"><strong class="text-white">Upsell Module:</strong> Locally deployed LLM systems for sensitive legal knowledge workflows.</p>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-tags text-blue-400 mt-1"></i>
-                            <p class="text-slate-300"><strong class="text-white">Current Pricing Position:</strong> Approximately 25% of traditional transcription provider costs.</p>
+                            <i class="fa-solid fa-users-gear text-blue-400 mt-1"></i>
+                            <p class="text-slate-300"><strong class="text-white">Partner model:</strong> You keep a technical team invested in your results after deployment.</p>
                         </div>
                     </div>
 
                     <a href="/solutions" class="inline-flex items-center gap-2 mt-8 text-blue-300 hover:text-white font-semibold transition">
-                        View the delivery model
+                        Explore our solutions
                         <i class="fa-solid fa-arrow-right"></i>
                     </a>
                 </div>
@@ -178,16 +183,16 @@
     </section>
 
     <section id="solutions-scroll" class="py-20 bg-slate-900 border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-white">Current Delivery Modules</h2>
-                <p class="text-slate-400 mt-2">These are active service tracks that plug into our wedge-first implementation model.</p>
+                <h2 class="text-3xl font-bold text-white">Solutions We Deliver</h2>
+                <p class="text-slate-400 mt-2">Each service is built to solve a specific operational problem and is tested before deployment.</p>
             </div>
-            <div class="grid md:grid-cols-3 gap-8">
+            <div class="flex justify-center">
                 {% for service in services %}
-                <a href="{{ url_for('main.enquire', service=service.id) }}" class="block h-full">
+                {% if "consult" in service.title|lower %}
+                <a href="{{ url_for('main.enquire', service=service.id) }}" class="block h-full w-full max-w-2xl">
                     <div class="p-8 rounded-2xl bg-slate-800 border border-slate-700 hover:border-blue-500 transition group flex flex-col h-full cursor-pointer relative">
-
                         <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition text-blue-500">
                             <i class="fa-solid fa-arrow-right"></i>
                         </div>
@@ -197,9 +202,7 @@
                         </div>
 
                         <h3 class="text-xl font-bold text-white mb-3">{{ service.title }}</h3>
-                        <p class="text-slate-400 mb-4 text-sm leading-relaxed flex-grow">
-                            {{ service.description }}
-                        </p>
+                        <p class="text-slate-400 mb-4 text-sm leading-relaxed flex-grow">{{ service.description }}</p>
 
                         <ul class="text-sm text-slate-300 space-y-2 mt-4">
                             {% for feature in service.features %}
@@ -211,19 +214,20 @@
                         </ul>
                     </div>
                 </a>
+                {% endif %}
                 {% endfor %}
             </div>
         </div>
     </section>
 
     <section id="contact" class="py-24 bg-slate-900">
-        <div class="max-w-3xl mx-auto px-6 text-center">
-            <h2 class="text-4xl font-bold text-white mb-4">Ready to Test a Wedge in Your Business?</h2>
-            <p class="text-slate-400 mb-8">Start with a short observational session. We identify one high-impact automation target and quantify expected ROI before build.</p>
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+            <h2 class="text-4xl font-bold text-white mb-4">Need a Solution for a Specific Business Problem?</h2>
+            <p class="text-slate-400 mb-8">Tell us what is slowing your team down. We will scope a practical, tested AI solution and show you what success looks like before implementation.</p>
 
-            <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-left">
+            <div class="bg-slate-800 p-6 sm:p-8 rounded-2xl border border-slate-700 text-left">
                 <form action="/contact" method="POST" class="space-y-4">
-                    <div class="grid md:grid-cols-2 gap-4">
+                    <div class="grid sm:grid-cols-2 gap-4">
                         <input type="text" name="name" required placeholder="Name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
                         <input type="email" name="email" required placeholder="Email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
                     </div>
