@@ -43,7 +43,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
-              <div class="bg-teal-600 text-white px-6 py-4 rounded-lg shadow-lg mb-4 flex items-center justify-between animate-fade-in-down border-l-4 border-teal-300">
+              <div class="bg-blue-600 text-white px-6 py-4 rounded-lg shadow-lg mb-4 flex items-center justify-between animate-fade-in-down border-l-4 border-blue-300">
                 <div><i class="fa-solid fa-check-circle mr-2"></i> {{ message }}</div>
                 <button onclick="this.parentElement.style.display='none'"><i class="fa-solid fa-times"></i></button>
               </div>
@@ -64,7 +64,7 @@
 
         <div class="relative z-10 min-h-[90vh] flex flex-col justify-center items-center text-center px-4 sm:px-6 py-20">
             <div class="max-w-5xl mx-auto">
-                <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-blue-300 bg-teal-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-8">
+                <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-8">
                     <i class="fa-solid fa-screwdriver-wrench"></i>
                     AI-Powered Problem-Solving Consultancy
                 </p>
@@ -74,11 +74,11 @@
                 </h1>
 
                 <p class="text-base sm:text-lg md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto">
-                    ELF-AI uses AI-powered tools to solve problems and build in-house capabilities. </br>
+                    ELF-AI uses AI-powered tools to solve problems </br> and build in-house capabilities. </br>
                 </p>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-8 sm:px-10 py-4 bg-teal-500 text-slate-950 font-bold rounded-full hover:bg-teal-400 transition shadow-lg shadow-teal-900/30">View Current Demo</a>
+                    <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-8 sm:px-10 py-4 bg-blue-500 text-slate-950 font-bold rounded-full hover:bg-blue-400 transition shadow-lg shadow-blue-900/30">View Current Demo</a>
                     <a href="#how-we-work" class="px-8 sm:px-10 py-4 border border-slate-400 text-white font-medium rounded-full hover:bg-white hover:text-slate-900 transition">How We Work</a>
                 </div>
             </div>
@@ -95,7 +95,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="text-center mb-14">
                 <h2 class="text-3xl md:text-5xl font-bold text-white">More than <span class="text-blue-500"> "just" </span></br>Consultancy</h2>
-                <p class="text-slate-400 mt-4 max-w-3xl mx-auto">We research, build and integrate. </br>We go a step further and train staff how to use the tools behind our solutions. </p>
+                <p class="text-slate-400 mt-4 max-w-3xl mx-auto">We research, build and integrate. </br> We train staff how to use the tools behind our solutions. </p>
             </div>
 
             <div class="grid md:grid-cols-3 gap-8">
@@ -108,7 +108,7 @@
                 </div>
 
                 <div class="p-8 rounded-2xl bg-slate-800 border border-slate-700">
-                    <div class="w-12 h-12 bg-teal-600/20 rounded-lg flex items-center justify-center mb-6 text-teal-400">
+                    <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-6 text-blue-400">
                         <i class="fa-solid fa-gears"></i>
                     </div>
                     <h3 class="text-xl font-bold text-white mb-3">Seamless Implementation</h3>
@@ -163,7 +163,7 @@
                     <div class="space-y-5 text-sm">
                         <div class="flex items-start gap-3">
                             <i class="fa-solid fa-building text-blue-400 mt-1"></i>
-                            <p class="text-slate-300"><strong class="text-white">SME-first approach:</strong> Solutions designed for flexible teams that immediate value impact.</p>
+                            <p class="text-slate-300"><strong class="text-white">SME-first approach:</strong> Solutions designed for flexible teams that value immediate impact.</p>
                         </div>
                         <div class="flex items-start gap-3">
                             <i class="fa-solid fa-chart-line text-blue-400 mt-1"></i>
@@ -188,7 +188,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="text-center mb-16">
                 <h2 class="text-3xl font-bold text-white">Find a Solution</h2>
-                <p class="text-slate-400 mt-2">Each service is built to solve a specific operational problem.</p>
+                <p class="text-slate-400 mt-2"><p class="text-slate-400 mb-8">Give us a challenge. </br>There is no problem too big or too small.</p></p>
             </div>
             <div class="flex justify-center">
                 {% for service in services %}
@@ -222,30 +222,6 @@
         </div>
     </section>
 
-    <section id="contact" class="py-24 bg-slate-900">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-            <h2 class="text-4xl font-bold text-white mb-4">Need a Solution for a Specific Business Problem?</h2>
-            <p class="text-slate-400 mb-8">Give us a challenge, there is no problem too big. We will scope a practical solution.</p>
-
-            <div class="bg-slate-800 p-6 sm:p-8 rounded-2xl border border-slate-700 text-left">
-                <form action="/contact" method="POST" class="space-y-4">
-                    <div class="grid sm:grid-cols-2 gap-4">
-                        <input type="text" name="name" required placeholder="Name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
-                        <input type="email" name="email" required placeholder="Email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
-                    </div>
-                    <select name="service" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-400 focus:outline-none focus:border-blue-500 transition">
-                        <option value="0">General Inquiry</option>
-                        {% for service in services %}
-                            <option value="{{ service.id }}">{{ service.title }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg transition shadow-lg shadow-blue-900/50">
-                        Request Consultation
-                    </button>
-                </form>
-            </div>
-        </div>
-    </section>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
