@@ -1,112 +1,151 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solutions | ELF-AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200">
+<body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
 
     <nav class="fixed w-full z-50 glass border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <a href="/" class="text-2xl font-bold tracking-tighter text-white hover:text-blue-400 transition">ELF<span class="text-blue-500">.AI</span></a>
-            
-            <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
+
+            <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
                 <a href="/about" class="hover:text-blue-400 transition">About Us</a>
                 <a href="/solutions" class="hover:text-blue-400 transition">Solutions</a>
-                
-                <a href="/enquire" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition shadow-lg shadow-blue-900/20">Modernise</a>
+                <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-5 py-2 border border-teal-400 text-teal-300 rounded-full hover:bg-teal-400 hover:text-slate-950 transition">Current Demo</a>
+                <a href="/enquire" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition shadow-lg shadow-blue-900/20">Book Session</a>
             </div>
         </div>
     </nav>
 
-    <header class="pt-32 pb-16 px-6 text-center bg-slate-900">
-        <h1 class="text-4xl md:text-6xl font-bold text-white mb-6"> {{solution.Slogan_1}} <span class="text-blue-500"><br>{{solution.Slogan_2}} </span></h1>
-        <p class="text-xl text-slate-400 max-w-3xl mx-auto">
-            {{solution.Tagline}}
+    <header class="pt-32 pb-20 px-6 text-center bg-slate-900 border-b border-slate-800">
+        <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-8">
+            <i class="fa-solid fa-layer-group"></i>
+            Wedge implementation + module expansion
+        </p>
+        <h1 class="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
+            From One Industry Wedge<br>
+            <span class="text-blue-500">to a Scalable AI Delivery System</span>
+        </h1>
+        <p class="text-lg md:text-xl text-slate-400 max-w-4xl mx-auto">
+            ELF-AI is implementation-first. We deploy one high-value automation pipeline, earn workflow access, then expand with reusable modules that compound delivery speed and margin over time.
         </p>
     </header>
 
-    <section class="py-20 px-6 max-w-5xl mx-auto space-y-24">
-        
+    <section class="py-20 px-6 max-w-7xl mx-auto border-b border-slate-800">
+        <div class="text-center mb-14">
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Wedge-to-Module Framework</h2>
+            <p class="text-slate-400 mt-3 max-w-3xl mx-auto">Our strategy follows a repeatable expansion model across each vertical.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
+                <span class="text-xs font-semibold text-blue-300 uppercase tracking-widest">Step 1</span>
+                <h3 class="text-white font-bold mt-2 mb-3">Choose Industry</h3>
+                <p class="text-slate-400 text-sm">Prioritize sectors with repetitive workflows, clear pain points, and repeatable deployment opportunities.</p>
+            </div>
+            <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
+                <span class="text-xs font-semibold text-blue-300 uppercase tracking-widest">Step 2</span>
+                <h3 class="text-white font-bold mt-2 mb-3">Define Problem</h3>
+                <p class="text-slate-400 text-sm">Distill discovery into one industry-wide problem that can be solved end-to-end with automation + AI.</p>
+            </div>
+            <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
+                <span class="text-xs font-semibold text-blue-300 uppercase tracking-widest">Step 3</span>
+                <h3 class="text-white font-bold mt-2 mb-3">Deploy Wedge</h3>
+                <p class="text-slate-400 text-sm">Implement the wedge fast, prove value, and deliver at a price that drives adoption.</p>
+            </div>
+            <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
+                <span class="text-xs font-semibold text-blue-300 uppercase tracking-widest">Step 4</span>
+                <h3 class="text-white font-bold mt-2 mb-3">Build Modules</h3>
+                <p class="text-slate-400 text-sm">Use earned access to identify adjacent bottlenecks and convert custom work into reusable modules.</p>
+            </div>
+            <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
+                <span class="text-xs font-semibold text-blue-300 uppercase tracking-widest">Step 5</span>
+                <h3 class="text-white font-bold mt-2 mb-3">Scale Sector-Wide</h3>
+                <p class="text-slate-400 text-sm">Reuse wedge + modules across similar clients to reduce cost, accelerate delivery, and increase margins.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-20 px-6 max-w-7xl mx-auto border-b border-slate-800">
+        <div class="grid lg:grid-cols-2 gap-12 items-start">
+            <div>
+                <h2 class="text-3xl font-bold text-white mb-5">Standard Project Process</h2>
+                <p class="text-slate-400 mb-8">Each engagement follows a documented lifecycle from acquisition to ongoing operations.</p>
+                <div class="space-y-4">
+                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">1.</span> Client acquisition through referrals and network channels.</div>
+                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">2.</span> Client meeting with wedge pitch plus free observational session.</div>
+                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">3.</span> Workflow observation to identify constraints and vendor dependencies.</div>
+                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">4.</span> Research and design of feasible, measurable AI interventions.</div>
+                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">5.</span> Build architecture, validate performance, and document the pipeline.</div>
+                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">6.</span> Deploy with IT integration and team enablement.</div>
+                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">7.</span> Operate continuously with support, monitoring, and iterative improvement.</div>
+                </div>
+            </div>
+
+            <div class="space-y-8">
+                <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800">
+                    <h3 class="text-xl font-bold text-white mb-4">Measurable Success Metrics</h3>
+                    <ul class="space-y-3 text-sm text-slate-300">
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-chart-line text-blue-400 mt-1"></i><span><strong class="text-white">Cost per unit of work:</strong> e.g., cost per audio hour transcribed or cost per document processed.</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-users text-blue-400 mt-1"></i><span><strong class="text-white">Adoption metrics:</strong> active users, usage frequency, and workflow penetration.</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-gauge text-blue-400 mt-1"></i><span><strong class="text-white">Operational continuity:</strong> uptime, latency, and support turnaround performance.</span></li>
+                    </ul>
+                </div>
+
+                <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800">
+                    <h3 class="text-xl font-bold text-white mb-4">Reusable Module Standards</h3>
+                    <ul class="space-y-3 text-sm text-slate-300">
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-cubes text-teal-400 mt-1"></i><span><strong class="text-white">Infrastructure:</strong> shared AWS/Python/code conventions to maximize reusability.</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-book text-teal-400 mt-1"></i><span><strong class="text-white">Knowledge:</strong> documentation and process playbooks for each delivery pipeline.</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-network-wired text-teal-400 mt-1"></i><span><strong class="text-white">Integration layer:</strong> consistent architecture for deployment and scale-out.</span></li>
+                        <li class="flex items-start gap-3"><i class="fa-solid fa-heart-pulse text-teal-400 mt-1"></i><span><strong class="text-white">Monitoring:</strong> common observability standards for all solutions.</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-20 px-6 max-w-7xl mx-auto border-b border-slate-800">
         <div class="grid md:grid-cols-2 gap-12 items-center">
             <div>
-                <div class="w-16 h-16 bg-blue-900/30 rounded-xl flex items-center justify-center mb-6 text-blue-400">
-                    <i class="fa-solid fa-microphone-lines text-2xl"></i>
-                </div>
-                <h2 class="text-3xl font-bold text-white mb-4">Hybrid Transcription</h2>
-                <p class="text-slate-400 mb-6 leading-relaxed">
-                    A pure AI cannot sign a legal affidavit.  Our "Hybrid" model solves this by utilizing a human-in-the-loop for verified accuracy.
-                </p>
-                <ul class="space-y-3 text-sm text-slate-300">
-                    <li class="flex items-start"><i class="fa-solid fa-check text-blue-500 mt-1 mr-3"></i> <span><strong>Hardware:</strong> Plaud Note Pro for instant recording.</span></li>
-                    <li class="flex items-start"><i class="fa-solid fa-check text-blue-500 mt-1 mr-3"></i> <span><strong>Consensus Protocol:</strong> Three separate AIs (Whisper, Kaldi) process the audio. Only disagreements trigger human review.</span></li>
-                    <li class="flex items-start"><i class="fa-solid fa-check text-blue-500 mt-1 mr-3"></i> <span><strong>Cost Savings:</strong> Reduces transcription costs from R1.1m to ~R72k over 3 years.</span></li>
+                <h2 class="text-3xl font-bold text-white mb-5">Execution Snapshot: Legal Vertical</h2>
+                <p class="text-slate-400 mb-6">Current focus is South African small and medium law firms where transcription load is high and confidentiality is non-negotiable.</p>
+                <ul class="space-y-4 text-sm text-slate-300">
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-microphone-lines text-blue-400 mt-1"></i><span><strong class="text-white">Industry-wide issue:</strong> human audio transcription.</span></li>
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-shield-check text-blue-400 mt-1"></i><span><strong class="text-white">Wedge system:</strong> adversarial check architecture for high-confidence output.</span></li>
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-laptop-code text-blue-400 mt-1"></i><span><strong class="text-white">Upsell track:</strong> locally deployed legal LLMs and document intelligence modules.</span></li>
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-percent text-blue-400 mt-1"></i><span><strong class="text-white">Pricing strategy:</strong> currently around 25% of traditional transcription provider pricing.</span></li>
                 </ul>
             </div>
-            <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700">
-                <h3 class="text-white font-bold mb-4">Comparative Cost Analysis</h3>
+
+            <div class="bg-slate-900 p-8 rounded-2xl border border-slate-800">
+                <h3 class="text-xl font-bold text-white mb-5">Next Actions for New Clients</h3>
                 <div class="space-y-4">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-slate-400">Human Transcription</span>
-                        <span class="text-red-400 font-mono">R21.00 / min</span>
-                    </div>
-                    <div class="w-full bg-slate-700 h-2 rounded-full"><div class="bg-red-500 h-2 rounded-full" style="width: 100%"></div></div>
-                    
-                    <div class="flex justify-between text-sm">
-                        <span class="text-slate-400">ELF Hybrid</span>
-                        <span class="text-blue-400 font-mono">~R1.50 / min</span>
-                    </div>
-                    <div class="w-full bg-slate-700 h-2 rounded-full"><div class="bg-blue-500 h-2 rounded-full" style="width: 10%"></div></div>
+                    <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between p-4 rounded-lg border border-teal-500/40 bg-teal-500/10 hover:bg-teal-500/20 transition">
+                        <span class="font-semibold text-teal-200">Open Current Demo</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-teal-300"></i>
+                    </a>
+                    <a href="/enquire" class="flex items-center justify-between p-4 rounded-lg border border-blue-500/40 bg-blue-500/10 hover:bg-blue-500/20 transition">
+                        <span class="font-semibold text-blue-100">Book Observational Session</span>
+                        <i class="fa-solid fa-arrow-right text-blue-300"></i>
+                    </a>
+                    <a href="/" class="flex items-center justify-between p-4 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-800 transition">
+                        <span class="font-semibold text-slate-200">Return to Strategy Overview</span>
+                        <i class="fa-solid fa-arrow-right text-slate-300"></i>
+                    </a>
                 </div>
             </div>
         </div>
-
-        <div class="grid md:grid-cols-2 gap-12 items-center">
-            <div class="order-2 md:order-1 bg-slate-800 p-8 rounded-2xl border border-slate-700">
-                <h3 class="text-white font-bold mb-4">Hardware Specifications</h3>
-                <div class="space-y-3 font-mono text-sm text-slate-300">
-                    <div class="flex justify-between border-b border-slate-700 pb-2">
-                        <span>Model</span>
-                        <span class="text-white">Mac Studio M3 Ultra</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-700 pb-2">
-                        <span>Memory</span>
-                        <span class="text-white">256GB Unified</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-700 pb-2">
-                        <span>LLM</span>
-                        <span class="text-white">Llama 3.1 405B</span>
-                    </div>
-                    <div class="flex justify-between pb-2">
-                        <span>Security</span>
-                        <span class="text-teal-400">Local Only (No Cloud)</span>
-                    </div>
-                </div>
-            </div>
-            <div class="order-1 md:order-2">
-                <div class="w-16 h-16 bg-teal-900/30 rounded-xl flex items-center justify-center mb-6 text-teal-400">
-                    <i class="fa-solid fa-brain text-2xl"></i>
-                </div>
-                <h2 class="text-3xl font-bold text-white mb-4">ELF Law Agent</h2>
-                <p class="text-slate-400 mb-6 leading-relaxed">
-                    We deploy a private "Case Library" LLM. It ingests your firm's historical PDF/Word documents into a local Vector Database, allowing you to "chat" with your past cases.
-                </p>
-                <ul class="space-y-3 text-sm text-slate-300">
-                    <li class="flex items-start"><i class="fa-solid fa-check text-teal-500 mt-1 mr-3"></i> <span><strong>Strict Citation:</strong> The model is forced to cite paragraph numbers from ingested documents to prevent hallucinations.</span></li>
-                    <li class="flex items-start"><i class="fa-solid fa-check text-teal-500 mt-1 mr-3"></i> <span><strong>Dual Models:</strong> Toggles between a "Fast Model" (Llama 70B) for search and a "Smart Model" (Llama 405B) for strategy.</span></li>
-                </ul>
-            </div>
-        </div>
-
     </section>
 
 </body>
