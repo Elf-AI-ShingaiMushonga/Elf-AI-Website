@@ -65,7 +65,10 @@ PY
 Update `.env`:
 - Set `SECRET_KEY=<generated value>`
 - Set `SITE_URL=https://elf-ai.co.za`
+- Set `DOMAIN=elf-ai.co.za`
+- Set `LETSENCRYPT_EMAIL=you@example.com`
 - Keep `APP_ENV=production`
+- Optional: set `RDS_SECRET_ID` and `AWS_REGION` if you want bootstrap to sync DB credentials automatically.
 
 7. Populate `DATABASE_URL` from Secrets Manager
 ```bash
@@ -79,10 +82,6 @@ ENV_FILE=.env ./scripts/sync-rds-env.sh "$RDS_SECRET_ID"
 ```bash
 cd /home/ubuntu/Elf-AI-Website
 chmod +x scripts/ec2-bootstrap.sh scripts/sync-rds-env.sh
-DOMAIN=elf-ai.co.za \
-EMAIL=you@example.com \
-AWS_REGION=us-east-1 \
-RDS_SECRET_ID=<secret-arn-or-name> \
 ./scripts/ec2-bootstrap.sh
 ```
 What this does:
