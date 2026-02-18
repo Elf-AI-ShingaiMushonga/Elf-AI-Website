@@ -11,7 +11,6 @@ ARG APP_GID=1000
 
 RUN apt-get update -o Acquire::Retries=3 \
     && apt-get install -y --no-install-recommends \
-        build-essential \
         ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
