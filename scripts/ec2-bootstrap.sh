@@ -6,6 +6,7 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 ENV_FILE="${ENV_FILE:-.env}"
 EMAIL="${EMAIL:-}"
 CERT_PATH="certbot/conf/live/${DOMAIN}/fullchain.pem"
+BOOTSTRAP_SEED_DB="${BOOTSTRAP_SEED_DB:-true}"
 
 if [[ ! -f "$COMPOSE_FILE" ]]; then
   echo "Missing $COMPOSE_FILE. Run from the repo root." >&2
@@ -82,5 +83,8 @@ NGINX_CONF=elf-ai.conf compose up --build -d web nginx
 
 echo "Running database migrations..."
 compose run --rm web flask --app app.py db upgrade
+
+echo "Ensuring required tables and baseline data exist..."
+compose run --rm -e SEED_DB="${BOOTSTRAP_SEED_DB}" web flask --app app.py init-db
 
 echo "Done. App should be available at https://$DOMAIN"

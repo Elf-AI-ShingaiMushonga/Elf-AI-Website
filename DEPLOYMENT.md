@@ -93,6 +93,7 @@ What this does:
 - Issues Let's Encrypt cert.
 - Starts HTTPS Nginx + web app.
 - Runs `flask db upgrade`.
+- Runs `flask init-db` (default with `SEED_DB=true`) so required tables + baseline content exist.
 
 9. Validate deployment
 ```bash
