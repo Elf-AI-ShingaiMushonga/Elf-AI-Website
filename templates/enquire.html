@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,33 +32,17 @@
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
+    <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
+    {% include "partials/public_nav.html" %}
 
-    <nav class="fixed w-full z-50 glass border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-            <a href="/" class="flex flex-col leading-none hover:text-blue-400 transition">
-                <span class="text-2xl font-bold tracking-tighter text-white">ELF<span class="text-blue-500">-AI</span></span>
-                <span class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 mt-1">No Problem</span>
-            </a>
-
-            <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
-                <a href="/about" class="hover:text-blue-400 transition">About Us</a>
-                <a href="/solutions" class="hover:text-blue-400 transition">Solutions</a>
-                <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-5 py-2 border border-blue-400 text-blue-300 rounded-full hover:bg-blue-400 hover:text-slate-950 transition">Current Demo</a>
-                <a href="/enquire" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition shadow-lg shadow-blue-900/20">Talk to ELF-AI</a>
+    <main id="main-content" class="min-h-screen pt-36 md:pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+        <section class="lg:col-span-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="#contact-process" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">How it works</a>
+                <a href="#enquiry-form" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Send enquiry</a>
+                <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Current demo</a>
             </div>
-        </div>
-
-        <div class="md:hidden border-t border-slate-800/80 px-4 py-3">
-            <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-semibold">
-                <a href="/about" class="px-3 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition">About</a>
-                <a href="/solutions" class="px-3 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition">Solutions</a>
-                <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-full border border-blue-400 text-blue-300">Current Demo</a>
-                <a href="/enquire" class="px-3 py-2 rounded-full bg-blue-600 text-white">Talk to ELF-AI</a>
-            </div>
-        </div>
-    </nav>
-
-    <div class="min-h-screen pt-36 md:pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+        </section>
 
         <div class="space-y-10">
             <div>
@@ -70,9 +54,13 @@
                 <p class="text-lg text-slate-400 leading-relaxed">
                     This ELF-AI consultation is built for decision-makers who need practical outcomes. We assess your workflow, identify the highest-impact opportunity, and propose a tested solution plan.
                 </p>
+                <p class="text-sm text-slate-300 mt-4 inline-flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-2">
+                    <i class="fa-solid fa-clock text-blue-400"></i>
+                    Typical response: within 1 business day
+                </p>
             </div>
 
-            <div class="space-y-6 border-t border-slate-800 pt-8">
+            <div id="contact-process" class="space-y-6 border-t border-slate-800 pt-8">
                 <h3 class="text-2xl font-bold text-white">What happens next?</h3>
 
                 <div class="flex gap-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
@@ -126,57 +114,87 @@
             </div>
         </div>
 
-        <div class="bg-slate-900 p-6 sm:p-8 md:p-9 rounded-3xl border border-slate-800 shadow-2xl shadow-black/50 lg:sticky lg:top-28">
+        <div id="enquiry-form" class="bg-slate-900 p-6 sm:p-8 md:p-9 rounded-3xl border border-slate-800 shadow-2xl shadow-black/50 lg:sticky lg:top-28">
             <h3 class="text-2xl font-bold text-white mb-6">Send an Enquiry</h3>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3 mb-5">
+                <p class="text-[11px] uppercase tracking-[0.15em] text-slate-500 mb-2">Helpful Before Submit</p>
+                <ul class="space-y-1.5 text-xs text-slate-300">
+                    <li>1. Name the workflow bottleneck you want solved first.</li>
+                    <li>2. Share one outcome metric (time, cost, quality, or risk).</li>
+                    <li>3. Add your preferred timeline to speed planning.</li>
+                </ul>
+            </div>
 
             <form action="/contact" method="POST" class="space-y-5">
+                <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
                 <div class="grid sm:grid-cols-2 gap-5">
                     <div class="space-y-2">
-                        <label class="text-sm text-slate-400 font-medium ml-1">Full Name</label>
-                        <input type="text" name="name" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
+                        <label for="contact-name" class="text-sm text-slate-400 font-medium ml-1">Full Name</label>
+                        <input id="contact-name" type="text" name="name" required maxlength="120" autocomplete="name" placeholder="Your full name" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-sm text-slate-400 font-medium ml-1">Job Title</label>
-                        <input type="text" name="role" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
+                        <label for="contact-role" class="text-sm text-slate-400 font-medium ml-1">Job Title</label>
+                        <input id="contact-role" type="text" name="role" maxlength="120" autocomplete="organization-title" placeholder="e.g. Operations Lead" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                    </div>
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div class="space-y-2">
+                        <label for="contact-email" class="text-sm text-slate-400 font-medium ml-1">Work Email</label>
+                        <input id="contact-email" type="email" name="email" required maxlength="255" autocomplete="email" placeholder="name@company.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="contact-phone" class="text-sm text-slate-400 font-medium ml-1">Phone (optional)</label>
+                        <input id="contact-phone" type="tel" name="phone" maxlength="40" autocomplete="tel" placeholder="+1 555 555 5555" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
                     </div>
                 </div>
 
                 <div class="space-y-2">
-                    <label class="text-sm text-slate-400 font-medium ml-1">Work Email</label>
-                    <input type="email" name="email" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
+                    <label for="contact-company" class="text-sm text-slate-400 font-medium ml-1">Firm / Company Name</label>
+                    <input id="contact-company" type="text" name="company" maxlength="200" autocomplete="organization" placeholder="Your organization" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-5">
+                    <div class="space-y-2">
+                        <label for="contact-service" class="text-sm text-slate-400 font-medium ml-1">Area of Interest</label>
+                        <select id="contact-service" name="service" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-blue-500 transition">
+                            <option value="0">General Inquiry</option>
+
+                            {% for service in services %}
+                                <option value="{{ service.id }}"
+                                    {% if request.args.get('service') == service.id|string %} selected {% endif %}>
+                                    {{ service.title }}
+                                </option>
+                            {% endfor %}
+
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="contact-timeline" class="text-sm text-slate-400 font-medium ml-1">Preferred Timeline</label>
+                        <select id="contact-timeline" name="timeline" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-blue-500 transition">
+                            <option value="">Not sure yet</option>
+                            <option value="immediate">Immediate (0-2 weeks)</option>
+                            <option value="this-quarter">This quarter</option>
+                            <option value="next-quarter">Next quarter</option>
+                            <option value="exploratory">Exploratory</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="space-y-2">
-                    <label class="text-sm text-slate-400 font-medium ml-1">Firm / Company Name</label>
-                    <input type="text" name="company" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-sm text-slate-400 font-medium ml-1">Area of Interest</label>
-                    <select name="service" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-blue-500 transition">
-                        <option value="0">General Inquiry</option>
-
-                        {% for service in services %}
-                            <option value="{{ service.id }}"
-                                {% if request.args.get('service') == service.id|string %} selected {% endif %}>
-                                {{ service.title }}
-                            </option>
-                        {% endfor %}
-
-                    </select>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-sm text-slate-400 font-medium ml-1">Additional Details</label>
-                    <textarea name="message" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition"></textarea>
+                    <label for="contact-message" class="text-sm text-slate-400 font-medium ml-1">Additional Details</label>
+                    <textarea id="contact-message" name="message" rows="4" maxlength="3000" placeholder="Briefly describe your current process, bottleneck, and target outcome." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
                 </div>
 
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg transition shadow-lg shadow-blue-900/50 mt-4">
                     Submit Enquiry
                 </button>
+                <p class="text-xs text-slate-500">By submitting, you agree to be contacted by ELF-AI about your enquiry.</p>
             </form>
         </div>
-    </div>
+    </main>
 
+    {% include "partials/public_footer.html" %}
+    <script src="{{ url_for('static', filename='elf.js') }}" defer></script>
 </body>
 </html>

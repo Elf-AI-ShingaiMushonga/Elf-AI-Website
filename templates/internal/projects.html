@@ -1,0 +1,173 @@
+{% extends "internal/base.html" %}
+
+{% block title %}Projects | ELF-AI Internal{% endblock %}
+
+{% block content %}
+<section class="mb-8">
+    <h1 class="text-3xl font-black text-white mb-3">Project Operations</h1>
+    <p class="text-slate-400 max-w-3xl">Move from client intake to active execution with clear ownership, stage control, and project-scoped workspaces.</p>
+</section>
+
+<section class="grid xl:grid-cols-[1.2fr_0.8fr] gap-6">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5" data-filter-root>
+        <div class="flex flex-col xl:flex-row gap-3 xl:items-center xl:justify-between">
+            <div class="grid sm:grid-cols-[1fr_auto_auto_auto] gap-3 flex-1">
+                <input type="search" data-filter-input placeholder="Search by project, client, owner, or summary..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition">
+                <select data-filter-status class="w-full sm:w-44 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
+                    <option value="all">All statuses</option>
+                    {% for status in project_statuses %}
+                    <option value="{{ status }}">{{ status|replace('-', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+                <select data-filter-stage class="w-full sm:w-44 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
+                    <option value="all">All stages</option>
+                    {% for stage in project_stages %}
+                    <option value="{{ stage }}">{{ stage|title }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" data-filter-reset class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 text-sm font-semibold transition">Reset</button>
+            </div>
+            <div class="text-xs uppercase tracking-[0.16em] text-slate-400">
+                Showing <span data-filter-count>{{ project_cards|length }}</span> projects · Press <span class="text-slate-200">/</span> to search
+            </div>
+        </div>
+
+        {% if project_cards %}
+        <div class="grid xl:grid-cols-2 gap-5 mt-5">
+            {% for card in project_cards %}
+            <article class="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 card-hover" data-filter-item data-status="{{ (card.project.status or '')|lower }}" data-stage="{{ (card.project.stage or '')|lower }}" data-filter-text="{{ card.project.name }} {{ card.project.client.name }} {{ card.project.owner.full_name if card.project.owner else '' }} {{ card.project.summary }}">
+                <div class="flex items-start justify-between gap-4 mb-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">{{ card.project.name }}</h2>
+                        <p class="text-xs text-slate-400 mt-1">{{ card.project.client.name }} · {{ card.project.stage|title }}</p>
+                    </div>
+                    <span class="text-xs px-2.5 py-1 rounded-full {{ internal_status_class(card.project.status) }}">{{ card.project.status|replace('-', ' ')|title }}</span>
+                </div>
+
+                <p class="text-sm text-slate-300 mb-4">{{ card.project.summary }}</p>
+
+                {% if card.project.resources %}
+                <div class="mb-4">
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-1">Linked Docs</p>
+                    <div class="flex flex-wrap gap-1">
+                        {% for resource in card.project.resources %}
+                        <a href="{{ resource.safe_link }}" target="_blank" rel="noopener noreferrer" class="text-[11px] px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-200 hover:bg-emerald-500/20 transition">{{ resource.title }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="grid grid-cols-3 gap-3 text-xs mb-4">
+                    <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                        <p class="text-slate-400 mb-1">Owner</p>
+                        <p class="text-slate-100 font-semibold">{{ card.project.owner.full_name if card.project.owner else 'Unassigned' }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                        <p class="text-slate-400 mb-1">Due Date</p>
+                        <p class="text-slate-100 font-semibold">{{ card.project.due_date.strftime('%d %b %Y') if card.project.due_date else 'TBD' }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                        <p class="text-slate-400 mb-1">Tasks</p>
+                        <p class="text-slate-100 font-semibold">{{ card.completed_tasks }}/{{ card.total_tasks }}</p>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="flex items-center justify-between text-xs mb-1.5">
+                        <span class="text-slate-400">Progress</span>
+                        <span class="text-slate-100 font-semibold">{{ card.progress }}%</span>
+                    </div>
+                    <div class="h-2 rounded-full bg-slate-800 overflow-hidden">
+                        <div class="h-full bg-blue-500" style="width: {{ card.progress }}%;"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <a href="{{ url_for('main.internal_todos', view='nested', project_id=card.project.id) }}" class="px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">Plan Tasks</a>
+                    <a href="{{ url_for('main.internal_todos', view='priority', project_id=card.project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">Priority Queue</a>
+                    <a href="{{ url_for('main.internal_resources', project_id=card.project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">Project Docs</a>
+                </div>
+
+                {% if card.project.tasks %}
+                <div class="space-y-2 mt-4">
+                    {% for task in card.project.tasks[:3] %}
+                    <div class="text-xs rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 flex items-center justify-between gap-3">
+                        <span class="text-slate-200">{{ task.title }}</span>
+                        <span class="px-2 py-0.5 rounded-full {{ internal_status_class(task.status) }}">{{ task.status|replace('-', ' ')|title }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
+        <p data-filter-empty class="hidden mt-5 text-sm text-slate-400">No projects match the current filters.</p>
+        {% else %}
+        <p class="mt-5 text-slate-400 text-sm">No internal projects are currently configured.</p>
+        {% endif %}
+    </article>
+
+    <article id="new-project" class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <h2 class="text-xl font-bold text-white mb-4">Create Project</h2>
+        <form action="{{ url_for('main.internal_project_add') }}" method="post" class="space-y-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Project Name</label>
+                <input name="name" type="text" required maxlength="200" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Client</label>
+                <select name="client_id" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <option value="" disabled {% if not selected_client_id %}selected{% endif %}>Select client</option>
+                    {% for client in clients %}
+                    <option value="{{ client.id }}" {% if selected_client_id and selected_client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Stage</label>
+                    <select name="stage" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        {% for stage in project_stages %}
+                        <option value="{{ stage }}" {% if stage == 'discovery' %}selected{% endif %}>{{ stage|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Status</label>
+                    <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        {% for status in project_statuses %}
+                        <option value="{{ status }}" {% if status == 'on-track' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Owner</label>
+                    <select name="owner_id" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        <option value="">Unassigned</option>
+                        {% for user in active_internal_users %}
+                        <option value="{{ user.id }}" {% if current_internal_user and current_internal_user.id == user.id %}selected{% endif %}>{{ user.full_name }} · {{ user.role|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Due Date</label>
+                    <input name="due_date" type="date" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                </div>
+            </div>
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Delivery Summary</label>
+                <textarea name="summary" rows="4" maxlength="3000" required placeholder="Scope, target outcome, and first milestone." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition"></textarea>
+            </div>
+            <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Create Project</button>
+        </form>
+
+        <div class="mt-5 rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+            <p class="text-xs uppercase tracking-[0.12em] text-slate-500 mb-2">Next Step</p>
+            <p class="text-xs text-slate-300">After creating a project, open the task planner and build the nested execution queue.</p>
+        </div>
+    </article>
+</section>
+{% endblock %}

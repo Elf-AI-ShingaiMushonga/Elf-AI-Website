@@ -1,0 +1,35 @@
+aws_region = "us-east-1"
+
+name_prefix = "elf-ai"
+environment = "prod"
+
+vpc_id             = "vpc-xxxxxxxxxxxxxxxxx"
+private_subnet_ids = ["subnet-aaaaaaaaaaaaaaaaa", "subnet-bbbbbbbbbbbbbbbbb"]
+
+# Recommended: allow DB access from the EC2/app security group.
+app_security_group_ids = ["sg-ccccccccccccccccc"]
+
+# Optional: use CIDR-based ingress if needed.
+allowed_cidr_blocks = []
+
+db_name           = "elfai"
+db_username       = "elfai_admin"
+db_instance_class = "db.t3.micro"
+engine_version    = null
+
+allocated_storage     = 20
+max_allocated_storage = 100
+backup_retention_period = 7
+
+multi_az             = false
+publicly_accessible  = false
+deletion_protection  = true
+skip_final_snapshot  = false
+apply_immediately    = false
+storage_encrypted    = true
+
+secret_name_override = ""
+
+tags = {
+  Owner = "ELF-AI"
+}

@@ -4,8 +4,15 @@ __pycache__/
 *.key
 *.pem
 .env
+.env.local
 logs/
 data/
 .venv/
 .ruff_cache/
 .pytest_cache/
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.auto.tfvars
+crash.log

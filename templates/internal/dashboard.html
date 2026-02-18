@@ -1,0 +1,204 @@
+{% extends "internal/base.html" %}
+
+{% block title %}Internal Dashboard | ELF-AI{% endblock %}
+
+{% block content %}
+<section class="mb-8">
+    <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-4">
+        <i class="fa-solid fa-gauge-high"></i>
+        Internal Operations
+    </p>
+    <h1 class="text-3xl md:text-4xl font-black text-white mb-3">Delivery Dashboard</h1>
+    <p class="text-slate-400 max-w-3xl">A live operating view for client work, delivery status, and execution quality across the consultancy pipeline.</p>
+</section>
+
+<section class="grid lg:grid-cols-[1.2fr_0.8fr] gap-4 mb-8">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">Quick Actions</p>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url_for('main.internal_todos') }}" class="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Open To-Do Board</a>
+            <a href="{{ url_for('main.internal_projects') }}" class="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Open Projects</a>
+            <a href="{{ url_for('main.internal_projects') }}#new-project" class="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Create Project</a>
+            <a href="{{ url_for('main.internal_clients') }}#new-client" class="px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-100 text-sm font-semibold transition">Create Client</a>
+            <a href="{{ url_for('main.internal_clients') }}" class="px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-100 text-sm font-semibold transition">View Clients</a>
+            <a href="{{ url_for('main.internal_resources') }}" class="px-4 py-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-100 text-sm font-semibold transition">Open Resources</a>
+        </div>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">Attention Queue</p>
+        <div class="grid sm:grid-cols-3 gap-3">
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-xs text-slate-400 mb-1">Due in 7 days</p>
+                <p class="text-xl font-black text-amber-300">{{ stats.due_soon }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-xs text-slate-400 mb-1">Overdue Tasks</p>
+                <p class="text-xl font-black text-rose-300">{{ stats.overdue }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-xs text-slate-400 mb-1">Blocked Tasks</p>
+                <p class="text-xl font-black text-orange-300">{{ stats.blocked }}</p>
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="rounded-2xl border border-slate-800 bg-slate-900 p-6 mb-8">
+    <div class="flex items-center justify-between gap-3 mb-4">
+        <h2 class="text-xl font-bold text-white">Consultant Workflow</h2>
+        <span class="text-xs text-slate-400">Lead to delivery</span>
+    </div>
+    <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
+        {% for step in journey_steps %}
+        <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <p class="text-[11px] uppercase tracking-[0.15em] text-blue-300 mb-1">Step {{ loop.index }}</p>
+            <h3 class="text-sm font-semibold text-white mb-2">{{ step.title }}</h3>
+            <p class="text-xs text-slate-400 mb-3">{{ step.body }}</p>
+            <a href="{{ step.href }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-300 hover:text-blue-200 transition">
+                {{ step.label }}
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="grid sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">Active Clients</p>
+        <p class="text-3xl font-black text-white">{{ stats.clients }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">Active Projects</p>
+        <p class="text-3xl font-black text-white">{{ stats.active_projects }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">Open Tasks</p>
+        <p class="text-3xl font-black text-white">{{ stats.open_tasks }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">Ops Requirements</p>
+        <p class="text-3xl font-black text-white">{{ stats.requirements }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">Knowledge Docs</p>
+        <p class="text-3xl font-black text-white">{{ stats.resources }}</p>
+    </article>
+</section>
+
+<section class="grid xl:grid-cols-[1.4fr_0.6fr] gap-6 mb-8">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-white">Operational Priorities</h2>
+            <span class="text-xs text-slate-400">Due soon threshold: {{ due_soon_cutoff.strftime('%d %b %Y') }}</span>
+        </div>
+
+        {% if upcoming_tasks %}
+        <div class="space-y-3">
+            {% for task in upcoming_tasks %}
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <p class="text-white font-semibold">{{ task.title }}</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ task.project.name }} · {{ task.assignee }}</p>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="px-2.5 py-1 rounded-full {{ internal_priority_class(task.priority) }} bg-slate-900 border border-slate-700">{{ task.priority|title }}</span>
+                    <span class="px-2.5 py-1 rounded-full {{ internal_status_class(task.status) }}">{{ task.status|replace('-', ' ')|title }}</span>
+                    <span class="text-slate-400">{{ task.due_date.strftime('%d %b') if task.due_date else 'No due date' }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-slate-400 text-sm">No open tasks. Delivery board is clear.</p>
+        {% endif %}
+    </article>
+
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 class="text-xl font-bold text-white mb-4">Announcements</h2>
+        <div class="space-y-3">
+            {% for item in announcements %}
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-white font-semibold text-sm">{{ item.title }}</p>
+                <p class="text-slate-400 text-xs mt-1">{{ item.body }}</p>
+            </div>
+            {% else %}
+            <p class="text-slate-400 text-sm">No announcements published.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="grid lg:grid-cols-[1fr_1fr] gap-6 mb-8">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-white">Knowledge Library Health</h2>
+            <a href="{{ url_for('main.internal_resources') }}" class="text-xs text-blue-300 hover:text-blue-200 transition">Open Library</a>
+        </div>
+
+        <div class="grid sm:grid-cols-3 gap-3 mb-4">
+            <a href="{{ url_for('main.internal_resources', state='linked') }}" class="block rounded-xl border border-slate-800 bg-slate-950/70 p-3 hover:border-emerald-500/40 transition">
+                <p class="text-xs text-slate-400 mb-1">Linked Docs</p>
+                <p class="text-xl font-black text-emerald-300">{{ knowledge_stats.linked }}</p>
+            </a>
+            <a href="{{ url_for('main.internal_resources', state='untagged') }}" class="block rounded-xl border border-slate-800 bg-slate-950/70 p-3 hover:border-amber-500/40 transition">
+                <p class="text-xs text-slate-400 mb-1">Missing Tags</p>
+                <p class="text-xl font-black text-amber-300">{{ knowledge_stats.without_tags }}</p>
+            </a>
+            <a href="{{ url_for('main.internal_resources', state='unlinked') }}" class="block rounded-xl border border-slate-800 bg-slate-950/70 p-3 hover:border-rose-500/40 transition">
+                <p class="text-xs text-slate-400 mb-1">Unlinked Docs</p>
+                <p class="text-xl font-black text-rose-300">{{ knowledge_stats.without_links }}</p>
+            </a>
+        </div>
+
+        {% if knowledge_stats.total %}
+        {% set linked_ratio = ((knowledge_stats.linked / knowledge_stats.total) * 100) | round(0, 'floor') %}
+        <p class="text-xs text-slate-400 mb-1">Documentation coverage</p>
+        <div class="h-2 rounded-full bg-slate-800 overflow-hidden mb-2">
+            <div class="h-full bg-blue-500" style="width: {{ linked_ratio }}%;"></div>
+        </div>
+        <p class="text-xs text-slate-300">{{ linked_ratio }}% of docs linked to project or task workflows.</p>
+        <div class="flex flex-wrap gap-2 mt-4">
+            <a href="{{ url_for('main.internal_resources', state='untagged') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-200 hover:bg-amber-500/20 transition">Fix Missing Tags</a>
+            <a href="{{ url_for('main.internal_resources', state='unlinked') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500/15 border border-rose-500/30 text-rose-200 hover:bg-rose-500/20 transition">Link Unmapped Docs</a>
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-400">No documents in the knowledge library yet.</p>
+        {% endif %}
+    </article>
+
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 class="text-xl font-bold text-white mb-4">Execution Notes</h2>
+        <div class="space-y-3 text-sm">
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-slate-200 font-semibold mb-1">Delivery focus</p>
+                <p class="text-slate-400">Prioritize overdue and blocked tasks before adding new work to the queue.</p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-slate-200 font-semibold mb-1">Knowledge hygiene</p>
+                <p class="text-slate-400">Tag every new document and link it to a project or to-do item for retrieval speed.</p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-slate-200 font-semibold mb-1">Review cadence</p>
+                <p class="text-slate-400">Use this dashboard as the weekly operating review baseline across client teams.</p>
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+    <h2 class="text-xl font-bold text-white mb-4">Recent Projects</h2>
+    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for project in recent_projects %}
+        <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <p class="text-white font-semibold mb-1">{{ project.name }}</p>
+            <p class="text-xs text-slate-400 mb-3">{{ project.client.name }} · {{ project.stage|title }}</p>
+            <span class="inline-flex px-2.5 py-1 rounded-full text-xs {{ internal_status_class(project.status) }}">{{ project.status|replace('-', ' ')|title }}</span>
+            <p class="text-xs text-slate-400 mt-3">{{ project.summary }}</p>
+        </article>
+        {% else %}
+        <p class="text-slate-400 text-sm">No projects available yet.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

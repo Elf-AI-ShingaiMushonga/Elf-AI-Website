@@ -1,0 +1,102 @@
+{% extends "internal/base.html" %}
+
+{% block title %}Clients | ELF-AI Internal{% endblock %}
+
+{% block content %}
+<section class="mb-8">
+    <h1 class="text-3xl font-black text-white mb-3">Client Registry</h1>
+    <p class="text-slate-400 max-w-3xl">Capture new clients, keep account ownership clear, and move straight into project setup without breaking flow.</p>
+</section>
+
+<section class="grid xl:grid-cols-[1.25fr_0.75fr] gap-6 mb-6">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5" data-filter-root>
+        <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+            <div class="flex flex-col sm:flex-row gap-3 flex-1">
+                <input type="search" data-filter-input placeholder="Search clients, industries, owners..." class="w-full sm:max-w-md bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition">
+                <select data-filter-status class="w-full sm:w-44 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
+                    <option value="all">All statuses</option>
+                    {% for status in client_statuses %}
+                    <option value="{{ status }}">{{ status|replace('-', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" data-filter-reset class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 text-sm font-semibold transition">Reset</button>
+            </div>
+            <div class="text-xs uppercase tracking-[0.16em] text-slate-400">
+                Showing <span data-filter-count>{{ clients|length }}</span> clients · Press <span class="text-slate-200">/</span> to search
+            </div>
+        </div>
+
+        {% if clients %}
+        <div class="grid md:grid-cols-2 gap-4 mt-5">
+            {% for client in clients %}
+            <article class="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 card-hover" data-filter-item data-status="{{ (client.status or '')|lower }}" data-filter-text="{{ client.name }} {{ client.industry }} {{ client.account_owner }} {{ client.notes or '' }}">
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <h2 class="text-lg font-bold text-white leading-tight">{{ client.name }}</h2>
+                    <span class="text-xs px-2.5 py-1 rounded-full {{ internal_status_class(client.status) }}">{{ client.status|title }}</span>
+                </div>
+                <p class="text-sm text-slate-300 mb-2"><strong class="text-slate-100">Industry:</strong> {{ client.industry }}</p>
+                <p class="text-sm text-slate-300 mb-2"><strong class="text-slate-100">Account Owner:</strong> {{ client.account_owner }}</p>
+                <p class="text-sm text-slate-300"><strong class="text-slate-100">Projects:</strong> {{ client.projects|length }}</p>
+                {% if client.notes %}
+                <p class="text-xs text-slate-400 mt-3">{{ client.notes }}</p>
+                {% endif %}
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <a href="{{ url_for('main.internal_projects', client_id=client.id) }}#new-project" class="px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">Start Project</a>
+                    <a href="{{ url_for('main.internal_projects') }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">View Projects</a>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        <p data-filter-empty class="hidden mt-5 text-sm text-slate-400">No clients match the current filters.</p>
+        {% else %}
+        <p class="mt-5 text-slate-400 text-sm">No internal clients have been added yet.</p>
+        {% endif %}
+    </article>
+
+    <article id="new-client" class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <h2 class="text-xl font-bold text-white mb-4">Add Client</h2>
+        <form action="{{ url_for('main.internal_client_add') }}" method="post" class="space-y-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Client Name</label>
+                <input name="name" type="text" required maxlength="200" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Industry</label>
+                <input name="industry" type="text" required maxlength="120" placeholder="e.g. Legal, Operations, Finance" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Account Owner</label>
+                <input name="account_owner" type="text" list="client-owner-options" value="{{ current_internal_user.full_name if current_internal_user else '' }}" required maxlength="120" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <datalist id="client-owner-options">
+                    {% for user in active_internal_users %}
+                    <option value="{{ user.full_name }}"></option>
+                    {% endfor %}
+                </datalist>
+            </div>
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Status</label>
+                <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    {% for status in client_statuses %}
+                    <option value="{{ status }}" {% if status == 'active' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Notes (optional)</label>
+                <textarea name="notes" rows="3" maxlength="1200" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition"></textarea>
+            </div>
+            <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Save Client</button>
+        </form>
+
+        <div class="mt-5 rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+            <p class="text-xs uppercase tracking-[0.12em] text-slate-500 mb-2">Consultant Handoff</p>
+            <ol class="space-y-2 text-xs text-slate-300">
+                <li>1. Save client profile.</li>
+                <li>2. Create a project for the engagement scope.</li>
+                <li>3. Build the execution plan in the nested to-do board.</li>
+            </ol>
+        </div>
+    </article>
+</section>
+{% endblock %}

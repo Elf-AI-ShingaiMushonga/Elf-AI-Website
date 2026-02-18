@@ -1,0 +1,258 @@
+{% extends "internal/base.html" %}
+
+{% block title %}Knowledge Library | ELF-AI Internal{% endblock %}
+
+{% block content %}
+<section class="mb-8">
+    <h1 class="text-3xl font-black text-white mb-3">Knowledge Library</h1>
+    <p class="text-slate-400 max-w-3xl">Search reusable delivery documents, tag them for discovery, and connect each document to active projects and to-do items.</p>
+</section>
+
+<section class="grid sm:grid-cols-2 xl:grid-cols-9 gap-4 mb-8">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover xl:col-span-2">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Visible Documents</p>
+        <p class="text-3xl font-black text-white">{{ summary_metrics.visible_docs }} <span class="text-sm font-semibold text-slate-400">/ {{ summary_metrics.total_docs }}</span></p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Linked Docs</p>
+        <p class="text-3xl font-black text-emerald-300">{{ summary_metrics.linked_docs }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Unlinked Docs</p>
+        <p class="text-3xl font-black text-rose-300">{{ summary_metrics.unlinked_docs }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Missing Tags</p>
+        <p class="text-3xl font-black text-amber-300">{{ summary_metrics.untagged_docs }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Categories</p>
+        <p class="text-3xl font-black text-blue-300">{{ summary_metrics.categories }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Tags</p>
+        <p class="text-3xl font-black text-amber-300">{{ summary_metrics.tags }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Linked Projects</p>
+        <p class="text-3xl font-black text-emerald-300">{{ summary_metrics.linked_projects }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Linked To-Do Items</p>
+        <p class="text-3xl font-black text-rose-300">{{ summary_metrics.linked_tasks }}</p>
+    </article>
+</section>
+
+<section class="grid xl:grid-cols-[1.2fr_0.8fr] gap-6 mb-8">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6" id="requirements">
+        <h2 class="text-xl font-bold text-white mb-4">Internal Site Requirements</h2>
+        <div class="space-y-4">
+            {% for group in requirements %}
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <h3 class="text-sm font-bold uppercase tracking-[0.12em] text-blue-300 mb-2">{{ group["area"] }}</h3>
+                <ul class="space-y-2 text-sm text-slate-300">
+                    {% for item in group["items"] %}
+                    <li class="flex items-start gap-2">
+                        <i class="fa-solid fa-check text-blue-400 mt-1"></i>
+                        <span>{{ item }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 class="text-xl font-bold text-white mb-4">Announcements</h2>
+        <div class="space-y-3">
+            {% for item in announcements %}
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-sm font-semibold text-white">{{ item.title }}</p>
+                <p class="text-xs text-slate-400 mt-1">{{ item.body }}</p>
+                <p class="text-[11px] text-slate-500 mt-2">{{ item.created_at.strftime('%d %b %Y') if item.created_at else '' }}</p>
+            </div>
+            {% else %}
+            <p class="text-slate-400 text-sm">No announcements available.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="grid xl:grid-cols-[1.35fr_0.65fr] gap-6">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6" data-filter-root>
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <h2 class="text-xl font-bold text-white">Document Library</h2>
+            <p class="text-xs text-slate-400">Press <span class="font-bold text-slate-200">/</span> to focus search · <span data-filter-count>{{ summary_metrics.visible_docs }}</span> visible</p>
+        </div>
+
+        <form method="get" action="{{ url_for('main.internal_resources') }}" class="grid md:grid-cols-[1fr_0.6fr_0.6fr_0.7fr_0.6fr_auto] gap-3 mb-5">
+            <input
+                type="search"
+                name="q"
+                value="{{ query_term }}"
+                data-filter-input
+                placeholder="Search title, description, tags, projects, or tasks..."
+                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition"
+            >
+            <select name="category" data-filter-status class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
+                <option value="all" {% if selected_category == 'all' %}selected{% endif %}>All categories</option>
+                {% for category in resource_categories %}
+                <option value="{{ category.value }}" {% if selected_category == category.value %}selected{% endif %}>{{ category.label }}</option>
+                {% endfor %}
+            </select>
+            <select name="tag" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
+                <option value="all" {% if selected_tag == 'all' %}selected{% endif %}>All tags</option>
+                {% for tag in resource_tags %}
+                <option value="{{ tag.value }}" {% if selected_tag == tag.value %}selected{% endif %}>#{{ tag.label }}</option>
+                {% endfor %}
+            </select>
+            <select name="project_id" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
+                {% for project_option in project_filter_options %}
+                <option value="{{ project_option.value }}" {% if selected_project_filter == project_option.value %}selected{% endif %}>{{ project_option.label }}</option>
+                {% endfor %}
+            </select>
+            <select name="state" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
+                {% for state in resource_states %}
+                <option value="{{ state.value }}" {% if selected_state == state.value %}selected{% endif %}>{{ state.label }}</option>
+                {% endfor %}
+            </select>
+            <div class="flex gap-2">
+                <button type="submit" class="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Search</button>
+                <a href="{{ url_for('main.internal_resources') }}" class="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 text-sm font-semibold transition">Reset</a>
+            </div>
+        </form>
+
+        <div class="flex flex-wrap gap-2 mb-5">
+            {% if selected_project_filter != 'all' %}
+            <a href="{{ url_for('main.internal_resources', project_id=selected_project_filter) }}" class="px-3 py-1.5 rounded-full text-xs font-semibold {{ 'bg-blue-500/20 text-blue-200 border border-blue-500/30' if selected_state == 'all' else 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-blue-500/30' }} transition">All docs</a>
+            <a href="{{ url_for('main.internal_resources', project_id=selected_project_filter, state='untagged') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold {{ 'bg-amber-500/20 text-amber-200 border border-amber-500/30' if selected_state == 'untagged' else 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-amber-500/30' }} transition">Missing tags</a>
+            <a href="{{ url_for('main.internal_resources', project_id=selected_project_filter, state='unlinked') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold {{ 'bg-rose-500/20 text-rose-200 border border-rose-500/30' if selected_state == 'unlinked' else 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-rose-500/30' }} transition">Unlinked docs</a>
+            <a href="{{ url_for('main.internal_resources', project_id=selected_project_filter, state='linked') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold {{ 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/30' if selected_state == 'linked' else 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-emerald-500/30' }} transition">Linked docs</a>
+            {% else %}
+            <a href="{{ url_for('main.internal_resources') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold {{ 'bg-blue-500/20 text-blue-200 border border-blue-500/30' if selected_state == 'all' else 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-blue-500/30' }} transition">All docs</a>
+            <a href="{{ url_for('main.internal_resources', state='untagged') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold {{ 'bg-amber-500/20 text-amber-200 border border-amber-500/30' if selected_state == 'untagged' else 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-amber-500/30' }} transition">Missing tags</a>
+            <a href="{{ url_for('main.internal_resources', state='unlinked') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold {{ 'bg-rose-500/20 text-rose-200 border border-rose-500/30' if selected_state == 'unlinked' else 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-rose-500/30' }} transition">Unlinked docs</a>
+            <a href="{{ url_for('main.internal_resources', state='linked') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold {{ 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/30' if selected_state == 'linked' else 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-emerald-500/30' }} transition">Linked docs</a>
+            {% endif %}
+            {% if selected_state != 'all' %}
+            <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300">Active state: {{ selected_state_label }}</span>
+            {% endif %}
+            {% if selected_project_filter != 'all' %}
+            <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300">Project scoped</span>
+            {% endif %}
+        </div>
+
+        <div class="space-y-5">
+            {% for category, resource_list in resources_by_category.items() %}
+            <div data-filter-group>
+                <h3 class="text-sm font-bold uppercase tracking-[0.12em] text-blue-300 mb-3">{{ category }}</h3>
+                <div class="grid md:grid-cols-2 gap-3">
+                    {% for resource in resource_list %}
+                    <article
+                        class="rounded-xl border border-slate-800 bg-slate-950/70 p-4 card-hover"
+                        data-filter-item
+                        data-status="{{ resource.category|lower }}"
+                        data-filter-text="{{ resource.searchable_text }}"
+                    >
+                        <a href="{{ resource.safe_link }}" target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-white hover:text-blue-300 transition">
+                            {{ resource.title }}
+                        </a>
+                        <p class="text-xs text-slate-400 mt-1">{{ resource.description }}</p>
+
+                        {% if resource.tags %}
+                        <div class="flex flex-wrap gap-1 mt-3">
+                            {% for tag in resource.tags %}
+                            <span class="text-[11px] px-2 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-200">#{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% if resource.projects %}
+                        <div class="mt-3">
+                            <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-1">Linked Projects</p>
+                            <div class="flex flex-wrap gap-1">
+                                {% for project in resource.projects %}
+                                <a href="{{ url_for('main.internal_projects') }}" class="text-[11px] px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-200 hover:bg-emerald-500/20 transition">{{ project.name }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if resource.tasks %}
+                        <div class="mt-3">
+                            <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-1">Linked To-Do Items</p>
+                            <div class="flex flex-wrap gap-1">
+                                {% for task in resource.tasks %}
+                                <a href="{{ url_for('main.internal_todos', view='nested') }}" class="text-[11px] px-2 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-200 hover:bg-blue-500/20 transition">{{ task.title }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <p class="text-slate-400 text-sm">No resources match the current filters.</p>
+            {% endfor %}
+        </div>
+
+        <p data-filter-empty class="hidden mt-5 text-sm text-slate-400">No resources match the current local filters.</p>
+    </article>
+
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 class="text-xl font-bold text-white mb-4">Add Document</h2>
+        <form action="{{ url_for('main.internal_resource_add') }}" method="post" class="space-y-3">
+            <input type="hidden" name="project_scope" value="{{ selected_project_filter if selected_project_filter != 'all' else '' }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Title</label>
+                <input name="title" type="text" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Document Link</label>
+                <input name="link" type="text" required placeholder="https://... or /internal/resources#..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Category</label>
+                <input name="category" type="text" value="operations" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Tags</label>
+                <input name="tags" type="text" placeholder="playbook, onboarding, legal-ai" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Description</label>
+                <textarea name="description" rows="3" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition"></textarea>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Link To Projects</label>
+                <select name="project_ids" multiple class="w-full h-28 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    {% for project in projects %}
+                    <option value="{{ project.id }}" {% if selected_project_filter == project.id|string %}selected{% endif %}>{{ project.name }} · {{ project.client.name }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-[11px] text-slate-500">Use Cmd/Ctrl + click to select multiple projects.</p>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Link To To-Do Items</label>
+                <select name="task_ids" multiple class="w-full h-32 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    {% for task in tasks %}
+                    <option value="{{ task.id }}">{{ task.project.name }} · {{ task.title }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-[11px] text-slate-500">Use Cmd/Ctrl + click to select multiple tasks.</p>
+            </div>
+
+            <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Save Document</button>
+        </form>
+    </article>
+</section>
+{% endblock %}

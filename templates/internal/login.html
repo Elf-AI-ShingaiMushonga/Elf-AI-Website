@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Internal Sign In | ELF-AI</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Logo.png') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white min-h-screen">
+    <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
+    <div class="fixed inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.12),transparent_48%)]"></div>
+
+    <main id="main-content" class="relative z-10 min-h-screen px-4 sm:px-6 py-10 flex items-center justify-center">
+        <div class="w-full max-w-5xl grid lg:grid-cols-2 gap-6 items-stretch">
+            <section class="rounded-3xl border border-slate-800 bg-slate-900/80 p-8 sm:p-10">
+                <a href="/" class="inline-flex items-center gap-2 text-sm text-blue-300 hover:text-blue-200 transition mb-8">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Back to public site
+                </a>
+
+                <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.22em] text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-6">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Restricted Access
+                </p>
+
+                <h1 class="text-3xl sm:text-4xl font-black text-white leading-tight mb-4">
+                    ELF-AI Internal
+                    <span class="text-blue-500">Delivery Portal</span>
+                </h1>
+                <p class="text-slate-400 leading-relaxed mb-8">
+                    Sign in to access live project tracking, client records, team tasks, and internal delivery resources.
+                </p>
+
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-start gap-3 rounded-xl bg-slate-950/70 border border-slate-800 p-3">
+                        <i class="fa-solid fa-chart-line text-blue-400 mt-0.5"></i>
+                        <span class="text-slate-300">Operational dashboard for active engagements and priorities.</span>
+                    </div>
+                    <div class="flex items-start gap-3 rounded-xl bg-slate-950/70 border border-slate-800 p-3">
+                        <i class="fa-solid fa-folder-tree text-blue-400 mt-0.5"></i>
+                        <span class="text-slate-300">Project and client management workspace for consultancy delivery.</span>
+                    </div>
+                    <div class="flex items-start gap-3 rounded-xl bg-slate-950/70 border border-slate-800 p-3">
+                        <i class="fa-solid fa-book text-blue-400 mt-0.5"></i>
+                        <span class="text-slate-300">Reusable playbooks, templates, and quality requirements.</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-3xl border border-slate-800 bg-slate-900 p-8 sm:p-10 shadow-2xl shadow-black/50">
+                <h2 class="text-2xl font-bold text-white mb-6">Sign In</h2>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    <div class="space-y-3 mb-5">
+                      {% for category, message in messages %}
+                        <div data-flash data-dismiss-ms="5600" class="rounded-xl px-4 py-3 text-sm flex items-start justify-between gap-3 {{ 'border border-amber-500/30 bg-amber-500/10 text-amber-100' if category == 'warning' else 'border border-blue-500/30 bg-blue-500/10 text-blue-100' }}">
+                            <span>{{ message }}</span>
+                            <button type="button" data-flash-close class="text-xs opacity-80 hover:opacity-100 transition focus-ring" aria-label="Dismiss message">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+
+                <form action="{{ url_for('main.internal_login', next=next_target) }}" method="post" class="space-y-4">
+                    <input type="hidden" name="next" value="{{ next_target }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="space-y-2">
+                        <label class="text-sm text-slate-400 font-medium ml-1">Email</label>
+                        <input name="email" type="email" required autocomplete="username" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm text-slate-400 font-medium ml-1">Password</label>
+                        <input name="password" type="password" required autocomplete="current-password" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg transition">
+                        Access Internal Portal
+                    </button>
+                </form>
+
+                {% if not has_users %}
+                <div class="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                    No internal user exists yet. Create one with:
+                    <code class="block mt-2 text-amber-200">flask create-internal-user</code>
+                </div>
+                {% endif %}
+            </section>
+        </div>
+    </main>
+    <script src="{{ url_for('static', filename='elf.js') }}" defer></script>
+</body>
+</html>

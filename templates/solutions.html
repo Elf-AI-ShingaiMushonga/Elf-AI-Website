@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,32 +32,10 @@
     </style>
 </head>
 <body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
+    <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
+    {% include "partials/public_nav.html" %}
 
-    <nav class="fixed w-full z-50 glass border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-            <a href="/" class="flex flex-col leading-none hover:text-blue-400 transition">
-                <span class="text-2xl font-bold tracking-tighter text-white">ELF<span class="text-blue-500">-AI</span></span>
-                <span class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 mt-1">No Problem</span>
-            </a>
-
-            <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
-                <a href="/about" class="hover:text-blue-400 transition">About Us</a>
-                <a href="/solutions" class="hover:text-blue-400 transition">Solutions</a>
-                <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-5 py-2 border border-blue-400 text-blue-300 rounded-full hover:bg-blue-400 hover:text-slate-950 transition">Current Demo</a>
-                <a href="/enquire" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition shadow-lg shadow-blue-900/20">Talk to ELF-AI</a>
-            </div>
-        </div>
-
-        <div class="md:hidden border-t border-slate-800/80 px-4 py-3">
-            <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-semibold">
-                <a href="/about" class="px-3 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition">About</a>
-                <a href="/solutions" class="px-3 py-2 rounded-full bg-slate-800 hover:bg-slate-700 transition">Solutions</a>
-                <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-full border border-blue-400 text-blue-300">Current Demo</a>
-                <a href="/enquire" class="px-3 py-2 rounded-full bg-blue-600 text-white">Talk to ELF-AI</a>
-            </div>
-        </div>
-    </nav>
-
+    <main id="main-content">
     <header class="pt-36 md:pt-32 pb-20 px-4 sm:px-6 text-center bg-slate-900 border-b border-slate-800">
         <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-8">
             <i class="fa-solid fa-puzzle-piece"></i>
@@ -72,7 +50,16 @@
         </p>
     </header>
 
-    <section class="py-20 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
+    <section class="py-6 bg-slate-950 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-center gap-2">
+            <a href="#value-areas" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Value Areas</a>
+            <a href="#delivery-process" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Delivery Process</a>
+            <a href="#solution-tracks" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Solution Tracks</a>
+            <a href="/enquire" class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition text-sm font-semibold">Book Consultation</a>
+        </div>
+    </section>
+
+    <section id="value-areas" class="py-20 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
         <div class="text-center mb-14">
             <h2 class="text-3xl md:text-4xl font-bold text-white">Where We Create Immediate Value</h2>
             <p class="text-slate-400 mt-3 max-w-3xl mx-auto">ELF-AI focuses on tackling the problems impeding your growth.</p>
@@ -87,12 +74,12 @@
             <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
                 <i class="fa-solid fa-arrow-trend-down text-blue-400 text-xl mb-4"></i>
                 <h3 class="text-white font-bold mb-3">Lower Costs</h3>
-                <p class="text-slate-400 text-sm">We aim to reduce avoidable costs, by bring in-house capabilities.</p>
+                <p class="text-slate-400 text-sm">We reduce avoidable costs by building sustainable in-house capabilities.</p>
             </div>
             <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
                 <i class="fa-solid fa-triangle-exclamation text-blue-400 text-xl mb-4"></i>
                 <h3 class="text-white font-bold mb-3">Higher Quality</h3>
-                <p class="text-slate-400 text-sm">We instituite controls that improve consistency and reduce production mistakes.</p>
+                <p class="text-slate-400 text-sm">We institute controls that improve consistency and reduce production mistakes.</p>
             </div>
             <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
                 <i class="fa-solid fa-lock text-blue-400 text-xl mb-4"></i>
@@ -102,7 +89,7 @@
         </div>
     </section>
 
-    <section class="py-12 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
+    <section id="delivery-process" class="py-12 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
         <div class="max-w-6xl">
             <h2 class="text-3xl font-bold text-white mb-5">How We Build and Validate Solutions</h2>
             <p class="text-slate-400 mb-6">Every project follows a quality-first process to ensure your solution is ready before launch.</p>
@@ -144,7 +131,7 @@
         </div>
     </section>
 
-    <section class="py-16 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
+    <section id="solution-tracks" class="py-16 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
         <div class="text-center mb-12">
             <h2 class="text-3xl font-bold text-white">Current Solution Tracks</h2>
             <p class="text-slate-400 mt-2">Choose a service to start a focused consultation.</p>
@@ -181,6 +168,9 @@
             <a href="/enquire" class="px-8 py-4 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">Book a Consultation</a>
         </div>
     </section>
+    </main>
 
+    {% include "partials/public_footer.html" %}
+    <script src="{{ url_for('static', filename='elf.js') }}" defer></script>
 </body>
 </html>

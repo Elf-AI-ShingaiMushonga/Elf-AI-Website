@@ -5,6 +5,7 @@ import os
 import secrets
 from logging.handlers import RotatingFileHandler
 
+import click
 from dotenv import load_dotenv
 from flask import Flask
 from flask_migrate import Migrate
@@ -13,7 +14,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_mail import Mail
 
 from extension import mail
-from models import db, setup_database
+from models import InternalUser, db, setup_database
 
 
 def _normalize_db_url(url: str) -> str:
@@ -67,7 +68,7 @@ def create_app(config_name: str | None = None) -> Flask:
 
     app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
     app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER') or os.environ.get('MAIL_USERNAME')
     mail.init_app(app)
 
     basedir = os.path.abspath(os.path.dirname(__file__))
@@ -81,7 +82,8 @@ def create_app(config_name: str | None = None) -> Flask:
     if os.getenv("USE_PROXY_FIX", "true").lower() in ("1", "true", "yes"):
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
-    if os.getenv("AUTO_INIT_DB", "false").lower() in ("1", "true", "yes"):
+    auto_init_db_enabled = os.getenv("AUTO_INIT_DB", "false").lower() in ("1", "true", "yes")
+    if auto_init_db_enabled and app_env != "testing":
         seed = os.getenv("SEED_DB", "false").lower() in ("1", "true", "yes")
         with app.app_context():
             setup_database(seed=seed)
@@ -90,12 +92,59 @@ def create_app(config_name: str | None = None) -> Flask:
     from routes import main_bp
     app.register_blueprint(main_bp)
 
+    @app.after_request
+    def apply_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if app_env == "production":
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        return response
+
     @app.cli.command("init-db")
     def init_db_command():
         seed = os.getenv("SEED_DB", "false").lower() in ("1", "true", "yes")
         with app.app_context():
             setup_database(seed=seed)
         print("Database initialized.")
+
+    @app.cli.command("create-internal-user")
+    @click.option("--email", prompt=True, help="Internal user email")
+    @click.option("--full-name", prompt=True, help="Display name")
+    @click.option(
+        "--password",
+        prompt=True,
+        hide_input=True,
+        confirmation_prompt=True,
+        help="Account password",
+    )
+    @click.option(
+        "--role",
+        default="consultant",
+        show_default=True,
+        type=click.Choice(["admin", "consultant", "operations", "analyst"], case_sensitive=False),
+    )
+    def create_internal_user_command(email: str, full_name: str, password: str, role: str):
+        normalized_email = email.strip().lower()
+        if not normalized_email:
+            raise click.BadParameter("Email cannot be empty.")
+
+        existing = InternalUser.query.filter_by(email=normalized_email).first()
+        if existing:
+            print(f"User already exists for {normalized_email}.")
+            return
+
+        user = InternalUser(
+            full_name=full_name.strip() or normalized_email,
+            email=normalized_email,
+            role=role.lower(),
+            is_active=True,
+        )
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        print(f"Created internal user: {normalized_email} ({user.role})")
 
     return app
 

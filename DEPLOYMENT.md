@@ -1,62 +1,150 @@
-Deployment Quickstart
+Deployment Runbook (EC2 Ubuntu + Docker + RDS PostgreSQL)
 
-Environment
-- Copy `.env.example` to `.env` and set `SECRET_KEY`.
-- If using Postgres, set `DATABASE_URL` to your connection string.
+1. Prerequisites
+- Domain DNS A records for `elf-ai.co.za` and `www.elf-ai.co.za` pointing to the EC2 public IP.
+- EC2 security group inbound rules:
+  - `22/tcp` from your admin IP.
+  - `80/tcp` from `0.0.0.0/0`.
+  - `443/tcp` from `0.0.0.0/0`.
+- IAM role on EC2 allowing:
+  - `secretsmanager:GetSecretValue`
+  - `kms:Decrypt` (for the Secrets Manager KMS key, if custom)
+- RDS PostgreSQL secret in AWS Secrets Manager (or provision with Terraform below).
 
-One-time DB init
-- `flask --app app.py init-db` (set `SEED_DB=true` if you want seed data)
+2. Optional: Provision RDS with Terraform
+```bash
+cd infra/aws-rds-postgres
+cp terraform.tfvars.example terraform.tfvars
+# edit terraform.tfvars: vpc_id, private_subnet_ids, app_security_group_ids, db settings
+terraform init
+terraform plan
+terraform apply
+```
+Save the `secret_arn` output for deployment steps.
 
-Migrations
-- `flask --app app.py db migrate -m "describe change"`
-- `flask --app app.py db upgrade`
+3. Connect to EC2
+```bash
+chmod 400 /path/to/your-key.pem
+ssh -i /path/to/your-key.pem ubuntu@<EC2_PUBLIC_IP>
+```
 
-Docker
-- Copy `.env.example` to `.env` and set a strong `SECRET_KEY`.
-- Build and run: `docker compose up --build -d`
-- Initialize DB (one-time): `docker compose run --rm web flask --app app.py init-db`
-- App listens on `http://localhost:8000`
+4. Install Docker Engine + Compose plugin on Ubuntu
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg lsb-release git awscli
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo usermod -aG docker ubuntu
+newgrp docker
+docker --version
+docker compose version
+```
 
-AWS EC2 (Docker + SQLite + Nginx)
-- Install Docker and the Compose plugin on the instance.
-- Create a persistent data directory for SQLite:
-  - `mkdir -p ~/elf-ai/data`
-  - `sudo chown -R 1000:1000 ~/elf-ai/data`
-- Copy the repo to the instance and create `.env` from `.env.example` with a strong `SECRET_KEY`.
-- Build and run the production stack:
-  - `docker compose -f docker-compose.prod.yml up --build -d`
-- Initialize the DB (one-time):
-  - `docker compose -f docker-compose.prod.yml run --rm web flask --app app.py init-db`
-- Open inbound port 80 in the EC2 Security Group.
+5. Pull application code
+```bash
+cd /home/ubuntu
+git clone <YOUR_GIT_REMOTE_URL> Elf-AI-Website
+cd Elf-AI-Website
+```
 
-HTTPS (Let's Encrypt + Nginx)
-- Point your domain's DNS A record to the EC2 public IP (elf-ai.co.za, www.elf-ai.co.za).
-- Temporarily use the HTTP-only config for the initial cert:
-  - Edit `docker-compose.prod.yml` to mount `./nginx/elf-ai-http.conf` as `default.conf`.
-  - `docker compose -f docker-compose.prod.yml up -d`
-- Request the cert (replace values):
-  - `docker compose -f docker-compose.prod.yml run --rm certbot certonly --webroot -w /var/www/certbot -d elf-ai.co.za -d www.elf-ai.co.za --email you@example.com --agree-tos --no-eff-email`
-- Switch back to the SSL config:
-  - Edit `docker-compose.prod.yml` to mount `./nginx/elf-ai.conf` as `default.conf`.
-  - `docker compose -f docker-compose.prod.yml up -d`
-- Renewal (run monthly via cron):
-  - `docker compose -f docker-compose.prod.yml run --rm certbot renew --webroot -w /var/www/certbot`
-  - `docker compose -f docker-compose.prod.yml exec nginx nginx -s reload`
+6. Create runtime env
+```bash
+cp .env.example .env
+python3 - <<'PY'
+import secrets
+print(secrets.token_hex(32))
+PY
+```
+Update `.env`:
+- Set `SECRET_KEY=<generated value>`
+- Set `SITE_URL=https://elf-ai.co.za`
+- Keep `APP_ENV=production`
 
-EC2 Bootstrap Script
-- `EMAIL=you@example.com bash scripts/ec2-bootstrap.sh`
+7. Populate `DATABASE_URL` from Secrets Manager
+```bash
+cd /home/ubuntu/Elf-AI-Website
+export AWS_REGION=us-east-1
+export RDS_SECRET_ID=<secret-arn-or-name>
+ENV_FILE=.env ./scripts/sync-rds-env.sh "$RDS_SECRET_ID"
+```
 
-GitHub Quickstart
-- `git init`
-- `git add .`
-- `git commit -m "Initial commit"`
-- Create a new GitHub repo and set the remote:
-  - `git remote add origin <your-repo-url>`
-  - `git branch -M main`
-  - `git push -u origin main`
+8. First-time production deploy (recommended one-command path)
+```bash
+cd /home/ubuntu/Elf-AI-Website
+chmod +x scripts/ec2-bootstrap.sh scripts/sync-rds-env.sh
+DOMAIN=elf-ai.co.za \
+EMAIL=you@example.com \
+AWS_REGION=us-east-1 \
+RDS_SECRET_ID=<secret-arn-or-name> \
+./scripts/ec2-bootstrap.sh
+```
+What this does:
+- Validates Docker/Compose availability.
+- Ensures `.env` exists and has a strong `SECRET_KEY`.
+- Syncs `DATABASE_URL` from Secrets Manager if `RDS_SECRET_ID` is set.
+- Boots HTTP Nginx for ACME challenge if no cert exists.
+- Issues Let's Encrypt cert.
+- Starts HTTPS Nginx + web app.
+- Runs `flask db upgrade`.
 
-Gunicorn (no Docker)
-- `gunicorn wsgi:app -c gunicorn.conf.py`
+9. Validate deployment
+```bash
+cd /home/ubuntu/Elf-AI-Website
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs --tail=100 web
+docker compose -f docker-compose.prod.yml logs --tail=100 nginx
+curl -I http://localhost/healthz
+curl -I https://elf-ai.co.za/healthz
+```
 
-Health check
-- `GET /healthz`
+10. Subsequent deployments (code updates)
+```bash
+cd /home/ubuntu/Elf-AI-Website
+git pull origin main
+# optional if DB credentials rotated:
+ENV_FILE=.env AWS_REGION=us-east-1 ./scripts/sync-rds-env.sh <secret-arn-or-name>
+NGINX_CONF=elf-ai.conf docker compose -f docker-compose.prod.yml up --build -d web nginx
+docker compose -f docker-compose.prod.yml run --rm web flask --app app.py db upgrade
+docker compose -f docker-compose.prod.yml ps
+```
+
+11. Set certificate auto-renewal (cron)
+```bash
+crontab -e
+```
+Add:
+```cron
+0 3 * * * cd /home/ubuntu/Elf-AI-Website && docker compose -f docker-compose.prod.yml --profile ops run --rm certbot renew --webroot -w /var/www/certbot && NGINX_CONF=elf-ai.conf docker compose -f docker-compose.prod.yml exec nginx nginx -s reload >> /home/ubuntu/cert-renew.log 2>&1
+```
+
+12. Troubleshooting
+```bash
+# Container status and logs
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f web
+docker compose -f docker-compose.prod.yml logs -f nginx
+
+# Disk pressure (common Docker failure)
+df -h
+docker system df
+docker image prune -f
+docker builder prune -f
+
+# Rebuild stack cleanly
+NGINX_CONF=elf-ai.conf docker compose -f docker-compose.prod.yml down
+NGINX_CONF=elf-ai.conf docker compose -f docker-compose.prod.yml up --build -d web nginx
+```
+
+13. Security checklist
+- Do not store private SSH keys (`*.pem`) in the repo.
+- Keep `.env` server-local only.
+- Restrict SSH to your IP in the EC2 security group.
+- Rotate DB credentials in Secrets Manager, then re-run `sync-rds-env.sh`.
+- Keep Ubuntu packages and Docker up to date.

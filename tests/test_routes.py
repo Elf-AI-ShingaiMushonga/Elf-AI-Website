@@ -1,6 +1,17 @@
+from extension import mail
+
+
 def test_home(client):
     response = client.get("/")
     assert response.status_code == 200
+
+
+def test_security_headers_present(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert response.headers.get("X-Frame-Options") == "DENY"
+    assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
 
 
 def test_solutions(client):
@@ -63,3 +74,37 @@ def test_contact_specific_service_redirects(client):
     )
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/#contact")
+
+
+def test_contact_sets_single_success_flash(client, monkeypatch):
+    monkeypatch.setattr(mail, "send", lambda _msg: None)
+    response = client.post(
+        "/contact",
+        data={"name": "Pat", "email": "pat@example.com", "message": "Hello", "service": "0"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with client.session_transaction() as session_state:
+        flashes = session_state.get("_flashes", [])
+
+    success_messages = [message for category, message in flashes if category == "success"]
+    assert len(success_messages) == 1
+
+
+def test_contact_honeypot_skips_mail_send(client, monkeypatch):
+    send_called = False
+
+    def _fake_send(_msg):
+        nonlocal send_called
+        send_called = True
+
+    monkeypatch.setattr(mail, "send", _fake_send)
+    response = client.post(
+        "/contact",
+        data={"name": "Bot", "email": "bot@example.com", "website": "spam-link"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/#contact")
+    assert send_called is False

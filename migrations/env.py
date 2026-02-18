@@ -12,10 +12,10 @@ if config.config_file_name and os.path.exists(config.config_file_name):
 
 config.set_main_option(
     "sqlalchemy.url",
-    os.getenv("DATABASE_URL", "sqlite:///elf.db"),
+    os.getenv("DATABASE_URL", "sqlite:///elf.db").replace("postgres://", "postgresql://", 1),
 )
 
-target_metadata = current_app.extension["migrate"].db.metadata
+target_metadata = current_app.extensions["migrate"].db.metadata
 
 
 def run_migrations_offline() -> None:
@@ -33,7 +33,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    connectable = current_app.extension["migrate"].db.engine
+    connectable = current_app.extensions["migrate"].db.engine
 
     with connectable.connect() as connection:
         context.configure(
