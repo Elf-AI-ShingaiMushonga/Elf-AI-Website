@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title if seo else 'Contact ELF AI | Start Your AI Consultation' }}</title>
-    <meta name="description" content="{{ seo.description if seo else 'Contact ELF AI to discuss your business challenge.' }}">
-    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF AI, ELF-AI, AI consultancy' }}">
+    <title>{{ seo.title if seo else 'Contact ELF-AI | Start Your AI Consultation' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'Contact ELF-AI to discuss your business challenge.' }}">
+    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/enquire' }}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF AI' }}">
-    <meta property="og:title" content="{{ seo.title if seo else 'Contact ELF AI | Start Your AI Consultation' }}">
-    <meta property="og:description" content="{{ seo.description if seo else 'Contact ELF AI to discuss your business challenge.' }}">
+    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'Contact ELF-AI | Start Your AI Consultation' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'Contact ELF-AI to discuss your business challenge.' }}">
     <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/enquire' }}">
     <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title if seo else 'Contact ELF AI | Start Your AI Consultation' }}">
-    <meta name="twitter:description" content="{{ seo.description if seo else 'Contact ELF AI to discuss your business challenge.' }}">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'Contact ELF-AI | Start Your AI Consultation' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'Contact ELF-AI to discuss your business challenge.' }}">
     <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     {% if seo and seo.structured_data %}
     <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
@@ -36,7 +36,7 @@
     <nav class="fixed w-full z-50 glass border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
             <a href="/" class="flex flex-col leading-none hover:text-blue-400 transition">
-                <span class="text-2xl font-bold tracking-tighter text-white">ELF<span class="text-blue-500">.AI</span></span>
+                <span class="text-2xl font-bold tracking-tighter text-white">ELF<span class="text-blue-500">-AI</span></span>
                 <span class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 mt-1">No Problem</span>
             </a>
 
@@ -68,7 +68,7 @@
                 </p>
                 <h1 class="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">Tell Us the Challenge.<br><span class="text-blue-500">We Will Design the Solution.</span></h1>
                 <p class="text-lg text-slate-400 leading-relaxed">
-                    This ELF AI consultation is built for decision-makers who need practical outcomes. We assess your workflow, identify the highest-impact opportunity, and propose a tested solution plan.
+                    This ELF-AI consultation is built for decision-makers who need practical outcomes. We assess your workflow, identify the highest-impact opportunity, and propose a tested solution plan.
                 </p>
             </div>
 

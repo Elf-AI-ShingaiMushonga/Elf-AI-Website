@@ -23,7 +23,7 @@ def test_home_includes_seo_metadata(client):
     html = response.get_data(as_text=True)
     assert '<meta name="description"' in html
     assert '<link rel="canonical"' in html
-    assert "ELF AI" in html
+    assert "ELF-AI" in html
 
 
 def test_robots_txt(client):

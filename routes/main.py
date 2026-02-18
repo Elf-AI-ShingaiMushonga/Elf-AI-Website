@@ -28,13 +28,13 @@ def _build_seo(path: str, title: str, description: str, image_filename: str = "i
             {
                 "@type": "Organization",
                 "@id": f"{site_url}/#organization",
-                "name": "ELF AI",
+                "name": "ELF-AI",
                 "alternateName": "ELF-AI",
                 "url": site_url,
                 "logo": f"{site_url}{url_for('static', filename='images/Logo.png')}",
                 "email": "shingai.mushonga@elf-ai.co.za",
                 "description": (
-                    "ELF AI is a problem-solving AI consultancy that designs, implements, "
+                    "ELF-AI is a problem-solving AI consultancy that designs, implements, "
                     "and trains teams on practical AI solutions."
                 ),
             },
@@ -42,7 +42,7 @@ def _build_seo(path: str, title: str, description: str, image_filename: str = "i
                 "@type": "WebSite",
                 "@id": f"{site_url}/#website",
                 "url": site_url,
-                "name": "ELF AI",
+                "name": "ELF-AI",
                 "publisher": {"@id": f"{site_url}/#organization"},
             },
             {
@@ -62,9 +62,9 @@ def _build_seo(path: str, title: str, description: str, image_filename: str = "i
         "description": description,
         "canonical": canonical,
         "og_image": og_image,
-        "site_name": "ELF AI",
+        "site_name": "ELF-AI",
         "keywords": (
-            "ELF AI, ELF-AI, AI consultancy, AI solutions, AI automation, "
+            "ELF-AI, AI consultancy, AI solutions, AI automation, "
             "business process automation, SME AI consulting"
         ),
         "structured_data": structured_data,
@@ -84,9 +84,9 @@ def home():
     return _render_page(
         "index.html",
         path="/",
-        title="ELF AI | Problem-Solving AI Consultancy for SMEs",
+        title="ELF-AI | Problem-Solving AI Consultancy for SMEs",
         description=(
-            "ELF AI (ELF-AI) helps businesses solve operational problems with practical AI "
+            "ELF-AI helps businesses solve operational problems with practical AI "
             "solutions, deployment support, and in-house team training."
         ),
         services=services,
@@ -102,9 +102,9 @@ def solutions():
     return _render_page(
         "solutions.html",
         path="/solutions",
-        title="AI Solutions | ELF AI",
+        title="AI Solutions | ELF-AI",
         description=(
-            "Explore ELF AI solution tracks for workflow automation, faster delivery, lower costs, "
+            "Explore ELF-AI solution tracks for workflow automation, faster delivery, lower costs, "
             "and measurable ROI for your business."
         ),
         services=services,
@@ -121,9 +121,9 @@ def about():
     return _render_page(
         "about.html",
         path="/about",
-        title="About ELF AI | AI Problem-Solving Consultancy",
+        title="About ELF-AI | AI Problem-Solving Consultancy",
         description=(
-            "Learn how ELF AI combines delivery, training, and operational support to build "
+            "Learn how ELF-AI combines delivery, training, and operational support to build "
             "long-term AI capability inside your team."
         ),
         about_us=about_us,
@@ -140,9 +140,9 @@ def enquire():
     return _render_page(
         "enquire.html",
         path="/enquire",
-        title="Contact ELF AI | Start Your AI Consultation",
+        title="Contact ELF-AI | Start Your AI Consultation",
         description=(
-            "Contact ELF AI to discuss your business challenge and get a scoped plan for a "
+            "Contact ELF-AI to discuss your business challenge and get a scoped plan for a "
             "practical, testable AI solution."
         ),
         enquiry=enquiry,

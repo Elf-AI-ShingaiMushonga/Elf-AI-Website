@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title if seo else 'ELF AI | Problem-Solving AI Consultancy' }}</title>
-    <meta name="description" content="{{ seo.description if seo else 'ELF AI is a problem-solving AI consultancy for businesses.' }}">
-    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF AI, ELF-AI, AI consultancy' }}">
+    <title>{{ seo.title if seo else 'ELF-AI | Problem-Solving AI Consultancy' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'ELF-AI is a problem-solving AI consultancy for businesses.' }}">
+    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/' }}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF AI' }}">
-    <meta property="og:title" content="{{ seo.title if seo else 'ELF AI | Problem-Solving AI Consultancy' }}">
-    <meta property="og:description" content="{{ seo.description if seo else 'ELF AI is a problem-solving AI consultancy for businesses.' }}">
+    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'ELF-AI | Problem-Solving AI Consultancy' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'ELF-AI is a problem-solving AI consultancy for businesses.' }}">
     <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/' }}">
     <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title if seo else 'ELF AI | Problem-Solving AI Consultancy' }}">
-    <meta name="twitter:description" content="{{ seo.description if seo else 'ELF AI is a problem-solving AI consultancy for businesses.' }}">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'ELF-AI | Problem-Solving AI Consultancy' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'ELF-AI is a problem-solving AI consultancy for businesses.' }}">
     <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     {% if seo and seo.structured_data %}
     <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
@@ -93,7 +93,7 @@
                 </h1>
 
                 <p class="text-base sm:text-lg md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto">
-                    ELF AI (ELF-AI) uses practical AI tools to solve business problems </br> and build in-house capabilities. </br>
+                    ELF-AI uses practical AI tools to solve business problems </br> and build in-house capabilities. </br>
                 </p>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
@@ -146,59 +146,61 @@
     </section>
 
     <section class="py-20 bg-slate-950 border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6">
-            <div class="grid lg:grid-cols-2 gap-12 items-start">
-                <div>
-                    <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">
-                        How ELF-AI Turns
-                        <span id="problem-cycle" class="inline-block min-w-[10ch] text-left text-red-300 transition-opacity duration-300">Delays</span>
-                        Into
-                        <span id="result-cycle" class="inline-block min-w-[10ch] text-left text-blue-400 transition-opacity duration-300">Speed</span>
-                    </h2>
-                    <p class="text-slate-400 mb-8">Our project flow is designed for speed without sacrificing quality and reliability.</p>
+        <div class="max-w-5xl mx-auto px-4 sm:px-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">
+                How ELF-AI Turns
+                <span id="problem-cycle" class="inline-block min-w-[10ch] text-left text-red-300 transition-opacity duration-300">Delays</span>
+                Into
+                <span id="result-cycle" class="inline-block min-w-[10ch] text-left text-blue-400 transition-opacity duration-300">Speed</span>
+            </h2>
+            <p class="text-slate-400 mb-8">Our project flow is designed for speed without sacrificing quality and reliability.</p>
 
-                    <ol class="space-y-4">
-                        <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
-                            <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">1</span>
-                            <span class="text-slate-300 text-sm">Discovery session to define the core business problem and success criteria.</span>
-                        </li>
-                        <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
-                            <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">2</span>
-                            <span class="text-slate-300 text-sm">Solution architecture and rapid prototype aligned to your current workflow.</span>
-                        </li>
-                        <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
-                            <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">4</span>
-                            <span class="text-slate-300 text-sm">Integration, Deployment and Monitoring.</span>
-                        </li>
-                        <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
-                            <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">4</span>
-                            <span class="text-slate-300 text-sm">Team enablement, training and continuous improvement.</span>
-                        </li>
-                    </ol>
-                </div>
+            <ol class="space-y-4">
+                <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
+                    <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">1</span>
+                    <span class="text-slate-300 text-sm">Discovery session to define the core business problem and success criteria.</span>
+                </li>
+                <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
+                    <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">2</span>
+                    <span class="text-slate-300 text-sm">Solution architecture and rapid prototype aligned to your current workflow.</span>
+                </li>
+                <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
+                    <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">3</span>
+                    <span class="text-slate-300 text-sm">Integration, deployment, and monitoring.</span>
+                </li>
+                <li class="flex items-start gap-4 p-4 bg-slate-900 border border-slate-800 rounded-xl">
+                    <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">4</span>
+                    <span class="text-slate-300 text-sm">Team enablement, training, and continuous improvement.</span>
+                </li>
+            </ol>
+        </div>
+    </section>
 
-                <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 self-center">
-                    <h3 class="text-2xl font-bold text-white mb-6"> SME meets Practical AI</h3>
-                    <div class="space-y-5 text-sm">
-                        <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-building text-blue-400 mt-1"></i>
-                            <p class="text-slate-300"><strong class="text-white">SME-first approach:</strong> Solutions designed for flexible teams that value immediate impact.</p>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-chart-line text-blue-400 mt-1"></i>
-                            <p class="text-slate-300"><strong class="text-white">Measurable ROI:</strong> We track outcomes through cost savings, speed gains, and adoption metrics.</p>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-users-gear text-blue-400 mt-1"></i>
-                            <p class="text-slate-300"><strong class="text-white">Training Model:</strong> We train staff, leaving an empowered team invested in your results after deployment.</p>
-                        </div>
+    <section class="py-20 bg-slate-900 border-b border-slate-800">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6">
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4 text-center">SME Meets Practical AI</h2>
+            <p class="text-slate-400 mb-10 text-center max-w-3xl mx-auto">Our delivery model is designed for businesses that need practical outcomes and long-term capability.</p>
+
+            <div class="p-8 rounded-2xl bg-slate-950 border border-slate-800 max-w-4xl mx-auto">
+                <div class="space-y-5 text-sm">
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-building text-blue-400 mt-1"></i>
+                        <p class="text-slate-300"><strong class="text-white">SME-first approach:</strong> Solutions designed for flexible teams that value immediate impact.</p>
                     </div>
-
-                    <a href="/solutions" class="inline-flex items-center gap-2 mt-8 text-blue-300 hover:text-white font-semibold transition">
-                        Explore our solutions
-                        <i class="fa-solid fa-arrow-right"></i>
-                    </a>
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-chart-line text-blue-400 mt-1"></i>
+                        <p class="text-slate-300"><strong class="text-white">Measurable ROI:</strong> We track outcomes through cost savings, speed gains, and adoption metrics.</p>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-users-gear text-blue-400 mt-1"></i>
+                        <p class="text-slate-300"><strong class="text-white">Training model:</strong> We train staff, leaving an empowered team invested in your results after deployment.</p>
+                    </div>
                 </div>
+
+                <a href="/solutions" class="inline-flex items-center gap-2 mt-8 text-blue-300 hover:text-white font-semibold transition">
+                    Explore our solutions
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
             </div>
         </div>
     </section>

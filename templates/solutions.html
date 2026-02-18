@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title if seo else 'AI Solutions | ELF AI' }}</title>
-    <meta name="description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF AI.' }}">
-    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF AI, ELF-AI, AI consultancy' }}">
+    <title>{{ seo.title if seo else 'AI Solutions | ELF-AI' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF-AI.' }}">
+    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/solutions' }}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF AI' }}">
-    <meta property="og:title" content="{{ seo.title if seo else 'AI Solutions | ELF AI' }}">
-    <meta property="og:description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF AI.' }}">
+    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'AI Solutions | ELF-AI' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF-AI.' }}">
     <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/solutions' }}">
     <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title if seo else 'AI Solutions | ELF AI' }}">
-    <meta name="twitter:description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF AI.' }}">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'AI Solutions | ELF-AI' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF-AI.' }}">
     <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     {% if seo and seo.structured_data %}
     <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
@@ -36,7 +36,7 @@
     <nav class="fixed w-full z-50 glass border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
             <a href="/" class="flex flex-col leading-none hover:text-blue-400 transition">
-                <span class="text-2xl font-bold tracking-tighter text-white">ELF<span class="text-blue-500">.AI</span></span>
+                <span class="text-2xl font-bold tracking-tighter text-white">ELF<span class="text-blue-500">-AI</span></span>
                 <span class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 mt-1">No Problem</span>
             </a>
 
@@ -68,7 +68,7 @@
             <span class="text-blue-500">Built for the Real World</span>
         </h1>
         <p class="text-lg md:text-xl text-slate-400 max-w-4xl mx-auto">
-            ELF AI designs the right solution, deploys it, and teaches your team to do the same.
+            ELF-AI designs the right solution, deploys it, and teaches your team to do the same.
         </p>
     </header>
 
@@ -103,39 +103,43 @@
     </section>
 
     <section class="py-20 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
-        <div class="grid lg:grid-cols-2 gap-12 items-start">
-            <div>
-                <h2 class="text-3xl font-bold text-white mb-5">How We Build and Validate Solutions</h2>
-                <p class="text-slate-400 mb-8">Every project follows a quality-first process to ensure your solution is ready before launch.</p>
-                <div class="space-y-4">
-                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">1.</span> Problem definition and success metric alignment.</div>
-                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">2.</span> Solution design and prototype development.</div>
-                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">3.</span> Functional testing and edge-case validation.</div>
-                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">4.</span> Workflow integration testing with user feedback.</div>
-                    <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">5.</span> Production deployment, team training, and post-launch monitoring.</div>
-                </div>
+        <div class="max-w-5xl">
+            <h2 class="text-3xl font-bold text-white mb-5">How We Build and Validate Solutions</h2>
+            <p class="text-slate-400 mb-8">Every project follows a quality-first process to ensure your solution is ready before launch.</p>
+            <div class="space-y-4">
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">1.</span> Problem definition and success metric alignment.</div>
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">2.</span> Solution design and prototype development.</div>
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">3.</span> Functional testing and edge-case validation.</div>
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">4.</span> Workflow integration testing with user feedback.</div>
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">5.</span> Production deployment, team training, and post-launch monitoring.</div>
             </div>
+        </div>
+    </section>
 
-            <div class="space-y-8">
-                <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800">
-                    <h3 class="text-xl font-bold text-white mb-4">What You Can Expect</h3>
-                    <ul class="space-y-3 text-sm text-slate-300">
-                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Clear scope:</strong> exactly what is being solved and how success is measured.</span></li>
-                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Tested deployment:</strong> confidence that the solution performs before go-live.</span></li>
-                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Operational fit:</strong> integration into your current systems and team processes.</span></li>
-                        <li class="flex items-start gap-3"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Ongoing support:</strong> performance monitoring, maintenance, and iterative improvements.</span></li>
-                    </ul>
-                </div>
+    <section class="py-20 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold text-white mb-5 text-center">What You Can Expect</h2>
+            <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800">
+                <ul class="space-y-3 text-sm text-slate-300">
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Clear scope:</strong> exactly what is being solved and how success is measured.</span></li>
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Tested deployment:</strong> confidence that the solution performs before go-live.</span></li>
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Operational fit:</strong> integration into your current systems and team processes.</span></li>
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Ongoing support:</strong> performance monitoring, maintenance, and iterative improvements.</span></li>
+                </ul>
+            </div>
+        </div>
+    </section>
 
-                <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800">
-                    <h3 class="text-xl font-bold text-white mb-4">Core Performance Metrics</h3>
-                    <ul class="space-y-3 text-sm text-slate-300">
-                        <li class="flex items-start gap-3"><i class="fa-solid fa-chart-line text-blue-400 mt-1"></i><span>Cost per unit of work before vs after deployment.</span></li>
-                        <li class="flex items-start gap-3"><i class="fa-solid fa-stopwatch text-blue-400 mt-1"></i><span>Turnaround time improvements across key workflows.</span></li>
-                        <li class="flex items-start gap-3"><i class="fa-solid fa-users text-blue-400 mt-1"></i><span>User adoption and frequency of use inside your team.</span></li>
-                        <li class="flex items-start gap-3"><i class="fa-solid fa-heart-pulse text-blue-400 mt-1"></i><span>Operational stability, support response, and uptime.</span></li>
-                    </ul>
-                </div>
+    <section class="py-20 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold text-white mb-5 text-center">Core Performance Metrics</h2>
+            <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800">
+                <ul class="space-y-3 text-sm text-slate-300">
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-chart-line text-blue-400 mt-1"></i><span>Cost per unit of work before vs after deployment.</span></li>
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-stopwatch text-blue-400 mt-1"></i><span>Turnaround time improvements across key workflows.</span></li>
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-users text-blue-400 mt-1"></i><span>User adoption and frequency of use inside your team.</span></li>
+                    <li class="flex items-start gap-3"><i class="fa-solid fa-heart-pulse text-blue-400 mt-1"></i><span>Operational stability, support response, and uptime.</span></li>
+                </ul>
             </div>
         </div>
     </section>
