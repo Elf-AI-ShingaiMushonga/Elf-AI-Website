@@ -3,7 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title or 'ELF-AI | Problem-Solving AI Consultancy' }}</title>
+    <title>{{ seo.title if seo else 'ELF AI | Problem-Solving AI Consultancy' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'ELF AI is a problem-solving AI consultancy for businesses.' }}">
+    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF AI, ELF-AI, AI consultancy' }}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/' }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF AI' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'ELF AI | Problem-Solving AI Consultancy' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'ELF AI is a problem-solving AI consultancy for businesses.' }}">
+    <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/' }}">
+    <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'ELF AI | Problem-Solving AI Consultancy' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'ELF AI is a problem-solving AI consultancy for businesses.' }}">
+    <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
+    {% if seo and seo.structured_data %}
+    <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
+    {% endif %}
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Logo.png') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/Logo.png') }}">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -76,7 +93,7 @@
                 </h1>
 
                 <p class="text-base sm:text-lg md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto">
-                    ELF-AI uses AI-powered tools to solve problems </br> and build in-house capabilities. </br>
+                    ELF AI (ELF-AI) uses practical AI tools to solve business problems </br> and build in-house capabilities. </br>
                 </p>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
@@ -97,7 +114,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="text-center mb-14">
                 <h2 class="text-3xl md:text-5xl font-bold text-white">More than <span class="text-blue-500"> "just" </span></br>Consultancy</h2>
-                <p class="text-slate-400 mt-4 max-w-3xl mx-auto">We research, build and integrate. </br> We train staff how to use the tools behind our solutions. </p>
+                <p class="text-slate-400 mt-4 max-w-3xl mx-auto">ELF-AI builds, integrates and maintains custom solutions. </p>
             </div>
 
             <div class="grid md:grid-cols-3 gap-8">

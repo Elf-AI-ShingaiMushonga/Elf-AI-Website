@@ -3,7 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us | ELF-AI</title>
+    <title>{{ seo.title if seo else 'About ELF AI' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'Learn about ELF AI and our practical AI consulting model.' }}">
+    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF AI, ELF-AI, AI consultancy' }}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/about' }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF AI' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'About ELF AI' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'Learn about ELF AI and our practical AI consulting model.' }}">
+    <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/about' }}">
+    <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero2.png', _external=True) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'About ELF AI' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'Learn about ELF AI and our practical AI consulting model.' }}">
+    <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero2.png', _external=True) }}">
+    {% if seo and seo.structured_data %}
+    <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
+    {% endif %}
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Logo.png') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/Logo.png') }}">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -48,7 +65,7 @@
         </p>
         <h1 class="text-4xl md:text-6xl font-black text-white mb-6">Dynamic<br><span class="text-blue-500">Problem-Solvers</span></h1>
         <p class="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
-            ELF-AI utilises the latest AI tools to devise solutions.</br> Then trains your staff to do the same. 
+            ELF AI (ELF-AI) utilises the latest AI tools to devise solutions.</br> Then trains your staff to do the same. 
         </p>
     </header>
 

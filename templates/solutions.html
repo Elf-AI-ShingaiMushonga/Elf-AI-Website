@@ -3,7 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solutions | ELF-AI</title>
+    <title>{{ seo.title if seo else 'AI Solutions | ELF AI' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF AI.' }}">
+    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF AI, ELF-AI, AI consultancy' }}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/solutions' }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF AI' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'AI Solutions | ELF AI' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF AI.' }}">
+    <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/solutions' }}">
+    <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'AI Solutions | ELF AI' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF AI.' }}">
+    <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
+    {% if seo and seo.structured_data %}
+    <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
+    {% endif %}
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Logo.png') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/Logo.png') }}">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -51,7 +68,7 @@
             <span class="text-blue-500">Built for the Real World</span>
         </h1>
         <p class="text-lg md:text-xl text-slate-400 max-w-4xl mx-auto">
-            We design the right solution, deploy it, and teach you to do the same.
+            ELF AI designs the right solution, deploys it, and teaches your team to do the same.
         </p>
     </header>
 
