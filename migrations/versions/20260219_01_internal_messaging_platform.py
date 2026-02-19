@@ -1,7 +1,7 @@
 """add internal messaging platform tables
 
-Revision ID: 20260219_01_internal_messaging_platform
-Revises: 20260218_01_internal_knowledge_library_links
+Revision ID: 20260219_01_messaging_platform
+Revises: 20260218_01_knowledge_links
 Create Date: 2026-02-19
 """
 
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "20260219_01_internal_messaging_platform"
-down_revision = "20260218_01_internal_knowledge_library_links"
+revision = "20260219_01_messaging_platform"
+down_revision = "20260218_01_knowledge_links"
 branch_labels = None
 depends_on = None
 

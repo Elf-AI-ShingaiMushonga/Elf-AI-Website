@@ -1,6 +1,6 @@
 """add internal knowledge library link tables and task parent id
 
-Revision ID: 20260218_01_internal_knowledge_library_links
+Revision ID: 20260218_01_knowledge_links
 Revises: 
 Create Date: 2026-02-18
 """
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "20260218_01_internal_knowledge_library_links"
+revision = "20260218_01_knowledge_links"
 down_revision = None
 branch_labels = None
 depends_on = None
