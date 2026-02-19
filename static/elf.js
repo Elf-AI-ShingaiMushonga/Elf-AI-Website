@@ -13,8 +13,21 @@ function toggleTheme() {
 
 function toggleMenu() {
   const menu = document.getElementById("mobileMenu");
+  const trigger = document.getElementById("menuToggle");
   if (!menu) return;
+
+  const willOpen = menu.classList.contains("hidden");
   menu.classList.toggle("hidden");
+
+  if (trigger) {
+    trigger.classList.toggle("is-open", willOpen);
+    trigger.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    const icon = trigger.querySelector("i");
+    if (icon) {
+      icon.classList.toggle("fa-bars", !willOpen);
+      icon.classList.toggle("fa-xmark", willOpen);
+    }
+  }
 }
 
 function initAutoDismissFlashes() {
@@ -379,8 +392,17 @@ document.addEventListener("DOMContentLoaded", () => {
   menuToggle?.addEventListener("click", toggleMenu);
 
   // close menu on link click
-  mobileMenu?.querySelectorAll("a[href^='#']").forEach((a) => {
-    a.addEventListener("click", () => mobileMenu.classList.add("hidden"));
+  mobileMenu?.querySelectorAll("a").forEach((a) => {
+    a.addEventListener("click", () => {
+      mobileMenu.classList.add("hidden");
+      if (!menuToggle) return;
+      menuToggle.classList.remove("is-open");
+      menuToggle.setAttribute("aria-expanded", "false");
+      const icon = menuToggle.querySelector("i");
+      if (!icon) return;
+      icon.classList.add("fa-bars");
+      icon.classList.remove("fa-xmark");
+    });
   });
 
   initAutoDismissFlashes();

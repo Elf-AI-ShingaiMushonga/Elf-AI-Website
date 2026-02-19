@@ -9,7 +9,7 @@
         Internal Operations
     </p>
     <h1 class="text-3xl md:text-4xl font-black text-white mb-3">Delivery Dashboard</h1>
-    <p class="text-slate-400 max-w-3xl">A live operating view for client work, delivery status, and execution quality across the consultancy pipeline.</p>
+    <p class="text-slate-400 max-w-3xl">Live view of client delivery, risk, and next actions.</p>
 </section>
 
 <section class="grid lg:grid-cols-[1.2fr_0.8fr] gap-4 mb-8">
@@ -47,7 +47,7 @@
 <section class="rounded-2xl border border-slate-800 bg-slate-900 p-6 mb-8">
     <div class="flex items-center justify-between gap-3 mb-4">
         <h2 class="text-xl font-bold text-white">Consultant Workflow</h2>
-        <span class="text-xs text-slate-400">Lead to delivery</span>
+        <span class="text-xs text-slate-400">Plan to delivery</span>
     </div>
     <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
         {% for step in journey_steps %}
@@ -111,7 +111,7 @@
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-slate-400 text-sm">No open tasks. Delivery board is clear.</p>
+        <p class="text-slate-400 text-sm">No open tasks.</p>
         {% endif %}
     </article>
 
@@ -154,14 +154,14 @@
 
         {% if knowledge_stats.total %}
         {% set linked_ratio = ((knowledge_stats.linked / knowledge_stats.total) * 100) | round(0, 'floor') %}
-        <p class="text-xs text-slate-400 mb-1">Documentation coverage</p>
+        <p class="text-xs text-slate-400 mb-1">Coverage</p>
         <div class="h-2 rounded-full bg-slate-800 overflow-hidden mb-2">
             <div class="h-full bg-blue-500" style="width: {{ linked_ratio }}%;"></div>
         </div>
-        <p class="text-xs text-slate-300">{{ linked_ratio }}% of docs linked to project or task workflows.</p>
+        <p class="text-xs text-slate-300">{{ linked_ratio }}% of docs linked to projects or tasks.</p>
         <div class="flex flex-wrap gap-2 mt-4">
-            <a href="{{ url_for('main.internal_resources', state='untagged') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-200 hover:bg-amber-500/20 transition">Fix Missing Tags</a>
-            <a href="{{ url_for('main.internal_resources', state='unlinked') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500/15 border border-rose-500/30 text-rose-200 hover:bg-rose-500/20 transition">Link Unmapped Docs</a>
+            <a href="{{ url_for('main.internal_resources', state='untagged') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-200 hover:bg-amber-500/20 transition">Add Missing Tags</a>
+            <a href="{{ url_for('main.internal_resources', state='unlinked') }}" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500/15 border border-rose-500/30 text-rose-200 hover:bg-rose-500/20 transition">Link Unlinked Docs</a>
         </div>
         {% else %}
         <p class="text-sm text-slate-400">No documents in the knowledge library yet.</p>
@@ -169,19 +169,19 @@
     </article>
 
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <h2 class="text-xl font-bold text-white mb-4">Execution Notes</h2>
+        <h2 class="text-xl font-bold text-white mb-4">Operating Notes</h2>
         <div class="space-y-3 text-sm">
             <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
                 <p class="text-slate-200 font-semibold mb-1">Delivery focus</p>
-                <p class="text-slate-400">Prioritize overdue and blocked tasks before adding new work to the queue.</p>
+                <p class="text-slate-400">Clear overdue and blocked tasks first.</p>
             </div>
             <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
                 <p class="text-slate-200 font-semibold mb-1">Knowledge hygiene</p>
-                <p class="text-slate-400">Tag every new document and link it to a project or to-do item for retrieval speed.</p>
+                <p class="text-slate-400">Tag and link each doc when it is added.</p>
             </div>
             <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
                 <p class="text-slate-200 font-semibold mb-1">Review cadence</p>
-                <p class="text-slate-400">Use this dashboard as the weekly operating review baseline across client teams.</p>
+                <p class="text-slate-400">Use this dashboard for weekly delivery reviews.</p>
             </div>
         </div>
     </article>

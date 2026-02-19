@@ -31,22 +31,20 @@
                     ELF-AI Internal
                     <span class="text-blue-500">Delivery Portal</span>
                 </h1>
-                <p class="text-slate-400 leading-relaxed mb-8">
-                    Sign in to access live project tracking, client records, team tasks, and internal delivery resources.
-                </p>
+                <p class="text-slate-400 leading-relaxed mb-8">Sign in for projects, clients, tasks, and internal docs.</p>
 
                 <div class="space-y-3 text-sm">
                     <div class="flex items-start gap-3 rounded-xl bg-slate-950/70 border border-slate-800 p-3">
                         <i class="fa-solid fa-chart-line text-blue-400 mt-0.5"></i>
-                        <span class="text-slate-300">Operational dashboard for active engagements and priorities.</span>
+                        <span class="text-slate-300">Dashboard for active delivery and priorities.</span>
                     </div>
                     <div class="flex items-start gap-3 rounded-xl bg-slate-950/70 border border-slate-800 p-3">
                         <i class="fa-solid fa-folder-tree text-blue-400 mt-0.5"></i>
-                        <span class="text-slate-300">Project and client management workspace for consultancy delivery.</span>
+                        <span class="text-slate-300">Project and client workspace.</span>
                     </div>
                     <div class="flex items-start gap-3 rounded-xl bg-slate-950/70 border border-slate-800 p-3">
                         <i class="fa-solid fa-book text-blue-400 mt-0.5"></i>
-                        <span class="text-slate-300">Reusable playbooks, templates, and quality requirements.</span>
+                        <span class="text-slate-300">Reusable playbooks, templates, and requirements.</span>
                     </div>
                 </div>
             </section>
@@ -87,7 +85,7 @@
 
                 {% if not has_users %}
                 <div class="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                    No internal user exists yet. Create one with:
+                    No internal users yet. Create one with:
                     <code class="block mt-2 text-amber-200">flask create-internal-user</code>
                 </div>
                 {% endif %}

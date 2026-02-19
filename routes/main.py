@@ -34,32 +34,32 @@ INTERNAL_SITE_REQUIREMENTS = [
     {
         "area": "Access and Security",
         "items": [
-            "Role-based access for consultants, operations, and admins.",
-            "Strong authentication with hashed passwords and session control.",
-            "Audit visibility for user activity and account status.",
+            "Role-based access for admins, consultants, and operations.",
+            "Strong authentication with hashed passwords and session controls.",
+            "Clear visibility of account status and activity.",
         ],
     },
     {
         "area": "Project Delivery Operations",
         "items": [
-            "Shared dashboard for project health, open tasks, and delivery status.",
-            "Client and project registry with ownership and stage tracking.",
-            "Task-level visibility for priorities, due dates, and assignees.",
+            "Shared dashboard for project health and open work.",
+            "Client and project registry with owner and stage tracking.",
+            "Task visibility for priority, due dates, and assignees.",
         ],
     },
     {
         "area": "Knowledge and Reuse",
         "items": [
-            "Central resource library for templates, playbooks, and compliance checklists.",
-            "Standardized project lifecycle requirements to reduce delivery variance.",
-            "Internal announcements for process updates and operational notices.",
+            "Central library for playbooks, templates, and checklists.",
+            "Standard lifecycle requirements to reduce delivery variance.",
+            "Internal announcements for process updates.",
         ],
     },
     {
         "area": "Governance and Quality",
         "items": [
-            "Clear pre-deployment quality and security controls.",
-            "Standard reporting expectations for scope, outcomes, and ROI.",
+            "Defined pre-deployment quality and security checks.",
+            "Standard reporting for scope, outcomes, and ROI.",
             "Consistent operational cadence across engagements.",
         ],
     },
@@ -685,25 +685,25 @@ def internal_dashboard():
     journey_steps = [
         {
             "title": "Capture Lead Context",
-            "body": "Use enquiry notes and meeting outcomes to define the first delivery objective.",
+            "body": "Use enquiry notes to set the first delivery objective.",
             "href": url_for("main.enquire"),
             "label": "View Enquiry Page",
         },
         {
             "title": "Create Client + Project",
-            "body": "Register the client and spin up a scoped project with clear owner, stage, and due date.",
+            "body": "Register the client and create a scoped project.",
             "href": url_for("main.internal_clients"),
             "label": "Open Client Registry",
         },
         {
             "title": "Plan Execution",
-            "body": "Break work into nested tasks and order the priority queue before kickoff.",
+            "body": "Break work into tasks and order the priority queue.",
             "href": url_for("main.internal_todos", view="priority"),
             "label": "Open To-Do Queue",
         },
         {
             "title": "Link Knowledge",
-            "body": "Attach playbooks and SOPs to project and task records for fast team reuse.",
+            "body": "Link docs to projects and tasks for reuse.",
             "href": url_for("main.internal_resources"),
             "label": "Open Knowledge Library",
         },
