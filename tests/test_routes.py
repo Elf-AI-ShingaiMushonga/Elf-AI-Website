@@ -76,6 +76,48 @@ def test_contact_specific_service_redirects(client):
     assert response.headers["Location"].endswith("/#contact")
 
 
+def test_contact_redirects_to_safe_return_target(client):
+    response = client.post(
+        "/contact",
+        data={
+            "name": "Pat",
+            "service": "0",
+            "return_to": "/enquire#enquiry-form",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/enquire#enquiry-form")
+
+
+def test_contact_ignores_unsafe_return_target(client):
+    response = client.post(
+        "/contact",
+        data={
+            "name": "Pat",
+            "service": "0",
+            "return_to": "https://malicious.example.com/phish",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/#contact")
+
+
+def test_contact_ignores_internal_return_target(client):
+    response = client.post(
+        "/contact",
+        data={
+            "name": "Pat",
+            "service": "0",
+            "return_to": "/internal/dashboard",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/#contact")
+
+
 def test_contact_sets_single_success_flash(client, monkeypatch):
     monkeypatch.setattr(mail, "send", lambda _msg: None)
     response = client.post(

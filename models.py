@@ -29,6 +29,12 @@ internal_resource_tag_links = db.Table(
     db.Column("tag_id", db.Integer, db.ForeignKey("internal_resource_tag.id"), primary_key=True),
 )
 
+internal_message_channel_member_links = db.Table(
+    "internal_message_channel_member_links",
+    db.Column("channel_id", db.Integer, db.ForeignKey("internal_message_channel.id"), primary_key=True),
+    db.Column("user_id", db.Integer, db.ForeignKey("internal_user.id"), primary_key=True),
+)
+
 
 class Service(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -86,6 +92,19 @@ class InternalUser(db.Model):
     last_login_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     projects = db.relationship("InternalProject", backref="owner", lazy=True)
+    message_channels = db.relationship(
+        "InternalMessageChannel",
+        secondary=internal_message_channel_member_links,
+        back_populates="members",
+        lazy=True,
+    )
+    sent_messages = db.relationship("InternalMessage", back_populates="sender", lazy=True)
+    created_message_channels = db.relationship(
+        "InternalMessageChannel",
+        back_populates="creator",
+        lazy=True,
+        foreign_keys="InternalMessageChannel.created_by_id",
+    )
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
@@ -124,6 +143,13 @@ class InternalProject(db.Model):
         secondary=internal_resource_project_links,
         back_populates="projects",
         lazy=True,
+    )
+    message_channel = db.relationship(
+        "InternalMessageChannel",
+        back_populates="project",
+        uselist=False,
+        lazy=True,
+        cascade="all, delete-orphan",
     )
 
 
@@ -247,6 +273,65 @@ class InternalAnnouncement(db.Model):
     title = db.Column(db.String(200), nullable=False)
     body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
+class InternalMessageChannel(db.Model):
+    __table_args__ = (
+        db.UniqueConstraint(
+            "direct_user_low_id",
+            "direct_user_high_id",
+            name="uq_internal_message_channel_direct_pair",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    channel_type = db.Column(db.String(16), nullable=False, default="group", index=True)
+    name = db.Column(db.String(160), nullable=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("internal_project.id"), nullable=True, unique=True, index=True)
+    direct_user_low_id = db.Column(db.Integer, db.ForeignKey("internal_user.id"), nullable=True, index=True)
+    direct_user_high_id = db.Column(db.Integer, db.ForeignKey("internal_user.id"), nullable=True, index=True)
+    created_by_id = db.Column(db.Integer, db.ForeignKey("internal_user.id"), nullable=True, index=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    project = db.relationship("InternalProject", back_populates="message_channel", lazy=True)
+    creator = db.relationship(
+        "InternalUser",
+        back_populates="created_message_channels",
+        lazy=True,
+        foreign_keys=[created_by_id],
+    )
+    direct_user_low = db.relationship("InternalUser", lazy=True, foreign_keys=[direct_user_low_id])
+    direct_user_high = db.relationship("InternalUser", lazy=True, foreign_keys=[direct_user_high_id])
+    members = db.relationship(
+        "InternalUser",
+        secondary=internal_message_channel_member_links,
+        back_populates="message_channels",
+        lazy=True,
+    )
+    messages = db.relationship(
+        "InternalMessage",
+        back_populates="channel",
+        lazy=True,
+        cascade="all, delete-orphan",
+        order_by="InternalMessage.created_at.asc()",
+    )
+
+
+class InternalMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    channel_id = db.Column(db.Integer, db.ForeignKey("internal_message_channel.id"), nullable=False, index=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey("internal_user.id"), nullable=False, index=True)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+
+    channel = db.relationship("InternalMessageChannel", back_populates="messages", lazy=True)
+    sender = db.relationship("InternalUser", back_populates="sent_messages", lazy=True)
 
 
 def _seed_public_site_data() -> None:

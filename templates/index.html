@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title if seo else 'ELF-AI | Problem-Solving AI Consultancy' }}</title>
-    <meta name="description" content="{{ seo.description if seo else 'ELF-AI is a problem-solving AI consultancy for businesses.' }}">
+    <title>{{ seo.title if seo else 'ELF-AI | SME AI Implementation & Software Ownership' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'ELF-AI helps SMEs replace expensive SaaS with custom AI software they own, implemented fast and measured by ROI.' }}">
     <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/' }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
-    <meta property="og:title" content="{{ seo.title if seo else 'ELF-AI | Problem-Solving AI Consultancy' }}">
-    <meta property="og:description" content="{{ seo.description if seo else 'ELF-AI is a problem-solving AI consultancy for businesses.' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'ELF-AI | SME AI Implementation & Software Ownership' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'ELF-AI helps SMEs replace expensive SaaS with custom AI software they own, implemented fast and measured by ROI.' }}">
     <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/' }}">
     <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title if seo else 'ELF-AI | Problem-Solving AI Consultancy' }}">
-    <meta name="twitter:description" content="{{ seo.description if seo else 'ELF-AI is a problem-solving AI consultancy for businesses.' }}">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'ELF-AI | SME AI Implementation & Software Ownership' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'ELF-AI helps SMEs replace expensive SaaS with custom AI software they own, implemented fast and measured by ROI.' }}">
     <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     {% if seo and seo.structured_data %}
     <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
@@ -26,12 +26,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-    </style>
 </head>
-<body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
+<body class="public-shell bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
     <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
     {% include "partials/public_nav.html" %}
 
@@ -48,7 +44,7 @@
         {% endwith %}
     </div>
 
-    <main id="main-content">
+    <main id="main-content" class="public-main">
     <header class="relative min-h-[90vh] w-full overflow-hidden border-b border-slate-800 pt-28 md:pt-20">
         <div id="carousel-container" class="absolute inset-0 w-full h-full z-0">
             {% for image in carousel_images %}
@@ -63,21 +59,21 @@
             <div class="max-w-5xl mx-auto">
                 <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-8">
                     <i class="fa-solid fa-screwdriver-wrench"></i>
-                    AI-Powered Problem-Solving Consultancy
+                    Implementation-First AI Consultancy for SMEs
                 </p>
 
                 <h1 class="text-4xl sm:text-5xl md:text-7xl font-black text-white mb-6 tracking-tight leading-tight">
                     ELF<span class="text-blue-500">-AI</span>
-                    <span class="block text-2xl sm:text-3xl md:text-4xl font-semibold text-slate-200 mt-3">Practical AI Consultancy</span>
+                    <span class="block text-2xl sm:text-3xl md:text-4xl font-semibold text-slate-200 mt-3">Own Your AI Software</span>
                 </h1>
 
                 <p class="text-base sm:text-lg md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto">
-                    ELF-AI uses practical AI delivery to solve real workflow problems, deploy reliable systems, and build in-house capability for your team.
+                    Replace recurring SaaS spend with custom AI systems built for your workflow. We design, build, deploy, and train your team to run what you own.
                 </p>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-8 sm:px-10 py-4 bg-blue-500 text-slate-950 font-bold rounded-full hover:bg-blue-400 transition shadow-lg shadow-blue-900/30">View Current Demo</a>
-                    <a href="#how-we-work" class="px-8 sm:px-10 py-4 border border-slate-400 text-white font-medium rounded-full hover:bg-white hover:text-slate-900 transition">How We Work</a>
+                    <a href="/enquire" class="px-8 sm:px-10 py-4 bg-blue-500 text-slate-950 font-bold rounded-full hover:bg-blue-400 transition shadow-lg shadow-blue-900/30">Book a Strategy Call</a>
+                    <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-8 sm:px-10 py-4 border border-slate-400 text-white font-medium rounded-full hover:bg-white hover:text-slate-900 transition">View Current Demo</a>
                 </div>
             </div>
         </div>
@@ -89,33 +85,97 @@
         </div>
     </header>
 
-    <section class="py-6 bg-slate-950 border-b border-slate-800">
+    <section class="section-anchor-nav py-4 bg-slate-950 border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-center gap-2">
+            <a href="#start-here" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Start Here</a>
             <a href="#how-we-work" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">How We Work</a>
-            <a href="#delivery-benchmarks" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Delivery Benchmarks</a>
-            <a href="#solutions-scroll" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Consultation Path</a>
-            <a href="/enquire" class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition text-sm font-semibold">Start an Enquiry</a>
+            <a href="#delivery-benchmarks" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Commercial Model</a>
+            <a href="#solutions-scroll" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Wedge + Modules</a>
+            <a href="#faq" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">FAQ</a>
+            <a href="/enquire" class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition text-sm font-semibold">Book a Strategy Call</a>
+        </div>
+    </section>
+
+    <section id="start-here" class="py-12 bg-slate-900 border-b border-slate-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-white">Start Here: Pick Your Next Step</h2>
+                <p class="text-slate-400 mt-2 max-w-3xl mx-auto">If you are evaluating options, this gives you a faster path than browsing every section.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-4">
+                <a href="#delivery-benchmarks" class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 card-hover block">
+                    <p class="text-xs uppercase tracking-[0.16em] text-slate-400 mb-2">Option 1</p>
+                    <h3 class="text-white font-semibold mb-2">Check Commercial Fit</h3>
+                    <p class="text-sm text-slate-300">Review speed, ownership model, and how outcomes are measured before you spend more time.</p>
+                </a>
+                <a href="/solutions#solution-tracks" class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 card-hover block">
+                    <p class="text-xs uppercase tracking-[0.16em] text-slate-400 mb-2">Option 2</p>
+                    <h3 class="text-white font-semibold mb-2">See Solution Tracks</h3>
+                    <p class="text-sm text-slate-300">Understand where we typically start and how module-based expansion works after a wedge launch.</p>
+                </a>
+                <a href="/enquire#enquiry-form" class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5 card-hover block">
+                    <p class="text-xs uppercase tracking-[0.16em] text-slate-400 mb-2">Option 3</p>
+                    <h3 class="text-white font-semibold mb-2">Book A Strategy Call</h3>
+                    <p class="text-sm text-slate-300">Share your bottleneck and get a practical fit/no-fit recommendation with an early scope direction.</p>
+                </a>
+            </div>
+            <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800"><i class="fa-solid fa-lock text-blue-300"></i> Confidential scoping discussions</span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800"><i class="fa-solid fa-clock text-blue-300"></i> Typical response within 1 business day</span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950 border border-slate-800"><i class="fa-solid fa-circle-check text-blue-300"></i> No-obligation first call</span>
+            </div>
         </div>
     </section>
 
     <section id="delivery-benchmarks" class="py-12 bg-slate-950 border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-white">Questions Serious Buyers Ask First</h2>
+                <p class="text-slate-400 mt-2 max-w-3xl mx-auto">Straight answers on fit, delivery speed, ownership, and measurable outcomes.</p>
+            </div>
             <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
-                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Problem Clarity</p>
-                    <p class="text-white font-semibold">Define what to solve first with measurable success criteria.</p>
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Are We A Fit?</p>
+                    <p class="text-white font-semibold">Best fit is service-sector SMEs (usually 10-200 employees) with clear workflow friction and decision-ready leadership.</p>
                 </article>
                 <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
-                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Workflow Fit</p>
-                    <p class="text-white font-semibold">Design and validate around your existing operating model.</p>
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">How Fast?</p>
+                    <p class="text-white font-semibold">For standard modules, we target one-week MVPs and roughly five business days to deploy once scope and data are approved.</p>
                 </article>
                 <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
-                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Team Enablement</p>
-                    <p class="text-white font-semibold">Transfer practical capability so teams keep momentum post-launch.</p>
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Who Owns It?</p>
+                    <p class="text-white font-semibold">You get perpetual licensing of the delivered software, with no forced recurring license lock-in.</p>
                 </article>
                 <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
-                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Measured Outcomes</p>
-                    <p class="text-white font-semibold">Track cost, speed, and quality improvements through delivery.</p>
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">How Is Success Measured?</p>
+                    <p class="text-white font-semibold">Every project is tracked against cost per unit of work, turnaround time, and user adoption metrics.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-12 bg-slate-900 border-b border-slate-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-white">Common Buyer Objections, Answered</h2>
+                <p class="text-slate-400 mt-2 max-w-3xl mx-auto">If you are comparing vendors right now, this is the practical shortlist view.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4">
+                <article class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                    <p class="text-white font-semibold mb-2">“Why not just keep our SaaS stack?”</p>
+                    <p class="text-slate-300 text-sm">If SaaS is already efficient for your workflow, keep it. We step in when lock-in, cost, or process mismatch is creating measurable drag.</p>
+                </article>
+                <article class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                    <p class="text-white font-semibold mb-2">“Will this create technical dependency on you?”</p>
+                    <p class="text-slate-300 text-sm">No. Our delivery model is ownership-first. Your team is trained on the system, and managed support is optional, not mandatory.</p>
+                </article>
+                <article class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                    <p class="text-white font-semibold mb-2">“Can you prove value before a large rollout?”</p>
+                    <p class="text-slate-300 text-sm">Yes. We start with a wedge implementation focused on one high-friction process and validate outcomes before expansion.</p>
+                </article>
+                <article class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                    <p class="text-white font-semibold mb-2">“What if our data and workflows are messy?”</p>
+                    <p class="text-slate-300 text-sm">That is expected. Discovery and observation are built into our process specifically to map constraints before implementation commitments.</p>
                 </article>
             </div>
         </div>
@@ -125,11 +185,11 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-6">
                 <div>
-                    <h2 class="text-3xl md:text-4xl font-bold text-white">Start a Project in 3 Steps</h2>
-                    <p class="text-slate-400 mt-2 max-w-2xl">A simple path from challenge definition to a deployed, measurable solution.</p>
+                    <h2 class="text-3xl md:text-4xl font-bold text-white">Standard Project Process</h2>
+                    <p class="text-slate-400 mt-2 max-w-2xl">A structured path that lowers delivery risk and keeps decisions practical.</p>
                 </div>
                 <a href="/enquire" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition text-sm font-semibold w-fit">
-                    Start an Enquiry
+                    Schedule Discovery
                     <i class="fa-solid fa-arrow-right"></i>
                 </a>
             </div>
@@ -137,18 +197,18 @@
             <div class="grid md:grid-cols-3 gap-4">
                 <article class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
                     <p class="text-[11px] uppercase tracking-[0.16em] text-blue-300 mb-2">Step 1</p>
-                    <h3 class="text-white font-semibold mb-2">Define the Core Problem</h3>
-                    <p class="text-sm text-slate-400">Share your bottleneck, constraints, and target outcome in one consultation.</p>
+                    <h3 class="text-white font-semibold mb-2">Observe the Workflow</h3>
+                    <p class="text-sm text-slate-400">We run a discovery + observation pass to identify friction points and define success metrics before build work starts.</p>
                 </article>
                 <article class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
                     <p class="text-[11px] uppercase tracking-[0.16em] text-blue-300 mb-2">Step 2</p>
-                    <h3 class="text-white font-semibold mb-2">Validate the Delivery Plan</h3>
-                    <p class="text-sm text-slate-400">We provide scoped architecture, implementation path, and testing approach.</p>
+                    <h3 class="text-white font-semibold mb-2">Design + Feasibility</h3>
+                    <p class="text-sm text-slate-400">You get a scoped architecture, delivery plan, and testing pathway tied to your business outcome.</p>
                 </article>
                 <article class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
                     <p class="text-[11px] uppercase tracking-[0.16em] text-blue-300 mb-2">Step 3</p>
-                    <h3 class="text-white font-semibold mb-2">Deploy and Enable Teams</h3>
-                    <p class="text-sm text-slate-400">Roll out with training, operational controls, and measurable success metrics.</p>
+                    <h3 class="text-white font-semibold mb-2">Build, Deploy, Train</h3>
+                    <p class="text-sm text-slate-400">We implement the solution, deploy into production, and train your team to operate and improve it.</p>
                 </article>
             </div>
         </div>
@@ -157,8 +217,8 @@
     <section id="how-we-work" class="py-20 bg-slate-900 border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6">
             <div class="text-center mb-14">
-                <h2 class="text-3xl md:text-5xl font-bold text-white">More than <span class="text-blue-500">"just"</span><br>Consultancy</h2>
-                <p class="text-slate-400 mt-4 max-w-3xl mx-auto">ELF-AI builds, integrates and maintains custom solutions. </p>
+                <h2 class="text-3xl md:text-5xl font-bold text-white">How We Reduce Delivery Risk</h2>
+                <p class="text-slate-400 mt-4 max-w-3xl mx-auto">Execution is grounded in observation, modular architecture, and measurable operating outcomes.</p>
             </div>
 
             <div class="grid md:grid-cols-3 gap-8">
@@ -166,24 +226,24 @@
                     <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-6 text-blue-400">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Exploratory Research</h3>
-                    <p class="text-slate-300 text-sm leading-relaxed">Knowledge is power, so every project starts with a research phase. Research on the problem, possible solutions and solution feasibility.</p>
+                    <h3 class="text-xl font-bold text-white mb-3">Observation Before Build</h3>
+                    <p class="text-slate-300 text-sm leading-relaxed">We do workflow observation and problem synthesis first, so build decisions are grounded in operational reality.</p>
                 </div>
 
                 <div class="p-8 rounded-2xl bg-slate-800 border border-slate-700">
                     <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-6 text-blue-400">
                         <i class="fa-solid fa-gears"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Seamless Implementation</h3>
-                    <p class="text-slate-300 text-sm leading-relaxed">We integrate our solutions into your existing operations, train your team, and provide ongoing support so performance stays strong over time.</p>
+                    <h3 class="text-xl font-bold text-white mb-3">Productised Module Flywheel</h3>
+                    <p class="text-slate-300 text-sm leading-relaxed">Reusable architecture lets us deploy quickly while still tailoring each implementation to your workflow.</p>
                 </div>
 
                 <div class="p-8 rounded-2xl bg-slate-800 border border-slate-700">
                     <div class="w-12 h-12 bg-indigo-600/20 rounded-lg flex items-center justify-center mb-6 text-indigo-400">
                         <i class="fa-solid fa-brain"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Project Training</h3>
-                    <p class="text-slate-300 text-sm leading-relaxed">ELF-AI uses AI tools to develop solutions and your staff can too. ELF trains staff to utilise the AI tools used to produce the solution. </p>
+                    <h3 class="text-xl font-bold text-white mb-3">Technical Empowerment</h3>
+                    <p class="text-slate-300 text-sm leading-relaxed">We train your team so capability remains in-house, not locked behind external vendors.</p>
                 </div>
             </div>
         </div>
@@ -194,47 +254,51 @@
             <div class="grid lg:grid-cols-[1.15fr_0.85fr] gap-8 items-start">
                 <div>
                     <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">
-                        How ELF-AI Turns
+                        From
                         <span id="problem-cycle" class="inline-block min-w-[10ch] text-left text-red-300 transition-opacity duration-300">Delays</span>
-                        Into
+                        To
                         <span id="result-cycle" class="inline-block min-w-[10ch] text-left text-blue-400 transition-opacity duration-300">Speed</span>
                     </h2>
-                    <p class="text-slate-400 mb-6">Our project flow is designed for speed without sacrificing quality and reliability.</p>
+                    <p class="text-slate-400 mb-6">We use an implementation-first wedge strategy: solve one high-friction workflow first, then expand through modular add-ons.</p>
 
                     <ol class="space-y-3">
                         <li class="flex items-start gap-4 p-3.5 bg-slate-900 border border-slate-800 rounded-xl">
                             <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">1</span>
-                            <span class="text-slate-300 text-sm">Discovery session to define the core business problem and success criteria.</span>
+                            <span class="text-slate-300 text-sm">Client meeting and observational discovery to identify high-friction workflow bottlenecks.</span>
                         </li>
                         <li class="flex items-start gap-4 p-3.5 bg-slate-900 border border-slate-800 rounded-xl">
                             <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">2</span>
-                            <span class="text-slate-300 text-sm">Solution architecture and rapid prototype aligned to your current workflow.</span>
+                            <span class="text-slate-300 text-sm">Research and design with feasibility checks mapped to a measurable business outcome.</span>
                         </li>
                         <li class="flex items-start gap-4 p-3.5 bg-slate-900 border border-slate-800 rounded-xl">
                             <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">3</span>
-                            <span class="text-slate-300 text-sm">Integration, deployment, and monitoring.</span>
+                            <span class="text-slate-300 text-sm">Build and deploy using reusable module infrastructure for faster iteration.</span>
                         </li>
                         <li class="flex items-start gap-4 p-3.5 bg-slate-900 border border-slate-800 rounded-xl">
                             <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">4</span>
-                            <span class="text-slate-300 text-sm">Team enablement, training, and continuous improvement.</span>
+                            <span class="text-slate-300 text-sm">Operate with optional managed support, monitoring, and continuous improvement.</span>
                         </li>
                     </ol>
                 </div>
 
                 <aside class="rounded-2xl border border-blue-500/20 bg-gradient-to-b from-blue-500/10 to-slate-900 p-5 lg:sticky lg:top-28">
-                    <p class="text-xs uppercase tracking-[0.2em] text-blue-300 mb-4">Delivery Snapshot</p>
+                    <p class="text-xs uppercase tracking-[0.2em] text-blue-300 mb-4">Commercial Architecture</p>
                     <div class="space-y-3 text-sm">
                         <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
-                            <p class="text-blue-300 font-semibold mb-1">Discovery</p>
-                            <p class="text-slate-300">Outcome-aligned scope with clear success criteria.</p>
+                            <p class="text-blue-300 font-semibold mb-1">One-Time Implementation</p>
+                            <p class="text-slate-300">A single engagement fee covers architecture, build, and integration.</p>
                         </div>
                         <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
-                            <p class="text-blue-300 font-semibold mb-1">Build + Validate</p>
-                            <p class="text-slate-300">Rapid prototype, functional testing, and workflow-fit checks.</p>
+                            <p class="text-blue-300 font-semibold mb-1">Perpetual License</p>
+                            <p class="text-slate-300">You retain ownership of the delivered software, avoiding lock-in.</p>
                         </div>
                         <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
-                            <p class="text-blue-300 font-semibold mb-1">Deploy + Enable</p>
-                            <p class="text-slate-300">Production rollout with team training and measurable adoption.</p>
+                            <p class="text-blue-300 font-semibold mb-1">Optional Managed Services</p>
+                            <p class="text-slate-300">24-hour SLA-backed support, advisory, and maintenance if you want ongoing cover.</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/80 p-3">
+                            <p class="text-blue-300 font-semibold mb-1">Predictable Cost Structure</p>
+                            <p class="text-slate-300">Client-hosted deployment is preferred for cost control and transparency.</p>
                         </div>
                     </div>
                 </aside>
@@ -244,24 +308,29 @@
 
     <section class="py-14 bg-slate-900 border-b border-slate-800">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
-            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4 text-center">SME Meets Practical AI</h2>
-            <p class="text-slate-400 mb-8 text-center max-w-3xl mx-auto">Our delivery model is designed for businesses that need practical outcomes and long-term capability.</p>
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4 text-center">Built for SMEs With Real Constraints</h2>
+            <p class="text-slate-400 mb-8 text-center max-w-3xl mx-auto">If you need custom capability without enterprise consulting overhead, this model is built for you.</p>
 
-            <div class="grid md:grid-cols-3 gap-4">
+            <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
                 <article class="p-5 rounded-2xl bg-slate-950 border border-slate-800">
                     <i class="fa-solid fa-building text-blue-400 mb-4"></i>
-                    <h3 class="text-lg font-semibold text-white mb-2">SME-First Approach</h3>
-                    <p class="text-slate-300 text-sm">Solutions designed for flexible teams that value immediate impact.</p>
+                    <h3 class="text-lg font-semibold text-white mb-2">SME-First Design</h3>
+                    <p class="text-slate-300 text-sm">Primary fit is service-sector teams with roughly 10-200 employees and focused decision loops.</p>
                 </article>
                 <article class="p-5 rounded-2xl bg-slate-950 border border-slate-800">
-                    <i class="fa-solid fa-chart-line text-blue-400 mb-4"></i>
-                    <h3 class="text-lg font-semibold text-white mb-2">Measurable ROI</h3>
-                    <p class="text-slate-300 text-sm">We track outcomes through cost savings, speed gains, and adoption metrics.</p>
+                    <i class="fa-solid fa-money-check-dollar text-blue-400 mb-4"></i>
+                    <h3 class="text-lg font-semibold text-white mb-2">Implementation Pricing</h3>
+                    <p class="text-slate-300 text-sm">Typical one-time implementation starts from R100,000+ based on scope complexity.</p>
                 </article>
                 <article class="p-5 rounded-2xl bg-slate-950 border border-slate-800">
                     <i class="fa-solid fa-users-gear text-blue-400 mb-4"></i>
-                    <h3 class="text-lg font-semibold text-white mb-2">Training Model</h3>
-                    <p class="text-slate-300 text-sm">We train staff, leaving an empowered team invested in your results after deployment.</p>
+                    <h3 class="text-lg font-semibold text-white mb-2">Managed Support Option</h3>
+                    <p class="text-slate-300 text-sm">Optional ongoing support plans typically start from R15,000+ per month.</p>
+                </article>
+                <article class="p-5 rounded-2xl bg-slate-950 border border-slate-800">
+                    <i class="fa-solid fa-server text-blue-400 mb-4"></i>
+                    <h3 class="text-lg font-semibold text-white mb-2">Client-Controlled Hosting</h3>
+                    <p class="text-slate-300 text-sm">We prefer client-controlled infrastructure for predictable cost and long-term operational ownership.</p>
                 </article>
             </div>
 
@@ -278,37 +347,92 @@
     <section id="solutions-scroll" class="py-16 bg-slate-900 border-b border-slate-800">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold text-white">Find a Solution</h2>
-                <p class="text-slate-400 mt-3 max-w-2xl mx-auto">Give us a challenge. <br>There is no problem too big or too small.</p>
+                <h2 class="text-3xl font-bold text-white">Start With A Wedge, Scale With Modules</h2>
+                <p class="text-slate-400 mt-3 max-w-2xl mx-auto">We solve one high-impact workflow first, then expand through reusable modules such as document ingestion, automation, chatbot systems, and ERP capabilities.</p>
             </div>
             <div class="flex justify-center">
+                {% set ns = namespace(has_consult=false) %}
                 {% for service in services %}
-                {% if "consult" in service.title|lower %}
-                <a href="{{ url_for('main.enquire', service=service.id) }}" class="block h-full w-full max-w-3xl">
+                    {% if "consult" in service.title|lower %}
+                    {% set ns.has_consult = true %}
+                    <a href="{{ url_for('main.enquire', service=service.id) }}" class="block h-full w-full max-w-3xl">
+                        <div class="p-6 rounded-2xl bg-slate-800 border border-slate-700 hover:border-blue-500 transition group flex flex-col h-full cursor-pointer relative">
+                            <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition text-blue-500">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </div>
+
+                            <div class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center mb-6 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition">
+                                <i class="fa-solid {{ service.icon }} text-xl"></i>
+                            </div>
+
+                            <h3 class="text-xl font-bold text-white mb-3">{{ service.title }}</h3>
+                            <p class="text-slate-400 mb-4 text-sm leading-relaxed flex-grow">{{ service.description }}</p>
+
+                            <ul class="text-sm text-slate-300 space-y-2 mt-4">
+                                {% for feature in service.features %}
+                                <li class="flex items-center">
+                                    <i class="fa-solid fa-check text-blue-500 mr-2"></i>
+                                    {{ feature.text }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if not ns.has_consult %}
+                <a href="/enquire" class="block h-full w-full max-w-3xl">
                     <div class="p-6 rounded-2xl bg-slate-800 border border-slate-700 hover:border-blue-500 transition group flex flex-col h-full cursor-pointer relative">
                         <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition text-blue-500">
                             <i class="fa-solid fa-arrow-right"></i>
                         </div>
-
                         <div class="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center mb-6 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition">
-                            <i class="fa-solid {{ service.icon }} text-xl"></i>
+                            <i class="fa-solid fa-handshake"></i>
                         </div>
-
-                        <h3 class="text-xl font-bold text-white mb-3">{{ service.title }}</h3>
-                        <p class="text-slate-400 mb-4 text-sm leading-relaxed flex-grow">{{ service.description }}</p>
-
+                        <h3 class="text-xl font-bold text-white mb-3">ELF-AI Strategy Engagement</h3>
+                        <p class="text-slate-400 mb-4 text-sm leading-relaxed flex-grow">Start with a scoped discovery to isolate one workflow bottleneck, validate feasibility, and define a delivery plan.</p>
                         <ul class="text-sm text-slate-300 space-y-2 mt-4">
-                            {% for feature in service.features %}
-                            <li class="flex items-center">
-                                <i class="fa-solid fa-check text-blue-500 mr-2"></i>
-                                {{ feature.text }}
-                            </li>
-                            {% endfor %}
+                            <li class="flex items-center"><i class="fa-solid fa-check text-blue-500 mr-2"></i>Fast fit/no-fit recommendation</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-blue-500 mr-2"></i>Ownership-first commercial structure</li>
+                            <li class="flex items-center"><i class="fa-solid fa-check text-blue-500 mr-2"></i>Clear wedge scope and rollout pathway</li>
                         </ul>
                     </div>
                 </a>
                 {% endif %}
-                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section id="faq" class="py-16 bg-slate-950 border-b border-slate-800">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-white">Buyer FAQ</h2>
+                <p class="text-slate-400 mt-2">Short answers to the questions that usually block decisions.</p>
+            </div>
+            <div class="space-y-3">
+                <details class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                    <summary class="cursor-pointer text-white font-semibold">Do we need clean data before we start?</summary>
+                    <p class="text-slate-300 text-sm mt-2">No. Most engagements begin with imperfect data. We map constraints early and scope around what is workable.</p>
+                </details>
+                <details class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                    <summary class="cursor-pointer text-white font-semibold">Can we start small without a full transformation project?</summary>
+                    <p class="text-slate-300 text-sm mt-2">Yes. We use a wedge-first model so you can validate value in one workflow before broader expansion.</p>
+                </details>
+                <details class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                    <summary class="cursor-pointer text-white font-semibold">Will our team be dependent on ELF-AI long term?</summary>
+                    <p class="text-slate-300 text-sm mt-2">No. Systems are built for client ownership, and team enablement is part of the delivery process.</p>
+                </details>
+                <details class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                    <summary class="cursor-pointer text-white font-semibold">What should we prepare before a strategy call?</summary>
+                    <p class="text-slate-300 text-sm mt-2">Bring one bottleneck, one desired outcome metric, and your rough timeline. We can do the rest with you live.</p>
+                </details>
+            </div>
+            <div class="text-center mt-7">
+                <a href="/enquire#enquiry-form" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-500 transition">
+                    Book a Strategy Call
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </a>
             </div>
         </div>
     </section>
@@ -331,9 +455,9 @@
             if (problemCycle && resultCycle) {
                 const cyclePairs = [
                     { problem: 'Delays', result: 'Speed' },
-                    { problem: 'Problems', result: 'Solutions' },
-                    { problem: 'Complexity', result: 'Clarity' },
-                    { problem: 'Manual Tasks', result: 'Automation' },
+                    { problem: 'Vendor Lock-In', result: 'Ownership' },
+                    { problem: 'High TCO', result: 'ROI' },
+                    { problem: 'Manual Work', result: 'Automation' },
                 ];
                 let cycleIndex = 0;
                 let cycleDirection = 1;

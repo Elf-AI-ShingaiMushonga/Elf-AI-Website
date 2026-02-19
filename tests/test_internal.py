@@ -1,6 +1,17 @@
 import re
+from datetime import date, timedelta
 
-from models import InternalClient, InternalProject, InternalResource, InternalResourceTag, InternalTask, InternalUser, db
+from models import (
+    InternalClient,
+    InternalMessage,
+    InternalMessageChannel,
+    InternalProject,
+    InternalResource,
+    InternalResourceTag,
+    InternalTask,
+    InternalUser,
+    db,
+)
 
 
 def _extract_csrf_token(html: str) -> str:
@@ -77,6 +88,60 @@ def test_internal_sections_access_when_logged_in(client):
     resources_response = client.get("/internal/resources")
     assert resources_response.status_code == 200
     assert "Internal Site Requirements" in resources_response.get_data(as_text=True)
+
+    messages_response = client.get("/internal/messages")
+    assert messages_response.status_code == 200
+    assert "Consultant Messaging" in messages_response.get_data(as_text=True)
+
+
+def test_internal_omnibar_requires_authentication(client):
+    response = client.get("/internal/go?q=projects", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/internal/login" in response.headers["Location"]
+
+
+def test_internal_omnibar_quick_target_navigation(client):
+    _login(client)
+
+    response = client.get("/internal/go?q=projects", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/internal/projects")
+
+
+def test_internal_omnibar_project_match_navigation(client):
+    _login(client)
+
+    with client.application.app_context():
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        assert project is not None
+        project_id = project.id
+
+    response = client.get("/internal/go?q=project:%20Test%20Internal%20Project", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(f"/internal/todos?view=nested&project_id={project_id}")
+
+
+def test_internal_omnibar_task_match_navigation(client):
+    _login(client)
+
+    with client.application.app_context():
+        task = InternalTask.query.filter_by(title="Prepare weekly update").first()
+        assert task is not None
+        project_id = task.project_id
+
+    response = client.get("/internal/go?q=task:%20Prepare%20weekly%20update", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(f"/internal/todos?view=priority&project_id={project_id}")
+
+
+def test_internal_omnibar_unknown_query_shows_feedback(client):
+    _login(client)
+
+    response = client.get("/internal/go?q=not-a-real-internal-destination", follow_redirects=True)
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "No exact match found. Try page names or prefixes:" in html
+    assert "Delivery Dashboard" in html
 
 
 def test_internal_logout(client):
@@ -158,6 +223,258 @@ def test_internal_project_add(client):
         assert created_project.client_id == client_record.id
 
 
+def test_internal_project_add_uses_default_timeline_and_starter_plan(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/projects")
+
+    with client.application.app_context():
+        client_record = InternalClient.query.filter_by(name="Test Client").first()
+        owner_record = InternalUser.query.filter_by(email="internal-admin@elf-ai.co.za").first()
+        assert client_record is not None
+        assert owner_record is not None
+        expected_due_date = date.today() + timedelta(days=45)
+
+    response = client.post(
+        "/internal/projects/add",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Timeline Defaults Project",
+            "client_mode": "existing",
+            "client_id": str(client_record.id),
+            "owner_id": "self",
+            "timeline_days": "45",
+            "stage": "discovery",
+            "status": "on-track",
+            "summary": "Project created with default timeline and starter tasks.",
+            "create_starter_plan": "1",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with client.application.app_context():
+        created_project = InternalProject.query.filter_by(name="Timeline Defaults Project").first()
+        assert created_project is not None
+        assert created_project.client_id == client_record.id
+        assert created_project.owner_id == owner_record.id
+        assert created_project.due_date == expected_due_date
+
+        project_task_titles = {task.title for task in created_project.tasks}
+        assert "Kickoff and Discovery" in project_task_titles
+        assert "Solution Build and Validation" in project_task_titles
+        assert "Value Review and Scale Plan" in project_task_titles
+
+
+def test_internal_project_add_can_create_client_inline(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/projects")
+
+    response = client.post(
+        "/internal/projects/add",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Inline Client Kickoff",
+            "client_mode": "new",
+            "new_client_name": "Inline Intake Client",
+            "new_client_industry": "Retail",
+            "new_client_account_owner": "Internal Admin",
+            "new_client_status": "active",
+            "new_client_notes": "Created directly during kickoff flow.",
+            "timeline_days": "30",
+            "owner_id": "self",
+            "stage": "build",
+            "status": "on-track",
+            "summary": "Kickoff project with inline client creation.",
+            "create_starter_plan": "1",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert "/internal/projects?client_id=" in response.headers["Location"]
+
+    with client.application.app_context():
+        created_client = InternalClient.query.filter_by(name="Inline Intake Client").first()
+        created_project = InternalProject.query.filter_by(name="Inline Client Kickoff").first()
+        assert created_client is not None
+        assert created_project is not None
+        assert created_project.client_id == created_client.id
+
+
+def test_internal_project_add_respects_existing_client_mode(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/projects")
+
+    with client.application.app_context():
+        existing_client = InternalClient.query.filter_by(name="Test Client").first()
+        assert existing_client is not None
+        existing_client_id = existing_client.id
+
+    response = client.post(
+        "/internal/projects/add",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Existing Mode Project",
+            "client_mode": "existing",
+            "client_id": str(existing_client_id),
+            "new_client_name": "Should Not Be Created",
+            "new_client_industry": "Finance",
+            "new_client_account_owner": "Internal Admin",
+            "owner_id": "self",
+            "stage": "build",
+            "status": "on-track",
+            "summary": "Ensure stale new-client fields do not override selected client.",
+            "create_starter_plan": "0",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with client.application.app_context():
+        created_project = InternalProject.query.filter_by(name="Existing Mode Project").first()
+        assert created_project is not None
+        assert created_project.client_id == existing_client_id
+        stale_client = InternalClient.query.filter_by(name="Should Not Be Created").first()
+        assert stale_client is None
+
+
+def test_internal_project_add_can_disable_starter_plan(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/projects")
+
+    with client.application.app_context():
+        client_record = InternalClient.query.filter_by(name="Test Client").first()
+        assert client_record is not None
+        client_id = client_record.id
+
+    response = client.post(
+        "/internal/projects/add",
+        data={
+            "csrf_token": csrf_token,
+            "name": "No Starter Plan Project",
+            "client_mode": "existing",
+            "client_id": str(client_id),
+            "owner_id": "self",
+            "timeline_days": "30",
+            "stage": "discovery",
+            "status": "on-track",
+            "summary": "Project created without starter task generation.",
+            "create_starter_plan": "0",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with client.application.app_context():
+        created_project = InternalProject.query.filter_by(name="No Starter Plan Project").first()
+        assert created_project is not None
+        assert len(created_project.tasks) == 0
+
+
+def test_internal_messages_project_channel_auto_created(client):
+    _login(client)
+
+    response = client.get("/internal/messages")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Consultant Messaging" in html
+    assert "Test Internal Project" in html
+
+    with client.application.app_context():
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        assert project is not None
+        assert project.message_channel is not None
+        assert project.message_channel.channel_type == "project"
+
+
+def test_internal_messages_create_direct_channel(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/messages")
+
+    with client.application.app_context():
+        current_user = InternalUser.query.filter_by(email="internal-admin@elf-ai.co.za").first()
+        recipient_user = InternalUser.query.filter_by(email="delivery-consultant@elf-ai.co.za").first()
+        assert current_user is not None
+        assert recipient_user is not None
+        current_user_id = current_user.id
+        recipient_user_id = recipient_user.id
+
+    response = client.post(
+        "/internal/messages/direct/start",
+        data={
+            "csrf_token": csrf_token,
+            "recipient_id": str(recipient_user_id),
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert "/internal/messages?channel_id=" in response.headers["Location"]
+
+    with client.application.app_context():
+        direct_channel = InternalMessageChannel.query.filter_by(channel_type="direct").first()
+        assert direct_channel is not None
+        member_ids = {member.id for member in direct_channel.members}
+        assert member_ids == {current_user_id, recipient_user_id}
+
+
+def test_internal_messages_create_group_and_post_message(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/messages")
+
+    with client.application.app_context():
+        current_user = InternalUser.query.filter_by(email="internal-admin@elf-ai.co.za").first()
+        delivery_user = InternalUser.query.filter_by(email="delivery-consultant@elf-ai.co.za").first()
+        operations_user = InternalUser.query.filter_by(email="operations-analyst@elf-ai.co.za").first()
+        assert current_user is not None
+        assert delivery_user is not None
+        assert operations_user is not None
+        current_user_id = current_user.id
+        delivery_user_id = delivery_user.id
+        operations_user_id = operations_user.id
+
+    create_group_response = client.post(
+        "/internal/messages/group/create",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Delivery Standup",
+            "member_ids": [str(delivery_user_id), str(operations_user_id)],
+        },
+        follow_redirects=False,
+    )
+    assert create_group_response.status_code == 302
+    assert "/internal/messages?channel_id=" in create_group_response.headers["Location"]
+
+    with client.application.app_context():
+        group_channel = InternalMessageChannel.query.filter_by(
+            channel_type="group",
+            name="Delivery Standup",
+        ).first()
+        assert group_channel is not None
+        member_ids = {member.id for member in group_channel.members}
+        assert member_ids == {current_user_id, delivery_user_id, operations_user_id}
+        group_channel_id = group_channel.id
+
+    post_csrf_token = _csrf_token_for_path(client, f"/internal/messages?channel_id={group_channel_id}")
+    post_message_response = client.post(
+        "/internal/messages/post",
+        data={
+            "csrf_token": post_csrf_token,
+            "channel_id": str(group_channel_id),
+            "body": "Kickoff note: align today on blockers and next milestones.",
+        },
+        follow_redirects=False,
+    )
+    assert post_message_response.status_code == 302
+    assert post_message_response.headers["Location"].endswith(f"/internal/messages?channel_id={group_channel_id}")
+
+    with client.application.app_context():
+        created_message = InternalMessage.query.filter(
+            InternalMessage.channel_id == group_channel_id,
+            InternalMessage.body.ilike("%Kickoff note%"),
+        ).first()
+        assert created_message is not None
+        assert created_message.sender_id == current_user_id
+
+
 def test_internal_todo_add_nested_task(client):
     _login(client)
     csrf_token = _csrf_token_for_path(client, "/internal/todos")
@@ -202,7 +519,7 @@ def test_internal_todo_priority_queue_order(client):
     assert queue_titles
     assert queue_titles[0] == "Prepare weekly update"
     assert "Archive previous sprint artifacts" in queue_titles
-    assert "Search by task, assignee, project, or linked doc..." in html
+    assert "Filter this queue by task, assignee, project, or linked doc..." in html
     assert "Due soon threshold:" in html
 
 
@@ -240,6 +557,46 @@ def test_internal_todo_project_scope_filter(client):
     html = response.get_data(as_text=True)
     assert "Prepare weekly update" in html
     assert "Other project task" not in html
+
+
+def test_internal_todo_status_and_priority_updates(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/todos")
+
+    with client.application.app_context():
+        task = InternalTask.query.filter_by(title="Prepare weekly update").first()
+        assert task is not None
+        task_id = task.id
+
+    status_response = client.post(
+        f"/internal/todos/{task_id}/status",
+        data={
+            "csrf_token": csrf_token,
+            "view_mode": "priority",
+            "status": "done",
+        },
+        follow_redirects=False,
+    )
+    assert status_response.status_code == 302
+    assert status_response.headers["Location"].endswith("/internal/todos?view=priority")
+
+    priority_response = client.post(
+        f"/internal/todos/{task_id}/priority",
+        data={
+            "csrf_token": csrf_token,
+            "view_mode": "nested",
+            "priority": "low",
+        },
+        follow_redirects=False,
+    )
+    assert priority_response.status_code == 302
+    assert priority_response.headers["Location"].endswith("/internal/todos?view=nested")
+
+    with client.application.app_context():
+        updated_task = db.session.get(InternalTask, task_id)
+        assert updated_task is not None
+        assert updated_task.status == "done"
+        assert updated_task.priority == "low"
 
 
 def test_internal_resource_add_with_tags_and_links(client):
@@ -348,8 +705,10 @@ def test_internal_resource_project_scope_filter(client):
     with client.application.app_context():
         client_record = InternalClient.query.filter_by(name="Test Client").first()
         scoped_project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        scoped_task = InternalTask.query.filter_by(title="Prepare weekly update").first()
         assert client_record is not None
         assert scoped_project is not None
+        assert scoped_task is not None
         scoped_project_id = scoped_project.id
 
         other_project = InternalProject(
@@ -376,13 +735,21 @@ def test_internal_resource_project_scope_filter(client):
             description="Resource linked to other project",
             projects=[other_project],
         )
-        db.session.add_all([scoped_resource, other_resource])
+        task_only_resource = InternalResource(
+            title="Task Linked Scoped Doc",
+            category="operations",
+            link="https://example.com/task-linked-scoped-doc",
+            description="Resource linked via scoped project task only",
+            tasks=[scoped_task],
+        )
+        db.session.add_all([scoped_resource, other_resource, task_only_resource])
         db.session.commit()
 
     response = client.get(f"/internal/resources?project_id={scoped_project_id}")
     assert response.status_code == 200
     html = response.get_data(as_text=True)
     assert "Scoped Project Runbook" in html
+    assert "Task Linked Scoped Doc" in html
     assert "Other Project Runbook" not in html
 
 

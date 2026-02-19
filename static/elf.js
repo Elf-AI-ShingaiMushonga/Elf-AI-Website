@@ -137,6 +137,237 @@ function initFilterRoots() {
   });
 }
 
+function isoDateFromTodayOffset(days) {
+  const safeOffset = Number.isFinite(days) ? days : 30;
+  const targetDate = new Date();
+  targetDate.setHours(12, 0, 0, 0);
+  targetDate.setDate(targetDate.getDate() + safeOffset);
+
+  const year = targetDate.getFullYear();
+  const month = String(targetDate.getMonth() + 1).padStart(2, "0");
+  const day = String(targetDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function initProjectFormEnhancements() {
+  const projectForms = document.querySelectorAll("[data-project-form]");
+  if (!projectForms.length) return;
+
+  projectForms.forEach((form) => {
+    const clientModeSelect = form.querySelector("[data-client-mode]");
+    const existingClientField = form.querySelector("[data-existing-client-field]");
+    const existingClientSelect = form.querySelector("select[name='client_id']");
+    const newClientFields = form.querySelector("[data-new-client-fields]");
+    const newClientRequiredInputs = form.querySelectorAll("[data-new-client-required]");
+
+    const applyClientMode = () => {
+      const mode = (clientModeSelect?.value || "existing").toLowerCase();
+      const useNewClient = mode === "new";
+
+      existingClientField?.classList.toggle("hidden", useNewClient);
+      newClientFields?.classList.toggle("hidden", !useNewClient);
+
+      if (existingClientSelect) {
+        existingClientSelect.required = !useNewClient;
+      }
+      newClientRequiredInputs.forEach((input) => {
+        input.required = useNewClient;
+      });
+    };
+
+    clientModeSelect?.addEventListener("change", applyClientMode);
+    applyClientMode();
+
+    const timelineSelect = form.querySelector("[data-timeline-days]");
+    const dueDateInput = form.querySelector("[data-due-date]");
+    const resetDueDateButton = form.querySelector("[data-reset-timeline-due-date]");
+
+    const syncDueDateToTimeline = (force = false) => {
+      if (!timelineSelect || !dueDateInput) return;
+      if (!force && dueDateInput.dataset.manualDueDate === "true") return;
+
+      const timelineDays = Number(timelineSelect.value);
+      const safeDays = Number.isFinite(timelineDays) ? timelineDays : 30;
+      dueDateInput.value = isoDateFromTodayOffset(safeDays);
+    };
+
+    if (dueDateInput) {
+      dueDateInput.dataset.manualDueDate = "false";
+      dueDateInput.addEventListener("input", () => {
+        dueDateInput.dataset.manualDueDate = "true";
+      });
+    }
+
+    timelineSelect?.addEventListener("change", () => syncDueDateToTimeline());
+    resetDueDateButton?.addEventListener("click", () => {
+      if (dueDateInput) {
+        dueDateInput.dataset.manualDueDate = "false";
+      }
+      syncDueDateToTimeline(true);
+      dueDateInput?.focus();
+    });
+  });
+}
+
+function initTaskFormEnhancements() {
+  const taskForms = document.querySelectorAll("[data-task-form]");
+  if (!taskForms.length) return;
+
+  taskForms.forEach((form) => {
+    const dueDateInput = form.querySelector("[data-task-due-date]");
+    const presetButtons = form.querySelectorAll("[data-due-offset]");
+
+    if (!dueDateInput || !presetButtons.length) return;
+
+    const setDueDateFromOffset = (offsetDays) => {
+      const offset = Number(offsetDays);
+      if (!Number.isFinite(offset)) return;
+      dueDateInput.value = isoDateFromTodayOffset(offset);
+      dueDateInput.focus();
+    };
+
+    presetButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setDueDateFromOffset(button.dataset.dueOffset);
+      });
+    });
+  });
+}
+
+function initOptionSearchFilters() {
+  const searchInputs = document.querySelectorAll("[data-option-filter-input]");
+  if (!searchInputs.length) return;
+
+  searchInputs.forEach((input) => {
+    const targetId = input.getAttribute("data-option-filter-target");
+    if (!targetId) return;
+
+    const targetSelect = document.getElementById(targetId);
+    if (!(targetSelect instanceof HTMLSelectElement)) return;
+
+    const filterOptions = () => {
+      const term = (input.value || "").trim().toLowerCase();
+      Array.from(targetSelect.options).forEach((option) => {
+        if (!option.value) {
+          option.hidden = false;
+          return;
+        }
+
+        const label = (option.textContent || "").toLowerCase();
+        const isVisible = !term || label.includes(term) || option.selected;
+        option.hidden = !isVisible;
+      });
+    };
+
+    input.addEventListener("input", filterOptions);
+    filterOptions();
+  });
+}
+
+function initMessageEnhancements() {
+  const messageThreads = document.querySelectorAll("[data-message-thread]");
+  messageThreads.forEach((thread) => {
+    thread.scrollTop = thread.scrollHeight;
+  });
+
+  const snippetButtons = document.querySelectorAll("[data-message-snippet]");
+  snippetButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetId = button.getAttribute("data-message-target");
+      const snippetText = (button.getAttribute("data-message-snippet") || "").trim();
+      if (!targetId || !snippetText) return;
+
+      const textarea = document.getElementById(targetId);
+      if (!(textarea instanceof HTMLTextAreaElement)) return;
+
+      const currentValue = (textarea.value || "").trimEnd();
+      textarea.value = currentValue ? `${currentValue}\n${snippetText}` : snippetText;
+      textarea.focus();
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
+
+  const countableTextareas = document.querySelectorAll("[data-char-count-target]");
+  countableTextareas.forEach((textarea) => {
+    const counterId = textarea.getAttribute("data-char-count-target");
+    if (!counterId) return;
+
+    const counter = document.getElementById(counterId);
+    if (!counter) return;
+
+    const updateCounter = () => {
+      const length = (textarea.value || "").length;
+      const maxLength = Number(textarea.getAttribute("maxlength"));
+      if (Number.isFinite(maxLength) && maxLength > 0) {
+        counter.textContent = `${length}/${maxLength}`;
+      } else {
+        counter.textContent = String(length);
+      }
+    };
+
+    textarea.addEventListener("input", updateCounter);
+    updateCounter();
+  });
+}
+
+function initComposePromptButtons() {
+  const buttons = document.querySelectorAll("[data-compose-target][data-compose-text]");
+  if (!buttons.length) return;
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetId = button.getAttribute("data-compose-target");
+      const promptText = (button.getAttribute("data-compose-text") || "").trim();
+      if (!targetId || !promptText) return;
+
+      const textarea = document.getElementById(targetId);
+      if (!(textarea instanceof HTMLTextAreaElement)) return;
+
+      const hasText = (textarea.value || "").trim().length > 0;
+      textarea.value = hasText ? `${textarea.value.trimEnd()}\n${promptText}` : promptText;
+      textarea.focus();
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
+}
+
+function initInternalOmnibar() {
+  const omnibars = Array.from(document.querySelectorAll("[data-internal-omnibar]")).filter(
+    (input) => input instanceof HTMLInputElement
+  );
+  if (!omnibars.length) return;
+
+  const focusOmnibar = () => {
+    const visibleOmnibar = omnibars.find((input) => input.offsetParent !== null);
+    const target = visibleOmnibar || omnibars[0];
+    target.focus();
+    target.select();
+  };
+
+  document.addEventListener("keydown", (event) => {
+    const key = event.key.toLowerCase();
+    const keyboardShortcut = (event.metaKey || event.ctrlKey) && key === "k";
+    if (keyboardShortcut) {
+      event.preventDefault();
+      focusOmnibar();
+      return;
+    }
+
+    if (key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const activeTag = target.tagName.toLowerCase();
+    if (activeTag === "input" || activeTag === "textarea" || target.isContentEditable) return;
+
+    const hasPageFilter = Boolean(document.querySelector("[data-filter-input]"));
+    if (hasPageFilter) return;
+
+    event.preventDefault();
+    focusOmnibar();
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const themeToggle = document.getElementById("themeToggle");
   const themeToggleMobile = document.getElementById("themeToggleMobile");
@@ -154,5 +385,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   initAutoDismissFlashes();
   initScrollTopButton();
+  initInternalOmnibar();
   initFilterRoots();
+  initProjectFormEnhancements();
+  initTaskFormEnhancements();
+  initOptionSearchFilters();
+  initMessageEnhancements();
+  initComposePromptButtons();
 });

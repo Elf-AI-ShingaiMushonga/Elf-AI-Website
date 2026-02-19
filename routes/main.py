@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 from flask import Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for
 from flask_mail import Message
+from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 
 from extension import mail
@@ -14,6 +15,8 @@ from models import (
     Branding,
     InternalAnnouncement,
     InternalClient,
+    InternalMessage,
+    InternalMessageChannel,
     InternalProject,
     InternalResource,
     InternalResourceTag,
@@ -68,8 +71,13 @@ INTERNAL_TASK_PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
 INTERNAL_TASK_STATUS_RANK = {"todo": 0, "in-progress": 1, "blocked": 2, "done": 3}
 INTERNAL_PROJECT_STAGES = ("discovery", "build", "delivery", "operations")
 INTERNAL_PROJECT_STATUSES = ("on-track", "at-risk", "blocked", "completed")
+INTERNAL_MESSAGE_CHANNEL_TYPES = ("project", "direct", "group")
 INTERNAL_RESOURCE_STATES = ("all", "linked", "unlinked", "untagged")
 RESOURCE_CATEGORY_FALLBACK = "general"
+DEFAULT_PROJECT_TIMELINE_DAYS = 30
+PROJECT_TIMELINE_PRESETS = (14, 30, 45, 60, 90)
+PROJECT_TIMELINE_MIN_DAYS = 7
+PROJECT_TIMELINE_MAX_DAYS = 365
 CSRF_TOKEN_SESSION_KEY = "_internal_csrf_token"
 SAFE_RESOURCE_LINK_SCHEMES = {"http", "https"}
 
@@ -147,6 +155,22 @@ def _safe_next_url(next_target: str | None) -> str | None:
     return None
 
 
+def _safe_public_return_target(raw_target: str | None) -> str | None:
+    if not raw_target:
+        return None
+    candidate = raw_target.strip()
+    if not candidate:
+        return None
+    parsed = urlparse(candidate)
+    if parsed.scheme or parsed.netloc:
+        return None
+    if not candidate.startswith("/"):
+        return None
+    if candidate.startswith("/internal"):
+        return None
+    return candidate
+
+
 def _internal_status_class(status: str | None) -> str:
     normalized = (status or "").strip().lower()
     if normalized in {"on-track", "active", "done", "completed"}:
@@ -208,6 +232,16 @@ def _normalize_internal_project_status(raw_value: str | None) -> str:
     return normalized if normalized in INTERNAL_PROJECT_STATUSES else "on-track"
 
 
+def _normalize_project_timeline_days(raw_value: str | None) -> int:
+    if raw_value is None:
+        return DEFAULT_PROJECT_TIMELINE_DAYS
+    try:
+        parsed_days = int(str(raw_value).strip())
+    except (TypeError, ValueError):
+        return DEFAULT_PROJECT_TIMELINE_DAYS
+    return min(max(parsed_days, PROJECT_TIMELINE_MIN_DAYS), PROJECT_TIMELINE_MAX_DAYS)
+
+
 def _normalize_resource_category(raw_value: str | None) -> str:
     normalized = " ".join((raw_value or RESOURCE_CATEGORY_FALLBACK).strip().split()).lower()
     return normalized or RESOURCE_CATEGORY_FALLBACK
@@ -259,6 +293,174 @@ def _is_safe_resource_link(raw_value: str | None) -> bool:
 
     parsed = urlparse(candidate)
     return parsed.scheme.lower() in SAFE_RESOURCE_LINK_SCHEMES and bool(parsed.netloc)
+
+
+def _parse_positive_int(raw_value: str | None) -> int | None:
+    if raw_value is None:
+        return None
+    try:
+        value = int(raw_value)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _ensure_project_message_channel(
+    project: InternalProject,
+    *,
+    created_by: InternalUser | None = None,
+) -> InternalMessageChannel:
+    if project.message_channel:
+        return project.message_channel
+
+    channel = InternalMessageChannel(
+        channel_type="project",
+        name=f"{project.name} Channel",
+        project=project,
+        creator=created_by,
+    )
+    db.session.add(channel)
+    return channel
+
+
+def _create_project_starter_tasks(
+    project: InternalProject,
+    *,
+    timeline_days: int,
+    owner_display_name: str,
+) -> None:
+    start_date = date.today()
+    effective_timeline_days = max(timeline_days, 1)
+    project_due_date = project.due_date or (start_date + timedelta(days=effective_timeline_days))
+    delivery_owner = owner_display_name or project.client.account_owner or "Project Team"
+
+    def milestone(percentage: float) -> date:
+        span_days = max((project_due_date - start_date).days, 1)
+        offset_days = max(1, int(round(span_days * percentage)))
+        target_date = start_date + timedelta(days=offset_days)
+        return min(target_date, project_due_date)
+
+    plan_blueprint = [
+        {
+            "title": "Kickoff and Discovery",
+            "priority": "high",
+            "due_date": milestone(0.2),
+            "subtasks": [
+                ("Confirm delivery objective and success metric", milestone(0.08)),
+                ("Map current workflow and bottlenecks", milestone(0.14)),
+                ("Approve scope and execution cadence", milestone(0.2)),
+            ],
+        },
+        {
+            "title": "Solution Build and Validation",
+            "priority": "high",
+            "due_date": milestone(0.55),
+            "subtasks": [
+                ("Implement pilot workflow with target users", milestone(0.38)),
+                ("Review model and process output quality", milestone(0.48)),
+                ("Prioritize iteration backlog", milestone(0.55)),
+            ],
+        },
+        {
+            "title": "Rollout and Team Enablement",
+            "priority": "medium",
+            "due_date": milestone(0.82),
+            "subtasks": [
+                ("Prepare launch checklist and fallback plan", milestone(0.67)),
+                ("Deliver team training and handover", milestone(0.76)),
+                ("Go-live monitoring and issue triage", milestone(0.82)),
+            ],
+        },
+        {
+            "title": "Value Review and Scale Plan",
+            "priority": "medium",
+            "due_date": project_due_date,
+            "subtasks": [
+                ("Measure ROI against baseline KPI", milestone(0.9)),
+                ("Present optimisation and scale recommendations", project_due_date),
+            ],
+        },
+    ]
+
+    for phase in plan_blueprint:
+        parent_task = InternalTask(
+            project=project,
+            title=phase["title"],
+            assignee=delivery_owner,
+            priority=phase["priority"],
+            status="todo",
+            due_date=phase["due_date"],
+        )
+        db.session.add(parent_task)
+
+        for subtask_title, subtask_due_date in phase["subtasks"]:
+            db.session.add(
+                InternalTask(
+                    project=project,
+                    parent_task=parent_task,
+                    title=subtask_title,
+                    assignee=delivery_owner,
+                    priority=phase["priority"],
+                    status="todo",
+                    due_date=subtask_due_date,
+                )
+            )
+
+
+def _get_or_create_direct_channel(
+    current_user: InternalUser,
+    recipient_user: InternalUser,
+) -> tuple[InternalMessageChannel, bool]:
+    low_id, high_id = sorted((current_user.id, recipient_user.id))
+    existing_channel = InternalMessageChannel.query.filter_by(
+        channel_type="direct",
+        direct_user_low_id=low_id,
+        direct_user_high_id=high_id,
+    ).first()
+    if existing_channel:
+        return existing_channel, False
+
+    channel = InternalMessageChannel(
+        channel_type="direct",
+        direct_user_low_id=low_id,
+        direct_user_high_id=high_id,
+        creator=current_user,
+    )
+    channel.members = [current_user, recipient_user]
+    db.session.add(channel)
+    return channel, True
+
+
+def _internal_user_can_access_channel(
+    channel: InternalMessageChannel,
+    user: InternalUser,
+) -> bool:
+    if channel.channel_type == "project":
+        return True
+    return any(member.id == user.id for member in channel.members)
+
+
+def _internal_channel_label(channel: InternalMessageChannel, user: InternalUser) -> tuple[str, str]:
+    channel_type = (channel.channel_type or "").strip().lower()
+    if channel_type not in INTERNAL_MESSAGE_CHANNEL_TYPES:
+        channel_type = "group"
+
+    if channel_type == "project":
+        if channel.project and channel.project.client:
+            return channel.project.name, channel.project.client.name
+        if channel.project:
+            return channel.project.name, "Project Channel"
+        return channel.name or "Project Channel", "Project Channel"
+
+    if channel_type == "direct":
+        peer_user = next((member for member in channel.members if member.id != user.id), None)
+        if peer_user:
+            return peer_user.full_name, f"{peer_user.role.title()} · {peer_user.email}"
+        return "Direct Message", "Peer channel"
+
+    member_count = len(channel.members)
+    member_suffix = "member" if member_count == 1 else "members"
+    return channel.name or "Group Channel", f"{member_count} {member_suffix}"
 
 
 def _internal_csrf_token() -> str:
@@ -533,6 +735,168 @@ def internal_dashboard():
     )
 
 
+@main_bp.route("/internal/go")
+@internal_login_required
+def internal_go():
+    raw_query = (request.args.get("q") or "").strip()
+    if not raw_query:
+        return redirect(url_for("main.internal_dashboard"))
+
+    query = " ".join(raw_query.split())
+    normalized = query.lower()
+    scope = "any"
+    prefixes = (
+        ("project:", "project"),
+        ("project ", "project"),
+        ("client:", "client"),
+        ("client ", "client"),
+        ("task:", "task"),
+        ("task ", "task"),
+        ("doc:", "resource"),
+        ("docs:", "resource"),
+        ("resource:", "resource"),
+        ("message:", "message"),
+        ("channel:", "message"),
+    )
+    for prefix, scope_name in prefixes:
+        if normalized.startswith(prefix):
+            query = " ".join(query[len(prefix) :].split())
+            normalized = query.lower()
+            scope = scope_name
+            break
+
+    if not query:
+        return redirect(url_for("main.internal_dashboard"))
+
+    quick_targets = {
+        "dashboard": url_for("main.internal_dashboard"),
+        "home": url_for("main.internal_dashboard"),
+        "todos": url_for("main.internal_todos"),
+        "todo": url_for("main.internal_todos"),
+        "tasks": url_for("main.internal_todos"),
+        "priority": url_for("main.internal_todos", view="priority"),
+        "priority queue": url_for("main.internal_todos", view="priority"),
+        "projects": url_for("main.internal_projects"),
+        "project": url_for("main.internal_projects"),
+        "new project": f"{url_for('main.internal_projects')}#new-project",
+        "clients": url_for("main.internal_clients"),
+        "client": url_for("main.internal_clients"),
+        "new client": f"{url_for('main.internal_clients')}#new-client",
+        "add task": f"{url_for('main.internal_todos')}#new-task",
+        "new task": f"{url_for('main.internal_todos')}#new-task",
+        "messages": url_for("main.internal_messages"),
+        "message": url_for("main.internal_messages"),
+        "resources": url_for("main.internal_resources"),
+        "resource": url_for("main.internal_resources"),
+        "docs": url_for("main.internal_resources"),
+        "knowledge": url_for("main.internal_resources"),
+        "library": url_for("main.internal_resources"),
+    }
+    if normalized in quick_targets:
+        return redirect(quick_targets[normalized])
+
+    if normalized.startswith("/internal/"):
+        return redirect(normalized)
+    if normalized.startswith("internal/"):
+        return redirect(f"/{normalized}")
+
+    query_pattern = f"%{query}%"
+
+    def scope_allows(target_scope: str) -> bool:
+        return scope in {"any", target_scope}
+
+    if scope_allows("project"):
+        project_match = (
+            InternalProject.query.filter(InternalProject.name.ilike(query_pattern))
+            .order_by(InternalProject.created_at.desc())
+            .first()
+        )
+        if project_match:
+            flash(f"Opened project '{project_match.name}'.", "success")
+            return redirect(url_for("main.internal_todos", view="nested", project_id=project_match.id))
+
+    if scope_allows("client"):
+        client_match = (
+            InternalClient.query.filter(
+                or_(
+                    InternalClient.name.ilike(query_pattern),
+                    InternalClient.industry.ilike(query_pattern),
+                    InternalClient.account_owner.ilike(query_pattern),
+                )
+            )
+            .order_by(InternalClient.name.asc())
+            .first()
+        )
+        if client_match:
+            flash(f"Opened client '{client_match.name}'.", "success")
+            return redirect(url_for("main.internal_projects", client_id=client_match.id))
+
+    if scope_allows("task"):
+        task_match = (
+            InternalTask.query.options(selectinload(InternalTask.project))
+            .filter(
+                or_(
+                    InternalTask.title.ilike(query_pattern),
+                    InternalTask.assignee.ilike(query_pattern),
+                )
+            )
+            .order_by(InternalTask.created_at.desc())
+            .first()
+        )
+        if task_match:
+            flash(f"Opened task queue for '{task_match.project.name}'.", "success")
+            return redirect(url_for("main.internal_todos", view="priority", project_id=task_match.project_id))
+
+    if scope_allows("resource"):
+        resource_match = (
+            InternalResource.query.filter(
+                or_(
+                    InternalResource.title.ilike(query_pattern),
+                    InternalResource.description.ilike(query_pattern),
+                    InternalResource.category.ilike(query_pattern),
+                )
+            )
+            .order_by(InternalResource.title.asc())
+            .first()
+        )
+        if resource_match:
+            flash(f"Opened documents matching '{resource_match.title}'.", "success")
+            return redirect(url_for("main.internal_resources", q=resource_match.title))
+
+    if scope_allows("message"):
+        channel_match = (
+            InternalMessageChannel.query.filter(
+                InternalMessageChannel.name.isnot(None),
+                InternalMessageChannel.name.ilike(query_pattern),
+            )
+            .order_by(InternalMessageChannel.updated_at.desc(), InternalMessageChannel.created_at.desc())
+            .first()
+        )
+        if channel_match and _internal_user_can_access_channel(channel_match, g.internal_user):
+            flash(f"Opened channel '{channel_match.name}'.", "success")
+            return redirect(url_for("main.internal_messages", channel_id=channel_match.id))
+        if channel_match:
+            return redirect(url_for("main.internal_messages"))
+
+        user_match = (
+            InternalUser.query.filter(
+                InternalUser.is_active.is_(True),
+                InternalUser.full_name.ilike(query_pattern),
+            )
+            .order_by(InternalUser.full_name.asc())
+            .first()
+        )
+        if user_match and user_match.id != g.internal_user.id:
+            flash(f"Found consultant '{user_match.full_name}'. Start a direct channel from Messages.", "success")
+            return redirect(url_for("main.internal_messages"))
+
+    flash(
+        "No exact match found. Try page names or prefixes: project:, client:, task:, doc:, message:.",
+        "warning",
+    )
+    return redirect(url_for("main.internal_dashboard"))
+
+
 @main_bp.route("/internal/clients")
 @internal_login_required
 def internal_clients():
@@ -596,7 +960,10 @@ def internal_projects():
             selected_client_id = selected_client_candidate
 
     projects = (
-        InternalProject.query.options(selectinload(InternalProject.resources))
+        InternalProject.query.options(
+            selectinload(InternalProject.resources),
+            selectinload(InternalProject.message_channel),
+        )
         .order_by(InternalProject.status.asc(), InternalProject.name.asc())
         .all()
     )
@@ -618,6 +985,8 @@ def internal_projects():
     active_internal_users = (
         InternalUser.query.filter_by(is_active=True).order_by(InternalUser.full_name.asc()).all()
     )
+    default_project_timeline_days = DEFAULT_PROJECT_TIMELINE_DAYS
+    default_project_due_date = date.today() + timedelta(days=default_project_timeline_days)
     return render_template(
         "internal/projects.html",
         project_cards=project_cards,
@@ -625,6 +994,9 @@ def internal_projects():
         active_internal_users=active_internal_users,
         project_stages=INTERNAL_PROJECT_STAGES,
         project_statuses=INTERNAL_PROJECT_STATUSES,
+        project_timeline_presets=PROJECT_TIMELINE_PRESETS,
+        default_project_timeline_days=default_project_timeline_days,
+        default_project_due_date=default_project_due_date,
         selected_client_id=selected_client_id,
     )
 
@@ -636,36 +1008,85 @@ def internal_project_add():
     summary = (request.form.get("summary") or "").strip()
     stage = _normalize_internal_project_stage(request.form.get("stage"))
     status = _normalize_internal_project_status(request.form.get("status"))
-    due_date = _parse_date(request.form.get("due_date"))
+    raw_due_date = (request.form.get("due_date") or "").strip()
+    due_date = _parse_date(raw_due_date)
+    timeline_days = _normalize_project_timeline_days(request.form.get("timeline_days"))
 
     client_id_raw = (request.form.get("client_id") or "").strip()
     owner_id_raw = (request.form.get("owner_id") or "").strip()
+    client_mode = (request.form.get("client_mode") or "existing").strip().lower()
+    create_starter_plan = "1" in request.form.getlist("create_starter_plan")
+    redirect_client_id: int | None = None
 
     if not name or not summary:
         flash("Project name and summary are required.", "warning")
         return redirect(url_for("main.internal_projects"))
 
-    try:
-        client_id = int(client_id_raw)
-    except ValueError:
-        flash("Select a valid client for the project.", "warning")
-        return redirect(url_for("main.internal_projects"))
-    client_record = db.session.get(InternalClient, client_id)
-    if not client_record:
-        flash("Selected client does not exist.", "warning")
+    if raw_due_date and not due_date:
+        flash("Provide a valid due date.", "warning")
         return redirect(url_for("main.internal_projects"))
 
+    if not due_date:
+        due_date = date.today() + timedelta(days=timeline_days)
+
+    new_client_name = " ".join((request.form.get("new_client_name") or "").strip().split())
+    new_client_industry = " ".join((request.form.get("new_client_industry") or "").strip().split())
+    new_client_account_owner = " ".join((request.form.get("new_client_account_owner") or "").strip().split())
+    new_client_notes = (request.form.get("new_client_notes") or "").strip()
+    new_client_status = (request.form.get("new_client_status") or "active").strip().lower()
+    if new_client_status not in {"active", "at-risk", "paused", "completed"}:
+        new_client_status = "active"
+
+    created_new_client = False
+    use_new_client = client_mode == "new"
+
+    if use_new_client:
+        if not new_client_name or not new_client_industry or not new_client_account_owner:
+            flash("For a new client, provide name, industry, and account owner.", "warning")
+            return redirect(url_for("main.internal_projects"))
+
+        existing_client = InternalClient.query.filter(InternalClient.name.ilike(new_client_name)).first()
+        if existing_client:
+            client_record = existing_client
+        else:
+            client_record = InternalClient(
+                name=new_client_name,
+                industry=new_client_industry,
+                account_owner=new_client_account_owner,
+                status=new_client_status,
+                notes=new_client_notes or None,
+            )
+            db.session.add(client_record)
+            db.session.flush()
+            created_new_client = True
+    else:
+        try:
+            client_id = int(client_id_raw)
+        except ValueError:
+            flash("Select a valid client for the project.", "warning")
+            return redirect(url_for("main.internal_projects"))
+        client_record = db.session.get(InternalClient, client_id)
+        if not client_record:
+            flash("Selected client does not exist.", "warning")
+            return redirect(url_for("main.internal_projects"))
+
+    redirect_client_id = client_record.id
+
     owner_record = None
-    if owner_id_raw:
+    if not owner_id_raw or owner_id_raw == "self":
+        owner_record = getattr(g, "internal_user", None)
+    elif owner_id_raw == "unassigned":
+        owner_record = None
+    else:
         try:
             owner_id = int(owner_id_raw)
         except ValueError:
             flash("Invalid project owner.", "warning")
-            return redirect(url_for("main.internal_projects", client_id=client_id))
+            return redirect(url_for("main.internal_projects", client_id=redirect_client_id))
         owner_record = db.session.get(InternalUser, owner_id)
         if not owner_record or not owner_record.is_active:
             flash("Selected project owner is not available.", "warning")
-            return redirect(url_for("main.internal_projects", client_id=client_id))
+            return redirect(url_for("main.internal_projects", client_id=redirect_client_id))
 
     project_record = InternalProject(
         name=name,
@@ -677,9 +1098,246 @@ def internal_project_add():
         summary=summary,
     )
     db.session.add(project_record)
+    _ensure_project_message_channel(project_record, created_by=getattr(g, "internal_user", None))
+    if create_starter_plan:
+        owner_display_name = owner_record.full_name if owner_record else client_record.account_owner
+        _create_project_starter_tasks(
+            project_record,
+            timeline_days=timeline_days,
+            owner_display_name=owner_display_name,
+        )
     db.session.commit()
-    flash(f"Project '{name}' created for {client_record.name}.", "success")
-    return redirect(url_for("main.internal_projects", client_id=client_record.id))
+    success_notes = [f"Project '{name}' created for {client_record.name}."]
+    if created_new_client:
+        success_notes.append("New client profile added.")
+    if create_starter_plan:
+        success_notes.append("Starter delivery plan generated.")
+    flash(" ".join(success_notes), "success")
+    return redirect(url_for("main.internal_projects", client_id=redirect_client_id))
+
+
+@main_bp.route("/internal/messages")
+@internal_login_required
+def internal_messages():
+    current_user = g.internal_user
+    selected_channel_id = _parse_positive_int(request.args.get("channel_id"))
+
+    projects = (
+        InternalProject.query.options(
+            selectinload(InternalProject.client),
+            selectinload(InternalProject.message_channel),
+        )
+        .order_by(InternalProject.name.asc())
+        .all()
+    )
+    created_project_channels = False
+    for project in projects:
+        if project.message_channel:
+            continue
+        _ensure_project_message_channel(project, created_by=current_user)
+        created_project_channels = True
+    if created_project_channels:
+        db.session.commit()
+        projects = (
+            InternalProject.query.options(
+                selectinload(InternalProject.client),
+                selectinload(InternalProject.message_channel),
+            )
+            .order_by(InternalProject.name.asc())
+            .all()
+        )
+
+    project_channels = [project.message_channel for project in projects if project.message_channel]
+    direct_channels = (
+        InternalMessageChannel.query.options(
+            selectinload(InternalMessageChannel.members),
+        )
+        .filter(
+            InternalMessageChannel.channel_type == "direct",
+            InternalMessageChannel.members.any(InternalUser.id == current_user.id),
+        )
+        .order_by(InternalMessageChannel.updated_at.desc(), InternalMessageChannel.created_at.desc())
+        .all()
+    )
+    group_channels = (
+        InternalMessageChannel.query.options(
+            selectinload(InternalMessageChannel.members),
+        )
+        .filter(
+            InternalMessageChannel.channel_type == "group",
+            InternalMessageChannel.members.any(InternalUser.id == current_user.id),
+        )
+        .order_by(InternalMessageChannel.updated_at.desc(), InternalMessageChannel.created_at.desc())
+        .all()
+    )
+
+    all_channel_ids = [channel.id for channel in project_channels + direct_channels + group_channels if channel]
+    if selected_channel_id is None and all_channel_ids:
+        selected_channel_id = all_channel_ids[0]
+
+    selected_channel = None
+    if selected_channel_id:
+        selected_channel = (
+            InternalMessageChannel.query.options(
+                selectinload(InternalMessageChannel.project).selectinload(InternalProject.client),
+                selectinload(InternalMessageChannel.members),
+                selectinload(InternalMessageChannel.messages).selectinload(InternalMessage.sender),
+            )
+            .filter_by(id=selected_channel_id)
+            .first()
+        )
+        if selected_channel and not _internal_user_can_access_channel(selected_channel, current_user):
+            flash("You do not have access to the selected channel.", "warning")
+            selected_channel = None
+    if not selected_channel and all_channel_ids:
+        fallback_channel_id = all_channel_ids[0]
+        if fallback_channel_id != selected_channel_id:
+            selected_channel = (
+                InternalMessageChannel.query.options(
+                    selectinload(InternalMessageChannel.project).selectinload(InternalProject.client),
+                    selectinload(InternalMessageChannel.members),
+                    selectinload(InternalMessageChannel.messages).selectinload(InternalMessage.sender),
+                )
+                .filter_by(id=fallback_channel_id)
+                .first()
+            )
+
+    available_users = (
+        InternalUser.query.filter(InternalUser.is_active.is_(True), InternalUser.id != current_user.id)
+        .order_by(InternalUser.full_name.asc())
+        .all()
+    )
+
+    project_channel_cards = []
+    for channel in project_channels:
+        title, subtitle = _internal_channel_label(channel, current_user)
+        project_channel_cards.append({"channel": channel, "title": title, "subtitle": subtitle})
+
+    direct_channel_cards = []
+    for channel in direct_channels:
+        title, subtitle = _internal_channel_label(channel, current_user)
+        direct_channel_cards.append({"channel": channel, "title": title, "subtitle": subtitle})
+
+    group_channel_cards = []
+    for channel in group_channels:
+        title, subtitle = _internal_channel_label(channel, current_user)
+        group_channel_cards.append({"channel": channel, "title": title, "subtitle": subtitle})
+
+    selected_channel_title = None
+    selected_channel_subtitle = None
+    if selected_channel:
+        selected_channel_title, selected_channel_subtitle = _internal_channel_label(selected_channel, current_user)
+
+    return render_template(
+        "internal/messages.html",
+        project_channel_cards=project_channel_cards,
+        direct_channel_cards=direct_channel_cards,
+        group_channel_cards=group_channel_cards,
+        selected_channel=selected_channel,
+        selected_channel_id=selected_channel.id if selected_channel else None,
+        selected_channel_title=selected_channel_title,
+        selected_channel_subtitle=selected_channel_subtitle,
+        available_users=available_users,
+    )
+
+
+@main_bp.route("/internal/messages/direct/start", methods=["POST"])
+@internal_login_required
+def internal_messages_start_direct():
+    current_user = g.internal_user
+    recipient_id = _parse_positive_int(request.form.get("recipient_id"))
+    if not recipient_id:
+        flash("Select a valid consultant to start a direct message.", "warning")
+        return redirect(url_for("main.internal_messages"))
+    if recipient_id == current_user.id:
+        flash("Select another consultant to start a direct message.", "warning")
+        return redirect(url_for("main.internal_messages"))
+
+    recipient_user = db.session.get(InternalUser, recipient_id)
+    if not recipient_user or not recipient_user.is_active:
+        flash("Selected consultant is not available.", "warning")
+        return redirect(url_for("main.internal_messages"))
+
+    channel, was_created = _get_or_create_direct_channel(current_user, recipient_user)
+    if was_created:
+        db.session.commit()
+        flash(f"Direct channel opened with {recipient_user.full_name}.", "success")
+
+    return redirect(url_for("main.internal_messages", channel_id=channel.id))
+
+
+@main_bp.route("/internal/messages/group/create", methods=["POST"])
+@internal_login_required
+def internal_messages_create_group():
+    current_user = g.internal_user
+    name = " ".join((request.form.get("name") or "").strip().split())
+    member_ids = set(_parse_int_list(request.form.getlist("member_ids")))
+    member_ids.add(current_user.id)
+
+    if not name:
+        flash("Group name is required.", "warning")
+        return redirect(url_for("main.internal_messages"))
+    if len(name) > 160:
+        flash("Group name must be 160 characters or fewer.", "warning")
+        return redirect(url_for("main.internal_messages"))
+    if len(member_ids) < 2:
+        flash("Select at least one additional consultant for the group.", "warning")
+        return redirect(url_for("main.internal_messages"))
+
+    members = (
+        InternalUser.query.filter(InternalUser.id.in_(member_ids), InternalUser.is_active.is_(True))
+        .order_by(InternalUser.full_name.asc())
+        .all()
+    )
+    if len(members) != len(member_ids):
+        flash("One or more selected group members are invalid or inactive.", "warning")
+        return redirect(url_for("main.internal_messages"))
+
+    channel = InternalMessageChannel(
+        channel_type="group",
+        name=name,
+        creator=current_user,
+    )
+    channel.members = members
+    db.session.add(channel)
+    db.session.commit()
+    flash(f"Group '{name}' created.", "success")
+    return redirect(url_for("main.internal_messages", channel_id=channel.id))
+
+
+@main_bp.route("/internal/messages/post", methods=["POST"])
+@internal_login_required
+def internal_messages_post():
+    current_user = g.internal_user
+    channel_id = _parse_positive_int(request.form.get("channel_id"))
+    body = (request.form.get("body") or "").strip()
+    if not channel_id:
+        flash("Choose a channel before posting a message.", "warning")
+        return redirect(url_for("main.internal_messages"))
+    if not body:
+        flash("Message body cannot be empty.", "warning")
+        return redirect(url_for("main.internal_messages", channel_id=channel_id))
+    if len(body) > 3000:
+        flash("Message body must be 3000 characters or fewer.", "warning")
+        return redirect(url_for("main.internal_messages", channel_id=channel_id))
+
+    channel = (
+        InternalMessageChannel.query.options(selectinload(InternalMessageChannel.members))
+        .filter_by(id=channel_id)
+        .first()
+    )
+    if not channel:
+        flash("Selected channel does not exist.", "warning")
+        return redirect(url_for("main.internal_messages"))
+    if not _internal_user_can_access_channel(channel, current_user):
+        flash("You do not have permission to post in that channel.", "warning")
+        return redirect(url_for("main.internal_messages"))
+
+    message = InternalMessage(channel=channel, sender=current_user, body=body)
+    channel.updated_at = datetime.now(timezone.utc)
+    db.session.add(message)
+    db.session.commit()
+    return redirect(url_for("main.internal_messages", channel_id=channel.id))
 
 
 @main_bp.route("/internal/todos")
@@ -757,6 +1415,10 @@ def internal_todos():
         "overdue": sum(1 for task in queue_tasks if task.due_date is not None and task.due_date < today),
     }
     visible_projects = [project for project in projects if not selected_project_id or project.id == selected_project_id]
+    active_internal_users = (
+        InternalUser.query.filter_by(is_active=True).order_by(InternalUser.full_name.asc()).all()
+    )
+    default_task_due_date = date.today() + timedelta(days=7)
 
     return render_template(
         "internal/todos.html",
@@ -772,6 +1434,8 @@ def internal_todos():
         parent_task_options=sorted(parent_task_options, key=_task_sort_key),
         task_statuses=INTERNAL_TASK_STATUSES,
         task_priorities=INTERNAL_TASK_PRIORITIES,
+        active_internal_users=active_internal_users,
+        default_task_due_date=default_task_due_date,
     )
 
 
@@ -946,6 +1610,8 @@ def internal_resources():
         tag_values = {tag.name for tag in resource.tags}
         is_linked = bool(resource.projects or resource.tasks)
         has_tags = bool(resource.tags)
+        linked_project_ids = {project.id for project in resource.projects}
+        linked_project_ids.update(task.project_id for task in resource.tasks if task.project_id)
         if selected_category != "all" and category_value != selected_category:
             continue
         if selected_tag != "all" and selected_tag not in tag_values:
@@ -956,7 +1622,7 @@ def internal_resources():
             continue
         if selected_state == "untagged" and has_tags:
             continue
-        if selected_project_filter != "all" and selected_project_filter not in {project.id for project in resource.projects}:
+        if selected_project_filter != "all" and selected_project_filter not in linked_project_ids:
             continue
         if query_term_lower and query_term_lower not in resource.searchable_text:
             continue
@@ -1142,11 +1808,13 @@ def contact():
     company = (request.form.get("company") or "").strip()
     phone = (request.form.get("phone") or "").strip()
     timeline = (request.form.get("timeline") or "").strip()
+    budget = (request.form.get("budget") or "").strip()
     message_body = (request.form.get("message") or "").strip()
+    return_to = _safe_public_return_target(request.form.get("return_to"))
     honeypot = (request.form.get("website") or "").strip()
     if honeypot:
         flash("Thank you. Your enquiry has been received.", "success")
-        return redirect(url_for("main.home", _anchor="contact"))
+        return redirect(return_to or url_for("main.home", _anchor="contact"))
 
     service_id = request.form.get("service")
 
@@ -1172,6 +1840,7 @@ def contact():
         Company: {company or "Not provided"}
         Phone: {phone or "Not provided"}
         Preferred Timeline: {timeline or "Not provided"}
+        Budget Range: {budget or "Not provided"}
         Service Interest: {service_name}
 
         Message:
@@ -1185,7 +1854,7 @@ def contact():
     except Exception as e:
         print(f"EMAIL ERROR: {e}")
         flash("Message saved, but we couldn't send the email confirmation.", "warning")
-    return redirect(url_for("main.home", _anchor="contact"))
+    return redirect(return_to or url_for("main.home", _anchor="contact"))
 
 
 @main_bp.route("/healthz")

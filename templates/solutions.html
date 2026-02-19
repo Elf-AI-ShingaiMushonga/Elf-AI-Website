@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title if seo else 'AI Solutions | ELF-AI' }}</title>
-    <meta name="description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF-AI.' }}">
+    <title>{{ seo.title if seo else 'AI Solutions | ELF-AI Implementation Modules' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'Explore ELF-AI solution modules, delivery process, and commercial model for SME AI implementation.' }}">
     <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/solutions' }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
-    <meta property="og:title" content="{{ seo.title if seo else 'AI Solutions | ELF-AI' }}">
-    <meta property="og:description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF-AI.' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'AI Solutions | ELF-AI Implementation Modules' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'Explore ELF-AI solution modules, delivery process, and commercial model for SME AI implementation.' }}">
     <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/solutions' }}">
     <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title if seo else 'AI Solutions | ELF-AI' }}">
-    <meta name="twitter:description" content="{{ seo.description if seo else 'Explore practical AI solutions from ELF-AI.' }}">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'AI Solutions | ELF-AI Implementation Modules' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'Explore ELF-AI solution modules, delivery process, and commercial model for SME AI implementation.' }}">
     <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     {% if seo and seo.structured_data %}
     <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
@@ -26,65 +26,61 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-    </style>
 </head>
-<body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
+<body class="public-shell bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
     <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
     {% include "partials/public_nav.html" %}
 
-    <main id="main-content">
+    <main id="main-content" class="public-main">
     <header class="pt-36 md:pt-32 pb-20 px-4 sm:px-6 text-center bg-slate-900 border-b border-slate-800">
         <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-8">
             <i class="fa-solid fa-puzzle-piece"></i>
-            Tested Solutions for Real Problems
+            Productised AI Architectures
         </p>
         <h1 class="text-4xl md:text-6xl font-black text-white mb-6 leading-tight">
-            AI Powered Solutions<br>
-            <span class="text-blue-500">Built for the Real World</span>
+            Start With One Workflow,<br>
+            <span class="text-blue-500">Scale Through Modules</span>
         </h1>
         <p class="text-lg md:text-xl text-slate-400 max-w-4xl mx-auto">
-            ELF-AI designs the right solution, deploys it, and teaches your team to do the same.
+            ELF-AI combines AI-native speed with reusable module infrastructure to deliver custom solutions without enterprise consulting drag.
         </p>
     </header>
 
-    <section class="py-6 bg-slate-950 border-b border-slate-800">
+    <section class="section-anchor-nav py-4 bg-slate-950 border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-center gap-2">
             <a href="#value-areas" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Value Areas</a>
             <a href="#delivery-process" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Delivery Process</a>
             <a href="#solution-tracks" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Solution Tracks</a>
-            <a href="/enquire" class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition text-sm font-semibold">Book Consultation</a>
+            <a href="/enquire" class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition text-sm font-semibold">Book a Strategy Call</a>
         </div>
     </section>
 
     <section id="value-areas" class="py-20 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
         <div class="text-center mb-14">
-            <h2 class="text-3xl md:text-4xl font-bold text-white">Where We Create Immediate Value</h2>
-            <p class="text-slate-400 mt-3 max-w-3xl mx-auto">ELF-AI focuses on tackling the problems impeding your growth.</p>
+            <h2 class="text-3xl md:text-4xl font-bold text-white">Core Module Families</h2>
+            <p class="text-slate-400 mt-3 max-w-3xl mx-auto">These are common high-impact implementation areas we deploy and adapt for each client.</p>
         </div>
 
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
-                <i class="fa-solid fa-clock text-blue-400 text-xl mb-4"></i>
-                <h3 class="text-white font-bold mb-3">Faster Workflows</h3>
-                <p class="text-slate-400 text-sm">We remove repetitive tasks so your team can focus on higher-value work.</p>
+                <i class="fa-solid fa-file-import text-blue-400 text-xl mb-4"></i>
+                <h3 class="text-white font-bold mb-3">Document Ingestion</h3>
+                <p class="text-slate-400 text-sm">Transform manual document-heavy workflows into structured, searchable, automatable pipelines.</p>
             </div>
             <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
-                <i class="fa-solid fa-arrow-trend-down text-blue-400 text-xl mb-4"></i>
-                <h3 class="text-white font-bold mb-3">Lower Costs</h3>
-                <p class="text-slate-400 text-sm">We reduce avoidable costs by building sustainable in-house capabilities.</p>
+                <i class="fa-solid fa-robot text-blue-400 text-xl mb-4"></i>
+                <h3 class="text-white font-bold mb-3">Workflow Automation</h3>
+                <p class="text-slate-400 text-sm">Eliminate repetitive operational steps with automation designed around your existing process constraints.</p>
             </div>
             <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
-                <i class="fa-solid fa-triangle-exclamation text-blue-400 text-xl mb-4"></i>
-                <h3 class="text-white font-bold mb-3">Higher Quality</h3>
-                <p class="text-slate-400 text-sm">We institute controls that improve consistency and reduce production mistakes.</p>
+                <i class="fa-solid fa-comments text-blue-400 text-xl mb-4"></i>
+                <h3 class="text-white font-bold mb-3">AI Assistant Ecosystems</h3>
+                <p class="text-slate-400 text-sm">Deploy chatbot and assistant capabilities that improve service delivery and internal team throughput.</p>
             </div>
             <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
-                <i class="fa-solid fa-lock text-blue-400 text-xl mb-4"></i>
-                <h3 class="text-white font-bold mb-3">Sensitive Workflows</h3>
-                <p class="text-slate-400 text-sm">We support secure deployment approaches for businesses with strict confidentiality requirements.</p>
+                <i class="fa-solid fa-sitemap text-blue-400 text-xl mb-4"></i>
+                <h3 class="text-white font-bold mb-3">ERP and System Layers</h3>
+                <p class="text-slate-400 text-sm">Build or extend ERP-level capability using modular architecture that scales with your operation.</p>
             </div>
         </div>
     </section>
@@ -92,26 +88,39 @@
     <section id="delivery-process" class="py-12 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
         <div class="max-w-6xl">
             <h2 class="text-3xl font-bold text-white mb-5">How We Build and Validate Solutions</h2>
-            <p class="text-slate-400 mb-6">Every project follows a quality-first process to ensure your solution is ready before launch.</p>
+            <p class="text-slate-400 mb-6">Every engagement follows a consistent implementation lifecycle for speed, quality control, and repeatability.</p>
             <div class="grid md:grid-cols-2 gap-3">
-                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">1.</span> Problem definition and success metric alignment.</div>
-                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">2.</span> Solution design and prototype development.</div>
-                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">3.</span> Functional testing and edge-case validation.</div>
-                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">4.</span> Workflow integration testing with user feedback.</div>
-                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 md:col-span-2"><span class="text-blue-300 font-semibold">5.</span> Production deployment, team training, and post-launch monitoring.</div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">1.</span> Client meeting and workflow observation to locate the highest-impact bottleneck.</div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">2.</span> Research, design, and feasibility analysis tied to clear ROI metrics.</div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">3.</span> Build architecture and test pathways using reusable implementation blocks.</div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800"><span class="text-blue-300 font-semibold">4.</span> Deploy with your IT environment and train users for confident adoption.</div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 md:col-span-2"><span class="text-blue-300 font-semibold">5.</span> Operate with monitoring and optional SLA-backed managed support.</div>
             </div>
         </div>
     </section>
 
     <section class="py-12 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
         <div class="max-w-5xl mx-auto">
-            <h2 class="text-3xl font-bold text-white mb-4 text-center">What You Can Expect</h2>
+            <h2 class="text-3xl font-bold text-white mb-4 text-center">Module Selection Criteria</h2>
+            <p class="text-slate-400 text-center mb-6">Every module we ship must pass practical delivery and commercial tests.</p>
+            <div class="grid md:grid-cols-2 gap-3 text-sm">
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-4"><strong class="text-white">Fast iteration:</strong> MVP target in about one week with short refinement cycles.</div>
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-4"><strong class="text-white">Fast deployment:</strong> implementation aims for about five business days after scope sign-off.</div>
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-4"><strong class="text-white">Reusable architecture:</strong> modular blocks, consistent stack, and repeatable pipelines.</div>
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-4"><strong class="text-white">Commercial value:</strong> measurable business impact and clear ROI path before expansion.</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-12 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold text-white mb-4 text-center">Commercial Architecture</h2>
             <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
                 <ul class="grid md:grid-cols-2 gap-3 text-sm text-slate-300">
-                    <li class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Clear scope:</strong> exactly what is being solved and how success is measured.</span></li>
-                    <li class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Tested deployment:</strong> confidence that the solution performs before go-live.</span></li>
-                    <li class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Operational fit:</strong> integration into your current systems and team processes.</span></li>
-                    <li class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Ongoing support:</strong> performance monitoring, maintenance, and iterative improvements.</span></li>
+                    <li class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">One-time implementation:</strong> a single engagement fee for build and integration.</span></li>
+                    <li class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Perpetual licensing:</strong> your business owns the delivered software.</span></li>
+                    <li class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Optional managed services:</strong> SLA-backed support and maintenance when required.</span></li>
+                    <li class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span><strong class="text-white">Lower TCO posture:</strong> client-controlled hosting and transparent operating costs.</span></li>
                 </ul>
             </div>
         </div>
@@ -134,38 +143,57 @@
     <section id="solution-tracks" class="py-16 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
         <div class="text-center mb-12">
             <h2 class="text-3xl font-bold text-white">Current Solution Tracks</h2>
-            <p class="text-slate-400 mt-2">Choose a service to start a focused consultation.</p>
+            <p class="text-slate-400 mt-2">Choose a track to start with a focused wedge implementation.</p>
         </div>
 
         <div class="flex justify-center">
+            {% set ns = namespace(has_consult=false) %}
             {% for service in services %}
-            {% if "consult" in service.title|lower %}
-            <a href="{{ url_for('main.enquire', service=service.id) }}" class="block h-full w-full max-w-3xl">
+                {% if "consult" in service.title|lower %}
+                {% set ns.has_consult = true %}
+                <a href="{{ url_for('main.enquire', service=service.id) }}" class="block h-full w-full max-w-3xl">
+                    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-blue-500 transition group flex flex-col h-full">
+                        <div class="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center mb-6 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition">
+                            <i class="fa-solid {{ service.icon }} text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-3">{{ service.title }}</h3>
+                        <p class="text-slate-400 mb-4 text-sm leading-relaxed flex-grow">{{ service.description }}</p>
+                        <ul class="text-sm text-slate-300 space-y-2 mt-2">
+                            {% for feature in service.features %}
+                            <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-500 mt-1"></i><span>{{ feature.text }}</span></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </a>
+                {% endif %}
+            {% endfor %}
+
+            {% if not ns.has_consult %}
+            <a href="/enquire" class="block h-full w-full max-w-3xl">
                 <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-blue-500 transition group flex flex-col h-full">
                     <div class="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center mb-6 text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition">
-                        <i class="fa-solid {{ service.icon }} text-xl"></i>
+                        <i class="fa-solid fa-handshake"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">{{ service.title }}</h3>
-                    <p class="text-slate-400 mb-4 text-sm leading-relaxed flex-grow">{{ service.description }}</p>
+                    <h3 class="text-xl font-bold text-white mb-3">ELF-AI Strategy Engagement</h3>
+                    <p class="text-slate-400 mb-4 text-sm leading-relaxed flex-grow">We identify one high-friction workflow, define the wedge implementation, and map the module expansion pathway.</p>
                     <ul class="text-sm text-slate-300 space-y-2 mt-2">
-                        {% for feature in service.features %}
-                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-500 mt-1"></i><span>{{ feature.text }}</span></li>
-                        {% endfor %}
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-500 mt-1"></i><span>Discovery with delivery-oriented feasibility</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-500 mt-1"></i><span>Commercial model aligned to ownership and ROI</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-500 mt-1"></i><span>Structured rollout from wedge to broader workflow scope</span></li>
                     </ul>
                 </div>
             </a>
             {% endif %}
-            {% endfor %}
         </div>
     </section>
 
     <section class="py-16 px-4 sm:px-6 max-w-5xl mx-auto text-center">
-        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Solve a Specific Problem?</h2>
-        <p class="text-slate-400 mb-8">See the live demo or book a session and we will map a tested solution to your workflow.</p>
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Replace Generic SaaS For Your Core Workflow?</h2>
+        <p class="text-slate-400 mb-8">Book a strategy call and we will map scope, ownership model, and measurable ROI before implementation starts.</p>
 
         <div class="flex flex-col sm:flex-row justify-center gap-4">
             <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-8 py-4 bg-blue-500 text-slate-950 font-bold rounded-full hover:bg-blue-400 transition">Open Current Demo</a>
-            <a href="/enquire" class="px-8 py-4 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">Book a Consultation</a>
+            <a href="/enquire" class="px-8 py-4 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">Book a Strategy Call</a>
         </div>
     </section>
     </main>

@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title if seo else 'About ELF-AI' }}</title>
-    <meta name="description" content="{{ seo.description if seo else 'Learn about ELF-AI and our practical AI consulting model.' }}">
+    <title>{{ seo.title if seo else 'About ELF-AI | Implementation-First AI Consultancy' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'Learn how ELF-AI helps SMEs replace generic SaaS with custom, owned AI systems and measurable delivery outcomes.' }}">
     <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/about' }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
-    <meta property="og:title" content="{{ seo.title if seo else 'About ELF-AI' }}">
-    <meta property="og:description" content="{{ seo.description if seo else 'Learn about ELF-AI and our practical AI consulting model.' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'About ELF-AI | Implementation-First AI Consultancy' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'Learn how ELF-AI helps SMEs replace generic SaaS with custom, owned AI systems and measurable delivery outcomes.' }}">
     <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/about' }}">
     <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero2.png', _external=True) }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title if seo else 'About ELF-AI' }}">
-    <meta name="twitter:description" content="{{ seo.description if seo else 'Learn about ELF-AI and our practical AI consulting model.' }}">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'About ELF-AI | Implementation-First AI Consultancy' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'Learn how ELF-AI helps SMEs replace generic SaaS with custom, owned AI systems and measurable delivery outcomes.' }}">
     <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero2.png', _external=True) }}">
     {% if seo and seo.structured_data %}
     <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
@@ -26,40 +26,36 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-    </style>
 </head>
-<body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
+<body class="public-shell bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
     <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
     {% include "partials/public_nav.html" %}
 
-    <main id="main-content">
+    <main id="main-content" class="public-main">
     <header class="pt-36 md:pt-32 pb-16 px-4 sm:px-6 text-center bg-slate-900 border-b border-slate-800">
         <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-4 py-2 mb-7">
             <i class="fa-solid fa-briefcase"></i>
-            Problem-Solving AI Consultancy
+            Implementation-First, Not Slideware
         </p>
-        <h1 class="text-4xl md:text-6xl font-black text-white mb-6">Dynamic<br><span class="text-blue-500">Problem-Solvers</span></h1>
+        <h1 class="text-4xl md:text-6xl font-black text-white mb-6">Built For Buyers Who<br><span class="text-blue-500">Need Results, Not Hype</span></h1>
         <p class="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
-            ELF-AI uses practical AI tools to design solutions and then trains your staff to operate and improve them.
+            ELF-AI helps SMEs deploy custom AI systems quickly, measure outcomes rigorously, and keep long-term capability in-house.
         </p>
     </header>
 
-    <section class="py-6 bg-slate-950 border-b border-slate-800">
+    <section class="section-anchor-nav py-4 bg-slate-950 border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-center gap-2">
             <a href="#why-elf" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Why ELF-AI</a>
             <a href="#how-we-work" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">How We Work</a>
             <a href="/solutions" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Solutions</a>
-            <a href="/enquire" class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition text-sm font-semibold">Book Consultation</a>
+            <a href="/enquire" class="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition text-sm font-semibold">Book a Strategy Call</a>
         </div>
     </section>
 
     <section id="why-elf" class="py-16 px-4 sm:px-6 max-w-7xl mx-auto border-b border-slate-800">
         <div class="text-center mb-14">
             <h2 class="text-3xl font-bold text-white">Why ELF-AI?</h2>
-            <p class="text-slate-400 mt-3">Our work is grounded in execution quality, transferring skills, and measurable business value.</p>
+            <p class="text-slate-400 mt-3">Our model is designed to answer the hard commercial questions before you commit budget.</p>
         </div>
 
         <div class="grid md:grid-cols-3 gap-8">
@@ -67,24 +63,47 @@
                 <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mb-6 text-blue-400">
                     <i class="fa-solid fa-bullseye"></i>
                 </div>
-                <h3 class="text-xl font-bold text-white mb-3">Problem-First Thinking</h3>
-                <p class="text-slate-400 text-sm leading-relaxed">We solve problems first and foremost. Every problem has a solution, ELF-AI will find yours.</p>
+                <h3 class="text-xl font-bold text-white mb-3">Wedge-First Delivery</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">We start with one high-friction workflow, prove value fast, and then expand into adjacent opportunities.</p>
             </div>
 
             <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 transition hover:-translate-y-1 hover:border-blue-500/40">
                 <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mb-6 text-blue-400">
                     <i class="fa-solid fa-brain"></i>
                 </div>
-                <h3 class="text-xl font-bold text-white mb-3">Upskill Your Employees</h3>
-                <p class="text-slate-400 text-sm leading-relaxed">We collaborate with staff and train them to use the same AI tools that power your solution.</p>
+                <h3 class="text-xl font-bold text-white mb-3">Productised Modules</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">Reusable architecture drives faster delivery while preserving custom fit to your operating model.</p>
             </div>
 
             <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 transition hover:-translate-y-1 hover:border-blue-500/40">
                 <div class="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center mb-6 text-indigo-400">
                     <i class="fa-solid fa-gauge-high"></i>
                 </div>
-                <h3 class="text-xl font-bold text-white mb-3">Measured Outcomes</h3>
-                <p class="text-slate-400 text-sm leading-relaxed">We track ROI through clear performance metrics such as cost, speed, and quality improvements.</p>
+                <h3 class="text-xl font-bold text-white mb-3">Ownership + ROI</h3>
+                <p class="text-slate-400 text-sm leading-relaxed">You own the delivered software through perpetual licensing, and outcomes are measured against cost, speed, and adoption.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-14 bg-slate-950 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="grid md:grid-cols-2 gap-4">
+                <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">What We Do</p>
+                    <ul class="space-y-2 text-sm text-slate-300">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span>Build custom AI software around your operational bottlenecks.</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span>Deploy into production and train your team to operate confidently.</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span>Track delivery against cost, turnaround, and adoption metrics.</span></li>
+                    </ul>
+                </article>
+                <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">What We Don’t Do</p>
+                    <ul class="space-y-2 text-sm text-slate-300">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-xmark text-rose-300 mt-1"></i><span>Sell vague AI roadmaps without implementation accountability.</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-xmark text-rose-300 mt-1"></i><span>Push mandatory recurring software license fees after delivery.</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-xmark text-rose-300 mt-1"></i><span>Force long enterprise-style rollout cycles when a wedge launch can deliver faster.</span></li>
+                    </ul>
+                </article>
             </div>
         </div>
     </section>
@@ -94,20 +113,20 @@
             <div class="grid md:grid-cols-2 gap-10 items-center">
                 <div>
                     <h2 class="text-3xl font-bold text-white mb-6">How We Work With You</h2>
-                    <p class="text-slate-400 mb-8">We stay involved from diagnosis to long-term operations so your solution keeps delivering value.</p>
+                    <p class="text-slate-400 mb-8">Our process is built for delivery confidence from first meeting to operational handover.</p>
 
                     <div class="space-y-6">
                         <div class="flex items-start gap-4">
                             <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">1</div>
-                            <p class="text-slate-300 text-sm mt-2">Discovery: understand the problem, constraints, and target outcomes.</p>
+                            <p class="text-slate-300 text-sm mt-2">Discovery + observation: map workflows, identify bottlenecks, and define measurable success metrics.</p>
                         </div>
                         <div class="flex items-start gap-4">
                             <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">2</div>
-                            <p class="text-slate-300 text-sm mt-2">Delivery: design, build, and test the right solution for your workflow.</p>
+                            <p class="text-slate-300 text-sm mt-2">Build + validate: design architecture, implement rapidly, and test fit against real process constraints.</p>
                         </div>
                         <div class="flex items-start gap-4">
                             <div class="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">3</div>
-                            <p class="text-slate-300 text-sm mt-2">Operations: deploy, train, monitor, and continuously improve performance.</p>
+                            <p class="text-slate-300 text-sm mt-2">Deploy + operate: production rollout, team training, and optional managed support with clear accountability.</p>
                         </div>
                     </div>
                 </div>
@@ -124,12 +143,44 @@
         </div>
     </section>
 
+    <section class="py-14 bg-slate-950 border-b border-slate-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-7">
+                <h2 class="text-3xl font-bold text-white">What Clients Should Expect In The First 30 Days</h2>
+                <p class="text-slate-400 mt-2">A practical pace with transparent checkpoints, not an open-ended advisory loop.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-4 text-sm">
+                <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                    <p class="text-[11px] uppercase tracking-[0.14em] text-blue-300 mb-2">Week 1</p>
+                    <p class="text-white font-semibold mb-2">Discovery + Workflow Mapping</p>
+                    <p class="text-slate-300">We identify bottlenecks, operating constraints, and the first metric to improve.</p>
+                </article>
+                <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                    <p class="text-[11px] uppercase tracking-[0.14em] text-blue-300 mb-2">Week 2-3</p>
+                    <p class="text-white font-semibold mb-2">Wedge Blueprint + Build Start</p>
+                    <p class="text-slate-300">You receive the scoped implementation path, commercial structure, and delivery plan.</p>
+                </article>
+                <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                    <p class="text-[11px] uppercase tracking-[0.14em] text-blue-300 mb-2">Week 4</p>
+                    <p class="text-white font-semibold mb-2">Validation + Handover Track</p>
+                    <p class="text-slate-300">We confirm adoption approach, operational ownership, and the expansion decision gate.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
     <section class="py-16 px-4 sm:px-6 max-w-4xl mx-auto text-center">
         <i class="fa-solid fa-handshake-angle text-5xl text-blue-500 mb-6 opacity-50"></i>
-        <blockquote class="text-2xl md:text-4xl font-semibold text-white leading-tight mb-6">
-            "Adapt or Die"
-        </blockquote>
-        <p class="text-slate-400 font-medium uppercase tracking-widest text-sm">- Andy Grove<br>(Former Intel CEO)</p>
+        <h3 class="text-2xl md:text-4xl font-semibold text-white leading-tight mb-4">
+            If you are evaluating AI vendors, ask us for the commercial model upfront.
+        </h3>
+        <p class="text-slate-400 max-w-2xl mx-auto mb-6">
+            We will walk you through expected timeline, implementation structure, ownership terms, and how ROI will be measured before build starts.
+        </p>
+        <a href="/enquire" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-500 transition">
+            Book a Strategy Call
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+        </a>
     </section>
     </main>
 

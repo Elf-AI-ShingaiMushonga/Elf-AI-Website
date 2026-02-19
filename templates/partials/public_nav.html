@@ -1,29 +1,32 @@
 {% set current_path = request.path %}
-<nav class="fixed w-full z-50 glass border-b border-slate-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-        <a href="/" class="flex flex-col leading-none hover:text-blue-400 transition focus-ring">
-            <span class="text-2xl font-bold tracking-tighter text-white">ELF<span class="text-blue-500">-AI</span></span>
-            <span class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400 mt-1">No Problem</span>
+<nav class="site-nav fixed w-full z-50 glass">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center gap-4">
+        <a href="/" class="brand-mark flex flex-col leading-none transition focus-ring">
+            <span class="text-[1.45rem] font-black tracking-tight text-white">ELF<span class="text-blue-500">-AI</span></span>
+            <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 mt-1">AI Implementation for SMEs</span>
         </a>
 
-        <div class="hidden md:flex items-center space-x-6 text-sm font-medium">
-            <a href="/" class="{{ 'text-blue-300' if current_path == '/' else 'text-slate-200 hover:text-blue-400' }} transition">Home</a>
-            <a href="/about" class="{{ 'text-blue-300' if current_path.startswith('/about') else 'text-slate-200 hover:text-blue-400' }} transition">About Us</a>
-            <a href="/solutions" class="{{ 'text-blue-300' if current_path.startswith('/solutions') else 'text-slate-200 hover:text-blue-400' }} transition">Solutions</a>
-            <a href="/internal/login" class="{{ 'text-blue-300' if current_path.startswith('/internal') else 'text-slate-200 hover:text-blue-400' }} transition">Internal Portal</a>
-            <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-5 py-2 border border-blue-400 text-blue-300 rounded-full hover:bg-blue-400 hover:text-slate-950 transition focus-ring">Current Demo</a>
-            <a href="/enquire" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition shadow-lg shadow-blue-900/20 focus-ring">Talk to ELF-AI</a>
+        <div class="hidden md:flex items-center gap-1.5">
+            <a href="/" class="nav-pill {{ 'active' if current_path == '/' else '' }}">Home</a>
+            <a href="/about" class="nav-pill {{ 'active' if current_path.startswith('/about') else '' }}">About</a>
+            <a href="/solutions" class="nav-pill {{ 'active' if current_path.startswith('/solutions') else '' }}">Solutions</a>
+        </div>
+
+        <div class="hidden md:flex items-center gap-2">
+            <a href="/internal/login" class="text-xs text-slate-400 hover:text-slate-200 transition focus-ring">Team Login</a>
+            <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="nav-cta-secondary focus-ring">Current Demo</a>
+            <a href="/enquire" class="nav-cta-primary focus-ring">Book a Strategy Call</a>
         </div>
     </div>
 
-    <div class="md:hidden border-t border-slate-800/80 px-4 py-3">
-        <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-semibold">
-            <a href="/" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if current_path == '/' else 'bg-slate-800 hover:bg-slate-700' }} transition">Home</a>
-            <a href="/about" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if current_path.startswith('/about') else 'bg-slate-800 hover:bg-slate-700' }} transition">About</a>
-            <a href="/solutions" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if current_path.startswith('/solutions') else 'bg-slate-800 hover:bg-slate-700' }} transition">Solutions</a>
-            <a href="/internal/login" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if current_path.startswith('/internal') else 'bg-slate-800 hover:bg-slate-700' }} transition">Internal</a>
-            <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-full border border-blue-400 text-blue-300">Current Demo</a>
-            <a href="/enquire" class="px-3 py-2 rounded-full bg-blue-600 text-white">Talk to ELF-AI</a>
+    <div class="md:hidden border-t border-slate-800/75 px-4 pb-3 pt-2.5">
+        <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs">
+            <a href="/" class="nav-pill {{ 'active' if current_path == '/' else '' }}">Home</a>
+            <a href="/about" class="nav-pill {{ 'active' if current_path.startswith('/about') else '' }}">About</a>
+            <a href="/solutions" class="nav-pill {{ 'active' if current_path.startswith('/solutions') else '' }}">Solutions</a>
+            <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="nav-cta-secondary">Demo</a>
+            <a href="/enquire" class="nav-cta-primary">Strategy Call</a>
+            <a href="/internal/login" class="nav-pill {{ 'active' if current_path.startswith('/internal') else '' }}">Team Login</a>
         </div>
     </div>
 </nav>

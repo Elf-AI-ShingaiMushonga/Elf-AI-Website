@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title if seo else 'Contact ELF-AI | Start Your AI Consultation' }}</title>
-    <meta name="description" content="{{ seo.description if seo else 'Contact ELF-AI to discuss your business challenge.' }}">
+    <title>{{ seo.title if seo else 'Contact ELF-AI | Book a Strategy Call' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'Book a strategy call with ELF-AI to scope an SME AI implementation with clear ownership and ROI metrics.' }}">
     <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/enquire' }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
-    <meta property="og:title" content="{{ seo.title if seo else 'Contact ELF-AI | Start Your AI Consultation' }}">
-    <meta property="og:description" content="{{ seo.description if seo else 'Contact ELF-AI to discuss your business challenge.' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'Contact ELF-AI | Book a Strategy Call' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'Book a strategy call with ELF-AI to scope an SME AI implementation with clear ownership and ROI metrics.' }}">
     <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/enquire' }}">
     <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title if seo else 'Contact ELF-AI | Start Your AI Consultation' }}">
-    <meta name="twitter:description" content="{{ seo.description if seo else 'Contact ELF-AI to discuss your business challenge.' }}">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'Contact ELF-AI | Book a Strategy Call' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'Book a strategy call with ELF-AI to scope an SME AI implementation with clear ownership and ROI metrics.' }}">
     <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
     {% if seo and seo.structured_data %}
     <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
@@ -26,19 +26,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-    </style>
 </head>
-<body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
+<body class="public-shell bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
     <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
     {% include "partials/public_nav.html" %}
 
-    <main id="main-content" class="min-h-screen pt-36 md:pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
-        <section class="lg:col-span-2">
+    <main id="main-content" class="public-main min-h-screen pt-36 md:pt-32 pb-16 px-4 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+        <section class="py-3 lg:py-0 lg:col-span-2">
             <div class="flex flex-wrap items-center gap-2">
                 <a href="#contact-process" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">How it works</a>
+                <a href="#fit-check" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Fit Check</a>
                 <a href="#enquiry-form" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Send enquiry</a>
                 <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition text-sm">Current demo</a>
             </div>
@@ -48,16 +45,25 @@
             <div>
                 <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-6">
                     <i class="fa-solid fa-comments"></i>
-                    Start With Your Business Problem
+                    Strategy Call for SME AI Implementation
                 </p>
-                <h1 class="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">Tell Us the Challenge.<br><span class="text-blue-500">We Will Design the Solution.</span></h1>
+                <h1 class="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">Tell Us The Workflow Problem.<br><span class="text-blue-500">We Will Scope The Wedge.</span></h1>
                 <p class="text-lg text-slate-400 leading-relaxed">
-                    This ELF-AI consultation is built for decision-makers who need practical outcomes. We assess your workflow, identify the highest-impact opportunity, and propose a tested solution plan.
+                    This consultation is for decision-makers who want clear commercial answers before build starts: scope, speed, ownership model, and measurable ROI.
                 </p>
                 <p class="text-sm text-slate-300 mt-4 inline-flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-4 py-2">
                     <i class="fa-solid fa-clock text-blue-400"></i>
-                    Typical response: within 1 business day
+                    Typical response within 1 business day
                 </p>
+                <p class="text-xs text-slate-400 mt-3">No obligation. We will tell you quickly if we are not the right fit.</p>
+                <div class="mt-4 rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+                    <p class="text-[11px] uppercase tracking-[0.14em] text-slate-400 mb-2">What You Get In The First Call</p>
+                    <ul class="space-y-1.5 text-sm text-slate-300">
+                        <li>1. A clear fit/no-fit recommendation.</li>
+                        <li>2. A wedge scope with a default 30-day pilot timeline (customized if needed).</li>
+                        <li>3. Early commercial view of implementation and support options.</li>
+                    </ul>
+                </div>
             </div>
 
             <div id="contact-process" class="space-y-6 border-t border-slate-800 pt-8">
@@ -68,8 +74,8 @@
                         <i class="fa-solid fa-calendar-check"></i>
                     </div>
                     <div>
-                        <h4 class="text-white font-bold">1. Consultation Call</h4>
-                        <p class="text-slate-400 text-sm mt-1">We map your current process and identify the most valuable bottleneck to solve first.</p>
+                        <h4 class="text-white font-bold">1. Discovery + Observation</h4>
+                        <p class="text-slate-400 text-sm mt-1">We map the current workflow and isolate the highest-friction bottleneck for first implementation.</p>
                     </div>
                 </div>
 
@@ -78,8 +84,8 @@
                         <i class="fa-solid fa-diagram-project"></i>
                     </div>
                     <div>
-                        <h4 class="text-white font-bold">2. Solution Blueprint</h4>
-                        <p class="text-slate-400 text-sm mt-1">You receive a scoped recommendation including delivery approach, testing plan, and expected impact.</p>
+                        <h4 class="text-white font-bold">2. Blueprint + Commercials</h4>
+                        <p class="text-slate-400 text-sm mt-1">You receive scoped architecture, a default pilot timeline, pricing architecture, and measurable success criteria.</p>
                     </div>
                 </div>
 
@@ -88,14 +94,21 @@
                         <i class="fa-solid fa-vial-circle-check"></i>
                     </div>
                     <div>
-                        <h4 class="text-white font-bold">3. Tested Deployment Path</h4>
-                        <p class="text-slate-400 text-sm mt-1">We define how your solution will be validated before go-live to reduce risk and speed adoption.</p>
+                        <h4 class="text-white font-bold">3. Build, Deploy, Enable</h4>
+                        <p class="text-slate-400 text-sm mt-1">We implement, deploy, and train your team, with optional SLA-backed support for ongoing operations.</p>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 space-y-4">
+            <div id="fit-check" class="bg-slate-900 p-5 rounded-xl border border-slate-800 space-y-4">
                 <div>
+                    <p class="text-sm text-slate-400 uppercase tracking-widest mb-3">Fit Check</p>
+                    <ul class="space-y-2 text-sm text-slate-300 mb-4">
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span>Primary fit: service-sector SMEs (typically 10-200 employees).</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span>Typical one-time implementation starts from R100,000+.</span></li>
+                        <li class="flex items-start gap-2"><i class="fa-solid fa-check text-blue-400 mt-1"></i><span>Optional managed support plans typically start from R15,000+ monthly.</span></li>
+                    </ul>
+
                     <p class="text-sm text-slate-400 uppercase tracking-widest mb-3">Direct Contact</p>
                     <div class="flex items-center gap-4 text-white mb-2">
                         <i class="fa-solid fa-envelope text-blue-500"></i>
@@ -120,13 +133,14 @@
                 <p class="text-[11px] uppercase tracking-[0.15em] text-slate-500 mb-2">Helpful Before Submit</p>
                 <ul class="space-y-1.5 text-xs text-slate-300">
                     <li>1. Name the workflow bottleneck you want solved first.</li>
-                    <li>2. Share one outcome metric (time, cost, quality, or risk).</li>
-                    <li>3. Add your preferred timeline to speed planning.</li>
+                    <li>2. Share one outcome metric (cost per unit, turnaround, or adoption).</li>
+                    <li>3. Add timeline and approximate budget range.</li>
                 </ul>
             </div>
 
             <form action="/contact" method="POST" class="space-y-5">
                 <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+                <input type="hidden" name="return_to" value="{{ request.path }}#enquiry-form">
                 <div class="grid sm:grid-cols-2 gap-5">
                     <div class="space-y-2">
                         <label for="contact-name" class="text-sm text-slate-400 font-medium ml-1">Full Name</label>
@@ -182,14 +196,32 @@
                 </div>
 
                 <div class="space-y-2">
+                    <label for="contact-budget" class="text-sm text-slate-400 font-medium ml-1">Indicative Budget (optional)</label>
+                    <select id="contact-budget" name="budget" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-slate-300 focus:outline-none focus:border-blue-500 transition">
+                        <option value="">Prefer not to say</option>
+                        <option value="below-r100k">Below R100k</option>
+                        <option value="r100k-r250k">R100k - R250k</option>
+                        <option value="r250k-r500k">R250k - R500k</option>
+                        <option value="above-r500k">Above R500k</option>
+                    </select>
+                </div>
+
+                <div class="space-y-2">
                     <label for="contact-message" class="text-sm text-slate-400 font-medium ml-1">Additional Details</label>
-                    <textarea id="contact-message" name="message" rows="4" maxlength="3000" placeholder="Briefly describe your current process, bottleneck, and target outcome." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" data-compose-target="contact-message" data-compose-text="Current bottleneck: " class="px-2.5 py-1 text-[11px] rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Bottleneck</button>
+                        <button type="button" data-compose-target="contact-message" data-compose-text="Target metric to improve: " class="px-2.5 py-1 text-[11px] rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Target Metric</button>
+                        <button type="button" data-compose-target="contact-message" data-compose-text="Current tooling/process setup: " class="px-2.5 py-1 text-[11px] rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Current Setup</button>
+                    </div>
+                    <textarea id="contact-message" name="message" rows="4" maxlength="3000" data-char-count-target="contact-message-char-count" placeholder="Briefly describe your current process, bottleneck, and target outcome." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+                    <p class="text-[11px] text-slate-500 text-right"><span id="contact-message-char-count">0/3000</span></p>
                 </div>
 
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg transition shadow-lg shadow-blue-900/50 mt-4">
-                    Submit Enquiry
+                    Request Strategy Call
                 </button>
                 <p class="text-xs text-slate-500">By submitting, you agree to be contacted by ELF-AI about your enquiry.</p>
+                <p class="text-xs text-slate-500">Commercial and workflow details shared here are treated as confidential and used only for scoping.</p>
             </form>
         </div>
     </main>

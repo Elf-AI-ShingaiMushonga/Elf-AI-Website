@@ -9,73 +9,129 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-    </style>
 </head>
-<body class="bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white min-h-screen">
+<body class="internal-shell bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white min-h-screen">
     <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
-    <div class="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.08),transparent_45%)]"></div>
+    <div class="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_right,rgba(77,124,244,0.16),transparent_43%),radial-gradient(circle_at_bottom_left,rgba(56,189,248,0.08),transparent_50%)]"></div>
 
-    <nav class="sticky top-0 z-50 border-b border-slate-800/90 bg-slate-950/85 backdrop-blur">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
-            <a href="{{ url_for('main.internal_dashboard') }}" class="flex flex-col leading-none hover:text-blue-300 transition">
-                <span class="text-2xl font-black tracking-tight text-white">ELF<span class="text-blue-500">-AI</span></span>
+    <nav class="site-nav sticky top-0 z-50 glass">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+            <a href="{{ url_for('main.internal_dashboard') }}" class="brand-mark flex flex-col leading-none">
+                <span class="text-[1.4rem] font-black tracking-tight text-white">ELF<span class="text-blue-500">-AI</span></span>
                 <span class="text-[10px] uppercase tracking-[0.2em] text-slate-400 mt-1">Internal Portal</span>
             </a>
 
-            <div class="hidden md:flex items-center gap-2 text-sm font-medium">
-                <a href="{{ url_for('main.internal_dashboard') }}" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if request.path in ['/internal', '/internal/dashboard'] else 'text-slate-300 hover:bg-slate-800' }} transition">Dashboard</a>
-                <a href="{{ url_for('main.internal_todos') }}" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if request.path.startswith('/internal/todos') else 'text-slate-300 hover:bg-slate-800' }} transition">To-Do</a>
-                <a href="{{ url_for('main.internal_projects') }}" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if request.path.startswith('/internal/projects') else 'text-slate-300 hover:bg-slate-800' }} transition">Projects</a>
-                <a href="{{ url_for('main.internal_clients') }}" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if request.path.startswith('/internal/clients') else 'text-slate-300 hover:bg-slate-800' }} transition">Clients</a>
-                <a href="{{ url_for('main.internal_resources') }}" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if request.path.startswith('/internal/resources') else 'text-slate-300 hover:bg-slate-800' }} transition">Resources</a>
-                <a href="/" class="px-3 py-2 rounded-full text-slate-300 hover:bg-slate-800 transition">Public Site</a>
-            </div>
+            <form action="{{ url_for('main.internal_go') }}" method="get" class="hidden md:flex flex-1 max-w-3xl items-center bg-slate-900/90 border border-slate-800 rounded-full px-3.5 py-2">
+                <i class="fa-solid fa-compass text-slate-500 text-sm mr-2"></i>
+                <input
+                    id="internal-omnibar-desktop"
+                    data-internal-omnibar
+                    type="search"
+                    name="q"
+                    aria-label="Internal omnibar"
+                    list="internal-omnibar-hints"
+                    placeholder="Go anywhere: pages, projects, clients, tasks, docs... (Ctrl/Cmd+K)"
+                    class="w-full bg-transparent text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none"
+                    autocomplete="off"
+                >
+            </form>
 
             <div class="flex items-center gap-2">
-                <form action="{{ url_for('main.internal_resources') }}" method="get" class="hidden lg:flex items-center bg-slate-900/90 border border-slate-800 rounded-full px-3 py-1.5">
-                    <i class="fa-solid fa-magnifying-glass text-slate-500 text-xs mr-2"></i>
-                    <input
-                        type="search"
-                        name="q"
-                        value="{{ request.args.get('q', '') if request.path.startswith('/internal/resources') else '' }}"
-                        placeholder="Search docs, tags, tasks"
-                        class="w-44 bg-transparent text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none"
-                    >
-                </form>
                 <div class="hidden sm:block text-right mr-2">
                     <p class="text-sm font-semibold text-white">{{ current_internal_user.full_name if current_internal_user else '' }}</p>
                     <p class="text-xs text-slate-400 uppercase">{{ current_internal_user.role if current_internal_user else '' }}</p>
                 </div>
                 <form action="{{ url_for('main.internal_logout') }}" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="px-4 py-2 rounded-full border border-slate-700 text-slate-200 hover:bg-slate-800 transition text-sm font-semibold">
+                    <button type="submit" class="nav-cta-secondary focus-ring">
                         Sign out
                     </button>
                 </form>
             </div>
         </div>
 
-        <div class="md:hidden px-4 sm:px-6 pb-3">
-            <div class="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs font-semibold">
-                <a href="{{ url_for('main.internal_dashboard') }}" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if request.path in ['/internal', '/internal/dashboard'] else 'bg-slate-800 text-slate-200' }}">Dashboard</a>
-                <a href="{{ url_for('main.internal_todos') }}" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if request.path.startswith('/internal/todos') else 'bg-slate-800 text-slate-200' }}">To-Do</a>
-                <a href="{{ url_for('main.internal_projects') }}" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if request.path.startswith('/internal/projects') else 'bg-slate-800 text-slate-200' }}">Projects</a>
-                <a href="{{ url_for('main.internal_clients') }}" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if request.path.startswith('/internal/clients') else 'bg-slate-800 text-slate-200' }}">Clients</a>
-                <a href="{{ url_for('main.internal_resources') }}" class="px-3 py-2 rounded-full {{ 'bg-blue-500/20 text-blue-300' if request.path.startswith('/internal/resources') else 'bg-slate-800 text-slate-200' }}">Resources</a>
-                <a href="/" class="px-3 py-2 rounded-full bg-slate-800 text-slate-200">Public</a>
+        <datalist id="internal-omnibar-hints">
+            <option value="dashboard"></option>
+            <option value="projects"></option>
+            <option value="new project"></option>
+            <option value="clients"></option>
+            <option value="new client"></option>
+            <option value="todos"></option>
+            <option value="priority queue"></option>
+            <option value="messages"></option>
+            <option value="resources"></option>
+            <option value="project: [project name]"></option>
+            <option value="client: [client name]"></option>
+            <option value="task: [task title]"></option>
+            <option value="doc: [document title]"></option>
+            <option value="message: [channel or teammate]"></option>
+        </datalist>
+
+        <div class="hidden md:block px-4 sm:px-6 pb-2">
+            <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs">
+                <a href="{{ url_for('main.internal_dashboard') }}" class="nav-pill {{ 'active' if request.path in ['/internal', '/internal/dashboard'] else '' }}">Dashboard</a>
+                <a href="{{ url_for('main.internal_todos') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/todos') else '' }}">To-Do</a>
+                <a href="{{ url_for('main.internal_projects') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/projects') else '' }}">Projects</a>
+                <a href="{{ url_for('main.internal_messages') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/messages') else '' }}">Messages</a>
+                <a href="{{ url_for('main.internal_clients') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/clients') else '' }}">Clients</a>
+                <a href="{{ url_for('main.internal_resources') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/resources') else '' }}">Resources</a>
+                <a href="/" class="nav-pill">Public Site</a>
             </div>
-            <form action="{{ url_for('main.internal_resources') }}" method="get" class="mt-3 flex items-center bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-2">
-                <i class="fa-solid fa-magnifying-glass text-slate-500 text-xs mr-2"></i>
+        </div>
+
+        <div class="md:hidden px-4 sm:px-6 pb-3">
+            <form action="{{ url_for('main.internal_go') }}" method="get" class="flex items-center bg-slate-900/90 border border-slate-800 rounded-full px-3.5 py-2">
+                <i class="fa-solid fa-compass text-slate-500 text-xs mr-2"></i>
                 <input
+                    id="internal-omnibar-mobile"
+                    data-internal-omnibar
                     type="search"
                     name="q"
-                    placeholder="Search docs, tags, tasks"
+                    aria-label="Internal omnibar"
+                    list="internal-omnibar-hints"
+                    placeholder="Go anywhere in internal portal"
                     class="w-full bg-transparent text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none"
+                    autocomplete="off"
                 >
             </form>
+            <div class="mt-3 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs">
+                <a href="{{ url_for('main.internal_dashboard') }}" class="nav-pill {{ 'active' if request.path in ['/internal', '/internal/dashboard'] else '' }}">Dashboard</a>
+                <a href="{{ url_for('main.internal_todos') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/todos') else '' }}">To-Do</a>
+                <a href="{{ url_for('main.internal_projects') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/projects') else '' }}">Projects</a>
+                <a href="{{ url_for('main.internal_messages') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/messages') else '' }}">Messages</a>
+                <a href="{{ url_for('main.internal_clients') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/clients') else '' }}">Clients</a>
+                <a href="{{ url_for('main.internal_resources') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/resources') else '' }}">Resources</a>
+                <a href="/" class="nav-pill">Public</a>
+            </div>
+        </div>
+
+        <div class="quick-action-strip px-4 sm:px-6 py-2.5">
+            <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs">
+                <a href="{{ url_for('main.internal_clients') }}#new-client" class="quick-action-pill focus-ring">
+                    <i class="fa-solid fa-user-plus"></i>
+                    New Client
+                </a>
+                <a href="{{ url_for('main.internal_projects') }}#new-project" class="quick-action-pill focus-ring">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    New Project
+                </a>
+                <a href="{{ url_for('main.internal_todos') }}#new-task" class="quick-action-pill focus-ring">
+                    <i class="fa-solid fa-list-check"></i>
+                    Add Task
+                </a>
+                <a href="{{ url_for('main.internal_todos', view='priority') }}" class="quick-action-pill focus-ring">
+                    <i class="fa-solid fa-bolt"></i>
+                    Priority Queue
+                </a>
+                <a href="{{ url_for('main.internal_resources') }}" class="quick-action-pill focus-ring">
+                    <i class="fa-solid fa-book-open"></i>
+                    Knowledge Library
+                </a>
+                <a href="{{ url_for('main.internal_messages') }}" class="quick-action-pill focus-ring">
+                    <i class="fa-solid fa-comments"></i>
+                    Team Messages
+                </a>
+            </div>
         </div>
     </nav>
 

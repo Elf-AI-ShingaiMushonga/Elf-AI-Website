@@ -141,9 +141,9 @@
         <p class="text-xs text-slate-500 mt-3">Due soon threshold: {{ due_soon_cutoff.strftime('%d %b %Y') }}</p>
     </article>
 
-    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+    <article id="new-task" class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
         <h2 class="text-lg font-bold text-white mb-4">Add Task or Subtask</h2>
-        <form action="{{ url_for('main.internal_todo_add') }}" method="post" class="space-y-3">
+        <form action="{{ url_for('main.internal_todo_add') }}" method="post" class="space-y-3" data-task-form>
             <input type="hidden" name="view_mode" value="{{ view_mode }}">
             <input type="hidden" name="project_scope" value="{{ selected_project_id if selected_project_id else '' }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -176,11 +176,28 @@
             <div class="grid sm:grid-cols-2 gap-3">
                 <div class="space-y-2">
                     <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Assignee</label>
-                    <input name="assignee" type="text" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <input name="assignee" type="text" list="todo-assignee-options" value="{{ current_internal_user.full_name if current_internal_user else '' }}" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <datalist id="todo-assignee-options">
+                        {% for user in active_internal_users %}
+                        <option value="{{ user.full_name }}"></option>
+                        {% endfor %}
+                    </datalist>
                 </div>
                 <div class="space-y-2">
                     <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Due Date</label>
-                    <input name="due_date" type="date" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <input
+                        name="due_date"
+                        type="date"
+                        value="{{ default_task_due_date.isoformat() }}"
+                        data-task-due-date
+                        class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition"
+                    >
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" data-due-offset="1" class="px-2.5 py-1 text-[11px] rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition">+1 day</button>
+                        <button type="button" data-due-offset="3" class="px-2.5 py-1 text-[11px] rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition">+3 days</button>
+                        <button type="button" data-due-offset="7" class="px-2.5 py-1 text-[11px] rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition">+1 week</button>
+                        <button type="button" data-due-offset="14" class="px-2.5 py-1 text-[11px] rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition">+2 weeks</button>
+                    </div>
                 </div>
             </div>
 
@@ -217,7 +234,7 @@
     </div>
 
     <div class="grid md:grid-cols-[1fr_auto_auto_auto] gap-3 mb-5">
-        <input type="search" data-filter-input placeholder="Search by task, assignee, project, or linked doc..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition">
+        <input type="search" data-filter-input placeholder="Filter this queue by task, assignee, project, or linked doc..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition">
         <select data-filter-status class="w-full md:w-44 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
             <option value="all">All statuses</option>
             <option value="todo">Todo</option>

@@ -1,0 +1,162 @@
+{% extends "internal/base.html" %}
+
+{% block title %}Messages | ELF-AI Internal{% endblock %}
+
+{% block content %}
+<section class="mb-8">
+    <h1 class="text-3xl font-black text-white mb-3">Consultant Messaging</h1>
+    <p class="text-slate-400 max-w-3xl">
+        Coordinate delivery through project channels, direct peer messaging, and consultant groups.
+    </p>
+</section>
+
+<section class="grid xl:grid-cols-[1.08fr_1.42fr] gap-6">
+    <aside class="space-y-6">
+        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <h2 class="text-base font-semibold text-white mb-3">Start Direct Message</h2>
+            <form action="{{ url_for('main.internal_messages_start_direct') }}" method="post" class="space-y-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Consultant</label>
+                <select name="recipient_id" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <option value="" disabled selected>Select consultant</option>
+                    {% for user in available_users %}
+                    <option value="{{ user.id }}">{{ user.full_name }} · {{ user.role|title }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition disabled:opacity-50" {% if not available_users %}disabled{% endif %}>
+                    Open Direct Channel
+                </button>
+            </form>
+        </article>
+
+        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <h2 class="text-base font-semibold text-white mb-3">Create Group</h2>
+            <form action="{{ url_for('main.internal_messages_create_group') }}" method="post" class="space-y-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Group Name</label>
+                    <input name="name" type="text" required maxlength="160" placeholder="e.g. Legal Delivery Team" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Members</label>
+                    <select name="member_ids" multiple size="6" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        {% for user in available_users %}
+                        <option value="{{ user.id }}">{{ user.full_name }} · {{ user.role|title }}</option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-[11px] text-slate-500">Hold Cmd/Ctrl to select multiple members.</p>
+                </div>
+                <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">
+                    Create Group Channel
+                </button>
+            </form>
+        </article>
+
+        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 space-y-5">
+            <section>
+                <h3 class="text-xs uppercase tracking-[0.14em] text-slate-400 mb-2">Project Channels</h3>
+                <div class="space-y-2 max-h-52 overflow-y-auto pr-1">
+                    {% for card in project_channel_cards %}
+                    {% set is_active = selected_channel_id == card.channel.id %}
+                    <a href="{{ url_for('main.internal_messages', channel_id=card.channel.id) }}" class="block rounded-lg border px-3 py-2 transition {{ 'border-blue-500/40 bg-blue-500/10' if is_active else 'border-slate-800 bg-slate-950/70 hover:border-slate-700' }}">
+                        <p class="text-sm font-semibold {{ 'text-blue-100' if is_active else 'text-slate-100' }}">{{ card.title }}</p>
+                        <p class="text-[11px] {{ 'text-blue-200/80' if is_active else 'text-slate-500' }}">{{ card.subtitle }}</p>
+                    </a>
+                    {% else %}
+                    <p class="text-xs text-slate-500">No project channels available.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section>
+                <h3 class="text-xs uppercase tracking-[0.14em] text-slate-400 mb-2">Direct Messages</h3>
+                <div class="space-y-2 max-h-44 overflow-y-auto pr-1">
+                    {% for card in direct_channel_cards %}
+                    {% set is_active = selected_channel_id == card.channel.id %}
+                    <a href="{{ url_for('main.internal_messages', channel_id=card.channel.id) }}" class="block rounded-lg border px-3 py-2 transition {{ 'border-blue-500/40 bg-blue-500/10' if is_active else 'border-slate-800 bg-slate-950/70 hover:border-slate-700' }}">
+                        <p class="text-sm font-semibold {{ 'text-blue-100' if is_active else 'text-slate-100' }}">{{ card.title }}</p>
+                        <p class="text-[11px] {{ 'text-blue-200/80' if is_active else 'text-slate-500' }}">{{ card.subtitle }}</p>
+                    </a>
+                    {% else %}
+                    <p class="text-xs text-slate-500">No direct channels yet.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section>
+                <h3 class="text-xs uppercase tracking-[0.14em] text-slate-400 mb-2">Groups</h3>
+                <div class="space-y-2 max-h-44 overflow-y-auto pr-1">
+                    {% for card in group_channel_cards %}
+                    {% set is_active = selected_channel_id == card.channel.id %}
+                    <a href="{{ url_for('main.internal_messages', channel_id=card.channel.id) }}" class="block rounded-lg border px-3 py-2 transition {{ 'border-blue-500/40 bg-blue-500/10' if is_active else 'border-slate-800 bg-slate-950/70 hover:border-slate-700' }}">
+                        <p class="text-sm font-semibold {{ 'text-blue-100' if is_active else 'text-slate-100' }}">{{ card.title }}</p>
+                        <p class="text-[11px] {{ 'text-blue-200/80' if is_active else 'text-slate-500' }}">{{ card.subtitle }}</p>
+                    </a>
+                    {% else %}
+                    <p class="text-xs text-slate-500">No groups created yet.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </article>
+    </aside>
+
+    <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 flex flex-col min-h-[40rem]">
+        {% if selected_channel %}
+        <div class="border-b border-slate-800 pb-4 mb-4">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white">{{ selected_channel_title }}</h2>
+                    <p class="text-sm text-slate-400 mt-1">{{ selected_channel_subtitle }}</p>
+                </div>
+                <span class="text-xs uppercase tracking-[0.14em] px-2.5 py-1 rounded-full border {{ 'border-cyan-500/40 bg-cyan-500/10 text-cyan-200' if selected_channel.channel_type == 'project' else 'border-blue-500/40 bg-blue-500/10 text-blue-200' if selected_channel.channel_type == 'direct' else 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' }}">
+                    {{ selected_channel.channel_type|title }}
+                </span>
+            </div>
+        </div>
+
+        <div class="flex-1 rounded-xl border border-slate-800 bg-slate-950/60 p-4 overflow-y-auto space-y-3 min-h-[20rem]" data-message-thread>
+            {% for message in selected_channel.messages %}
+            {% set is_own_message = current_internal_user and message.sender_id == current_internal_user.id %}
+            <article class="flex {{ 'justify-end' if is_own_message else 'justify-start' }}">
+                <div class="max-w-[85%] rounded-xl px-4 py-3 border {{ 'bg-blue-600/20 border-blue-500/30 text-blue-50' if is_own_message else 'bg-slate-900 border-slate-700 text-slate-100' }}">
+                    <p class="text-[11px] mb-1 {{ 'text-blue-100/80' if is_own_message else 'text-slate-400' }}">
+                        {{ message.sender.full_name }} · {{ message.created_at.strftime('%d %b %Y %H:%M') if message.created_at else '' }}
+                    </p>
+                    <p class="text-sm leading-relaxed">{{ message.body | e | replace('\n', '<br>') | safe }}</p>
+                </div>
+            </article>
+            {% else %}
+            <p class="text-sm text-slate-400">No messages in this channel yet. Post the first update to start the thread.</p>
+            {% endfor %}
+        </div>
+
+        <form action="{{ url_for('main.internal_messages_post') }}" method="post" class="mt-4 space-y-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="channel_id" value="{{ selected_channel.id }}">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Send Message</label>
+                <div class="flex flex-wrap gap-1.5">
+                    <button type="button" data-message-target="channel-message-body" data-message-snippet="Decision: " class="px-2.5 py-1 text-[11px] rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Decision</button>
+                    <button type="button" data-message-target="channel-message-body" data-message-snippet="Blocker: " class="px-2.5 py-1 text-[11px] rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Blocker</button>
+                    <button type="button" data-message-target="channel-message-body" data-message-snippet="Handoff: " class="px-2.5 py-1 text-[11px] rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Handoff</button>
+                </div>
+            </div>
+            <textarea id="channel-message-body" name="body" rows="3" maxlength="3000" required data-char-count-target="channel-message-char-count" placeholder="Write an update, decision, blocker, or handoff note..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-100 focus:outline-none focus:border-blue-500 transition"></textarea>
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-[11px] text-slate-500">Project channels are shared across the internal portal. <span id="channel-message-char-count">0/3000</span></p>
+                <button type="submit" class="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">
+                    Post Message
+                </button>
+            </div>
+        </form>
+        {% else %}
+        <div class="flex-1 rounded-xl border border-slate-800 bg-slate-950/60 p-6 flex items-center justify-center text-center">
+            <div>
+                <p class="text-lg font-semibold text-white mb-2">Select a channel to start messaging.</p>
+                <p class="text-sm text-slate-400">Open a project channel, start a direct message, or create a consultant group.</p>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+</section>
+{% endblock %}

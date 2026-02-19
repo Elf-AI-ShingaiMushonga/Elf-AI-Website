@@ -12,7 +12,7 @@
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5" data-filter-root>
         <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
             <div class="flex flex-col sm:flex-row gap-3 flex-1">
-                <input type="search" data-filter-input placeholder="Search clients, industries, owners..." class="w-full sm:max-w-md bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition">
+                <input type="search" data-filter-input placeholder="Filter this page by client, industry, or owner..." class="w-full sm:max-w-md bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition">
                 <select data-filter-status class="w-full sm:w-44 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
                     <option value="all">All statuses</option>
                     {% for status in client_statuses %}
@@ -22,7 +22,7 @@
                 <button type="button" data-filter-reset class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 text-sm font-semibold transition">Reset</button>
             </div>
             <div class="text-xs uppercase tracking-[0.16em] text-slate-400">
-                Showing <span data-filter-count>{{ clients|length }}</span> clients · Press <span class="text-slate-200">/</span> to search
+                Showing <span data-filter-count>{{ clients|length }}</span> clients · Press <span class="text-slate-200">/</span> to filter
             </div>
         </div>
 

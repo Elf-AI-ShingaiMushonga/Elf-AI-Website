@@ -96,7 +96,21 @@ def app():
             is_active=True,
         )
         internal_user.set_password("secret-password")
-        db.session.add(internal_user)
+        delivery_user = InternalUser(
+            full_name="Delivery Consultant",
+            email="delivery-consultant@elf-ai.co.za",
+            role="consultant",
+            is_active=True,
+        )
+        delivery_user.set_password("secret-password")
+        operations_user = InternalUser(
+            full_name="Operations Analyst",
+            email="operations-analyst@elf-ai.co.za",
+            role="operations",
+            is_active=True,
+        )
+        operations_user.set_password("secret-password")
+        db.session.add_all([internal_user, delivery_user, operations_user])
 
         client_record = InternalClient(
             name="Test Client",
