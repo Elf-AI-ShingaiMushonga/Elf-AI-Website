@@ -1,4 +1,6 @@
+import copy
 import hmac
+import json
 import os
 import re
 import secrets
@@ -31,6 +33,7 @@ from models import (
     InternalMessage,
     InternalMessageChannel,
     InternalProject,
+    InternalProjectStarterPlan,
     InternalResource,
     InternalResourceTag,
     InternalTask,
@@ -91,6 +94,8 @@ DEFAULT_PROJECT_TIMELINE_DAYS = 30
 PROJECT_TIMELINE_PRESETS = (14, 30, 45, 60, 90)
 PROJECT_TIMELINE_MIN_DAYS = 7
 PROJECT_TIMELINE_MAX_DAYS = 365
+PROJECT_STARTER_PLAN_RECORD_NAME = "default"
+DEFAULT_PROJECT_INDUSTRY_CATEGORY = "general"
 CSRF_TOKEN_SESSION_KEY = "_internal_csrf_token"
 SAFE_RESOURCE_LINK_SCHEMES = {"http", "https"}
 RESOURCE_UPLOAD_ALLOWED_EXTENSIONS = {
@@ -107,6 +112,173 @@ RESOURCE_UPLOAD_ALLOWED_EXTENSIONS = {
     "xlsx",
 }
 DEFAULT_RESOURCE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
+DEFAULT_PROJECT_STARTER_PLANS_BY_INDUSTRY = {
+    "general": [
+        {
+            "title": "Kickoff and Discovery",
+            "priority": "high",
+            "due_percent": 20,
+            "subtasks": [
+                {"title": "Confirm delivery objective and success metric", "due_percent": 8},
+                {"title": "Map current workflow and bottlenecks", "due_percent": 14},
+                {"title": "Approve scope and execution cadence", "due_percent": 20},
+            ],
+        },
+        {
+            "title": "Solution Build and Validation",
+            "priority": "high",
+            "due_percent": 55,
+            "subtasks": [
+                {"title": "Implement pilot workflow with target users", "due_percent": 38},
+                {"title": "Review model and process output quality", "due_percent": 48},
+                {"title": "Prioritize iteration backlog", "due_percent": 55},
+            ],
+        },
+        {
+            "title": "Rollout and Team Enablement",
+            "priority": "medium",
+            "due_percent": 82,
+            "subtasks": [
+                {"title": "Prepare launch checklist and fallback plan", "due_percent": 67},
+                {"title": "Deliver team training and handover", "due_percent": 76},
+                {"title": "Go-live monitoring and issue triage", "due_percent": 82},
+            ],
+        },
+        {
+            "title": "Value Review and Scale Plan",
+            "priority": "medium",
+            "due_percent": 100,
+            "subtasks": [
+                {"title": "Measure ROI against baseline KPI", "due_percent": 90},
+                {"title": "Present optimisation and scale recommendations", "due_percent": 100},
+            ],
+        },
+    ],
+    "legal": [
+        {
+            "title": "Matter Intake and Risk Triage",
+            "priority": "high",
+            "due_percent": 20,
+            "subtasks": [
+                {"title": "Capture matter scope and parties", "due_percent": 8},
+                {"title": "Run conflict and risk screening", "due_percent": 14},
+                {"title": "Approve legal strategy and timelines", "due_percent": 20},
+            ],
+        },
+        {
+            "title": "Research and Draft Assembly",
+            "priority": "high",
+            "due_percent": 55,
+            "subtasks": [
+                {"title": "Compile precedent and authority bundle", "due_percent": 38},
+                {"title": "Prepare first-pass draft pack", "due_percent": 48},
+                {"title": "Review citations and factual accuracy", "due_percent": 55},
+            ],
+        },
+        {
+            "title": "Client Review and Filing Readiness",
+            "priority": "medium",
+            "due_percent": 82,
+            "subtasks": [
+                {"title": "Run client review and amendment cycle", "due_percent": 67},
+                {"title": "Finalize filing and compliance checklist", "due_percent": 76},
+                {"title": "Submit and track filing milestones", "due_percent": 82},
+            ],
+        },
+        {
+            "title": "Post-Matter Retrospective",
+            "priority": "medium",
+            "due_percent": 100,
+            "subtasks": [
+                {"title": "Summarize outcome and lessons learned", "due_percent": 90},
+                {"title": "Update playbooks and precedents", "due_percent": 100},
+            ],
+        },
+    ],
+    "healthcare": [
+        {
+            "title": "Clinical Workflow Discovery",
+            "priority": "high",
+            "due_percent": 20,
+            "subtasks": [
+                {"title": "Map patient intake and triage journey", "due_percent": 8},
+                {"title": "Define safety, quality, and response KPIs", "due_percent": 14},
+                {"title": "Approve pilot care pathway scope", "due_percent": 20},
+            ],
+        },
+        {
+            "title": "Compliance and Data Governance",
+            "priority": "high",
+            "due_percent": 55,
+            "subtasks": [
+                {"title": "Validate privacy and consent controls", "due_percent": 38},
+                {"title": "Configure audit and access monitoring", "due_percent": 48},
+                {"title": "Run governance sign-off checklist", "due_percent": 55},
+            ],
+        },
+        {
+            "title": "Pilot and Staff Enablement",
+            "priority": "medium",
+            "due_percent": 82,
+            "subtasks": [
+                {"title": "Launch pilot in target unit", "due_percent": 67},
+                {"title": "Train clinicians and support staff", "due_percent": 76},
+                {"title": "Monitor incidents and escalation flow", "due_percent": 82},
+            ],
+        },
+        {
+            "title": "Outcome and Safety Review",
+            "priority": "medium",
+            "due_percent": 100,
+            "subtasks": [
+                {"title": "Compare outcomes to baseline metrics", "due_percent": 90},
+                {"title": "Finalize scale recommendation", "due_percent": 100},
+            ],
+        },
+    ],
+    "finance": [
+        {
+            "title": "Controls and Requirements Discovery",
+            "priority": "high",
+            "due_percent": 20,
+            "subtasks": [
+                {"title": "Map current controls and approval gates", "due_percent": 8},
+                {"title": "Define risk and compliance thresholds", "due_percent": 14},
+                {"title": "Approve scoped pilot use case", "due_percent": 20},
+            ],
+        },
+        {
+            "title": "Model Validation and Backtesting",
+            "priority": "high",
+            "due_percent": 55,
+            "subtasks": [
+                {"title": "Prepare validation dataset and assumptions", "due_percent": 38},
+                {"title": "Run backtesting and variance analysis", "due_percent": 48},
+                {"title": "Sign off performance guardrails", "due_percent": 55},
+            ],
+        },
+        {
+            "title": "Deployment and Monitoring Controls",
+            "priority": "medium",
+            "due_percent": 82,
+            "subtasks": [
+                {"title": "Deploy with approval workflow controls", "due_percent": 67},
+                {"title": "Train operations and risk teams", "due_percent": 76},
+                {"title": "Enable live monitoring and alerts", "due_percent": 82},
+            ],
+        },
+        {
+            "title": "Quarterly Value and Risk Review",
+            "priority": "medium",
+            "due_percent": 100,
+            "subtasks": [
+                {"title": "Review portfolio impact and exceptions", "due_percent": 90},
+                {"title": "Update control playbook and roadmap", "due_percent": 100},
+            ],
+        },
+    ],
+}
+DEFAULT_PROJECT_STARTER_PLAN_TEMPLATE = DEFAULT_PROJECT_STARTER_PLANS_BY_INDUSTRY[DEFAULT_PROJECT_INDUSTRY_CATEGORY]
 
 
 def _site_url() -> str:
@@ -267,6 +439,17 @@ def _normalize_project_timeline_days(raw_value: str | None) -> int:
     except (TypeError, ValueError):
         return DEFAULT_PROJECT_TIMELINE_DAYS
     return min(max(parsed_days, PROJECT_TIMELINE_MIN_DAYS), PROJECT_TIMELINE_MAX_DAYS)
+
+
+def _normalize_industry_category(raw_value: str | None) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "-", (raw_value or "").strip().lower()).strip("-")
+    if normalized == PROJECT_STARTER_PLAN_RECORD_NAME:
+        normalized = DEFAULT_PROJECT_INDUSTRY_CATEGORY
+    return normalized or DEFAULT_PROJECT_INDUSTRY_CATEGORY
+
+
+def _industry_category_label(category: str | None) -> str:
+    return _normalize_industry_category(category).replace("-", " ").title()
 
 
 def _normalize_resource_category(raw_value: str | None) -> str:
@@ -434,86 +617,190 @@ def _ensure_project_message_channel(
     return channel
 
 
+def _normalize_percentage(raw_value) -> float | None:
+    try:
+        parsed = float(raw_value)
+    except (TypeError, ValueError):
+        return None
+    if parsed < 0 or parsed > 100:
+        return None
+    return parsed
+
+
+def _normalize_project_starter_plan_template(raw_template) -> tuple[list[dict] | None, str | None]:
+    if not isinstance(raw_template, list) or not raw_template:
+        return None, "Starter plan template must be a non-empty JSON array."
+
+    normalized_phases: list[dict] = []
+    for phase_index, phase in enumerate(raw_template, start=1):
+        if not isinstance(phase, dict):
+            return None, f"Phase {phase_index} must be a JSON object."
+
+        title = " ".join(str(phase.get("title") or "").strip().split())
+        if not title:
+            return None, f"Phase {phase_index} is missing a valid title."
+
+        priority = str(phase.get("priority") or "medium").strip().lower()
+        if priority not in INTERNAL_TASK_PRIORITIES:
+            return None, (
+                f"Phase {phase_index} has invalid priority '{priority}'. "
+                f"Use one of: {', '.join(INTERNAL_TASK_PRIORITIES)}."
+            )
+
+        due_percent = _normalize_percentage(phase.get("due_percent", 100))
+        if due_percent is None:
+            return None, f"Phase {phase_index} requires due_percent between 0 and 100."
+
+        subtasks_raw = phase.get("subtasks") or []
+        if not isinstance(subtasks_raw, list):
+            return None, f"Phase {phase_index} subtasks must be a JSON array."
+
+        normalized_subtasks: list[dict] = []
+        for subtask_index, subtask in enumerate(subtasks_raw, start=1):
+            if isinstance(subtask, dict):
+                subtask_title = " ".join(str(subtask.get("title") or "").strip().split())
+                subtask_due_percent_raw = subtask.get("due_percent", due_percent)
+            elif isinstance(subtask, str):
+                subtask_title = " ".join(subtask.strip().split())
+                subtask_due_percent_raw = due_percent
+            else:
+                return None, f"Phase {phase_index} subtask {subtask_index} must be an object or string."
+
+            if not subtask_title:
+                return None, f"Phase {phase_index} subtask {subtask_index} is missing a valid title."
+
+            subtask_due_percent = _normalize_percentage(subtask_due_percent_raw)
+            if subtask_due_percent is None:
+                return None, (
+                    f"Phase {phase_index} subtask {subtask_index} requires due_percent between 0 and 100."
+                )
+
+            normalized_subtasks.append(
+                {
+                    "title": subtask_title,
+                    "due_percent": subtask_due_percent,
+                }
+            )
+
+        normalized_phases.append(
+            {
+                "title": title,
+                "priority": priority,
+                "due_percent": due_percent,
+                "subtasks": normalized_subtasks,
+            }
+        )
+
+    return normalized_phases, None
+
+
+def _serialize_project_starter_plan_template(template: list[dict]) -> str:
+    return json.dumps(template, indent=2, ensure_ascii=True)
+
+
+def _project_starter_plan_record(industry_category: str) -> InternalProjectStarterPlan | None:
+    normalized_category = _normalize_industry_category(industry_category)
+    record = InternalProjectStarterPlan.query.filter_by(name=normalized_category).first()
+    if record:
+        return record
+    if normalized_category == DEFAULT_PROJECT_INDUSTRY_CATEGORY:
+        return InternalProjectStarterPlan.query.filter_by(name=PROJECT_STARTER_PLAN_RECORD_NAME).first()
+    return None
+
+
+def _default_project_starter_plan_template(industry_category: str) -> list[dict]:
+    normalized_category = _normalize_industry_category(industry_category)
+    industry_template = DEFAULT_PROJECT_STARTER_PLANS_BY_INDUSTRY.get(normalized_category)
+    if industry_template:
+        return copy.deepcopy(industry_template)
+    return copy.deepcopy(DEFAULT_PROJECT_STARTER_PLAN_TEMPLATE)
+
+
+def _load_project_starter_plan_template(industry_category: str = DEFAULT_PROJECT_INDUSTRY_CATEGORY) -> list[dict]:
+    normalized_category = _normalize_industry_category(industry_category)
+    default_template = _default_project_starter_plan_template(normalized_category)
+    record = _project_starter_plan_record(normalized_category)
+    if not record:
+        return default_template
+
+    try:
+        raw_template = json.loads(record.template_json)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return default_template
+
+    normalized_template, error_message = _normalize_project_starter_plan_template(raw_template)
+    if error_message or not normalized_template:
+        return default_template
+    return normalized_template
+
+
+def _project_starter_plan_categories(existing_projects: list[InternalProject], clients: list[InternalClient]) -> list[str]:
+    default_categories = set(DEFAULT_PROJECT_STARTER_PLANS_BY_INDUSTRY.keys())
+    custom_categories = {_normalize_industry_category(plan.name) for plan in InternalProjectStarterPlan.query.all()}
+    project_categories = {_normalize_industry_category(project.industry_category) for project in existing_projects}
+    client_categories = {_normalize_industry_category(client.industry) for client in clients}
+    all_categories = default_categories | custom_categories | project_categories | client_categories
+    all_categories.add(DEFAULT_PROJECT_INDUSTRY_CATEGORY)
+    return sorted(all_categories)
+
+
+def _project_starter_plan_editor_context(industry_category: str) -> dict:
+    normalized_category = _normalize_industry_category(industry_category)
+    record = _project_starter_plan_record(normalized_category)
+    template = _load_project_starter_plan_template(normalized_category)
+    source = "custom" if record and _normalize_industry_category(record.name) == normalized_category else "default"
+    return {
+        "starter_plan_category": normalized_category,
+        "starter_plan_category_label": _industry_category_label(normalized_category),
+        "starter_plan_source": source,
+        "starter_plan_template_text": _serialize_project_starter_plan_template(template),
+        "starter_plan_updated_at": record.updated_at if record else None,
+        "starter_plan_updated_by": record.updated_by.full_name if record and record.updated_by else None,
+    }
+
+
 def _create_project_starter_tasks(
     project: InternalProject,
     *,
     timeline_days: int,
     owner_display_name: str,
+    plan_template: list[dict] | None = None,
 ) -> None:
     start_date = date.today()
     effective_timeline_days = max(timeline_days, 1)
     project_due_date = project.due_date or (start_date + timedelta(days=effective_timeline_days))
     delivery_owner = owner_display_name or project.client.account_owner or "Project Team"
+    starter_plan = plan_template or _load_project_starter_plan_template(project.industry_category)
 
     def milestone(percentage: float) -> date:
+        clamped_percentage = min(max(float(percentage), 0), 100) / 100
         span_days = max((project_due_date - start_date).days, 1)
-        offset_days = max(1, int(round(span_days * percentage)))
+        offset_days = max(1, int(round(span_days * clamped_percentage)))
         target_date = start_date + timedelta(days=offset_days)
         return min(target_date, project_due_date)
 
-    plan_blueprint = [
-        {
-            "title": "Kickoff and Discovery",
-            "priority": "high",
-            "due_date": milestone(0.2),
-            "subtasks": [
-                ("Confirm delivery objective and success metric", milestone(0.08)),
-                ("Map current workflow and bottlenecks", milestone(0.14)),
-                ("Approve scope and execution cadence", milestone(0.2)),
-            ],
-        },
-        {
-            "title": "Solution Build and Validation",
-            "priority": "high",
-            "due_date": milestone(0.55),
-            "subtasks": [
-                ("Implement pilot workflow with target users", milestone(0.38)),
-                ("Review model and process output quality", milestone(0.48)),
-                ("Prioritize iteration backlog", milestone(0.55)),
-            ],
-        },
-        {
-            "title": "Rollout and Team Enablement",
-            "priority": "medium",
-            "due_date": milestone(0.82),
-            "subtasks": [
-                ("Prepare launch checklist and fallback plan", milestone(0.67)),
-                ("Deliver team training and handover", milestone(0.76)),
-                ("Go-live monitoring and issue triage", milestone(0.82)),
-            ],
-        },
-        {
-            "title": "Value Review and Scale Plan",
-            "priority": "medium",
-            "due_date": project_due_date,
-            "subtasks": [
-                ("Measure ROI against baseline KPI", milestone(0.9)),
-                ("Present optimisation and scale recommendations", project_due_date),
-            ],
-        },
-    ]
-
-    for phase in plan_blueprint:
+    for phase in starter_plan:
+        phase_due_date = milestone(phase.get("due_percent", 100))
         parent_task = InternalTask(
             project=project,
             title=phase["title"],
             assignee=delivery_owner,
             priority=phase["priority"],
             status="todo",
-            due_date=phase["due_date"],
+            due_date=phase_due_date,
         )
         db.session.add(parent_task)
 
-        for subtask_title, subtask_due_date in phase["subtasks"]:
+        for subtask in phase.get("subtasks", []):
             db.session.add(
                 InternalTask(
                     project=project,
                     parent_task=parent_task,
-                    title=subtask_title,
+                    title=subtask["title"],
                     assignee=delivery_owner,
                     priority=phase["priority"],
                     status="todo",
-                    due_date=subtask_due_date,
+                    due_date=milestone(subtask.get("due_percent", phase.get("due_percent", 100))),
                 )
             )
 
@@ -1062,6 +1349,7 @@ def internal_client_add():
 def internal_projects():
     selected_client_id: int | None = None
     selected_client_raw = (request.args.get("client_id") or "").strip()
+    selected_starter_plan_category = _normalize_industry_category(request.args.get("starter_plan_category"))
     if selected_client_raw:
         try:
             selected_client_candidate = int(selected_client_raw)
@@ -1093,11 +1381,16 @@ def internal_projects():
         )
 
     clients = InternalClient.query.order_by(InternalClient.name.asc()).all()
+    starter_plan_categories = _project_starter_plan_categories(projects, clients)
+    if selected_starter_plan_category not in starter_plan_categories:
+        selected_starter_plan_category = DEFAULT_PROJECT_INDUSTRY_CATEGORY
+
     active_internal_users = (
         InternalUser.query.filter_by(is_active=True).order_by(InternalUser.full_name.asc()).all()
     )
     default_project_timeline_days = DEFAULT_PROJECT_TIMELINE_DAYS
     default_project_due_date = date.today() + timedelta(days=default_project_timeline_days)
+    starter_plan_editor = _project_starter_plan_editor_context(selected_starter_plan_category)
     return render_template(
         "internal/projects.html",
         project_cards=project_cards,
@@ -1109,6 +1402,68 @@ def internal_projects():
         default_project_timeline_days=default_project_timeline_days,
         default_project_due_date=default_project_due_date,
         selected_client_id=selected_client_id,
+        project_industry_categories=starter_plan_categories,
+        selected_starter_plan_category=selected_starter_plan_category,
+        starter_plan_categories=starter_plan_categories,
+        starter_plan_category=starter_plan_editor["starter_plan_category"],
+        starter_plan_category_label=starter_plan_editor["starter_plan_category_label"],
+        starter_plan_source=starter_plan_editor["starter_plan_source"],
+        starter_plan_template_text=starter_plan_editor["starter_plan_template_text"],
+        starter_plan_updated_at=starter_plan_editor["starter_plan_updated_at"],
+        starter_plan_updated_by=starter_plan_editor["starter_plan_updated_by"],
+    )
+
+
+@main_bp.route("/internal/projects/starter-plan", methods=["POST"])
+@internal_login_required
+def internal_project_starter_plan_update():
+    starter_plan_category = _normalize_industry_category(request.form.get("starter_plan_category"))
+    raw_template = (request.form.get("starter_plan_template") or "").strip()
+    if not raw_template:
+        flash("Starter plan template cannot be empty.", "warning")
+        return redirect(
+            f"{url_for('main.internal_projects', starter_plan_category=starter_plan_category)}#starter-plan-template"
+        )
+
+    try:
+        parsed_template = json.loads(raw_template)
+    except json.JSONDecodeError as exc:
+        flash(
+            f"Starter plan template must be valid JSON (line {exc.lineno}, column {exc.colno}).",
+            "warning",
+        )
+        return redirect(
+            f"{url_for('main.internal_projects', starter_plan_category=starter_plan_category)}#starter-plan-template"
+        )
+
+    normalized_template, error_message = _normalize_project_starter_plan_template(parsed_template)
+    if error_message or not normalized_template:
+        flash(error_message or "Invalid starter plan template.", "warning")
+        return redirect(
+            f"{url_for('main.internal_projects', starter_plan_category=starter_plan_category)}#starter-plan-template"
+        )
+
+    template_record = _project_starter_plan_record(starter_plan_category)
+    serialized_template = _serialize_project_starter_plan_template(normalized_template)
+    if not template_record:
+        template_record = InternalProjectStarterPlan(
+            name=starter_plan_category,
+            template_json=serialized_template,
+            updated_by=getattr(g, "internal_user", None),
+        )
+        db.session.add(template_record)
+    else:
+        template_record.name = starter_plan_category
+        template_record.template_json = serialized_template
+        template_record.updated_by = getattr(g, "internal_user", None)
+
+    db.session.commit()
+    flash(
+        f"Starter delivery plan template updated for {_industry_category_label(starter_plan_category)}.",
+        "success",
+    )
+    return redirect(
+        f"{url_for('main.internal_projects', starter_plan_category=starter_plan_category)}#starter-plan-template"
     )
 
 
@@ -1122,6 +1477,7 @@ def internal_project_add():
     raw_due_date = (request.form.get("due_date") or "").strip()
     due_date = _parse_date(raw_due_date)
     timeline_days = _normalize_project_timeline_days(request.form.get("timeline_days"))
+    industry_category = _normalize_industry_category(request.form.get("industry_category"))
 
     client_id_raw = (request.form.get("client_id") or "").strip()
     owner_id_raw = (request.form.get("owner_id") or "").strip()
@@ -1206,16 +1562,19 @@ def internal_project_add():
         stage=stage,
         status=status,
         due_date=due_date,
+        industry_category=industry_category,
         summary=summary,
     )
     db.session.add(project_record)
     _ensure_project_message_channel(project_record, created_by=getattr(g, "internal_user", None))
     if create_starter_plan:
         owner_display_name = owner_record.full_name if owner_record else client_record.account_owner
+        starter_plan_template = _load_project_starter_plan_template(industry_category)
         _create_project_starter_tasks(
             project_record,
             timeline_days=timeline_days,
             owner_display_name=owner_display_name,
+            plan_template=starter_plan_template,
         )
     db.session.commit()
     success_notes = [f"Project '{name}' created for {client_record.name}."]

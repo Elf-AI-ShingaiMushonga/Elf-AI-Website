@@ -1,4 +1,5 @@
 import io
+import json
 import re
 from datetime import date, timedelta
 
@@ -7,6 +8,7 @@ from models import (
     InternalMessage,
     InternalMessageChannel,
     InternalProject,
+    InternalProjectStarterPlan,
     InternalResource,
     InternalResourceTag,
     InternalTask,
@@ -369,6 +371,143 @@ def test_internal_project_add_can_disable_starter_plan(client):
         created_project = InternalProject.query.filter_by(name="No Starter Plan Project").first()
         assert created_project is not None
         assert len(created_project.tasks) == 0
+
+
+def test_internal_project_starter_plan_template_update_changes_generated_tasks_for_industry(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/projects")
+
+    custom_template = [
+        {
+            "title": "Consultation Kickoff",
+            "priority": "high",
+            "due_percent": 25,
+            "subtasks": [
+                {"title": "Run discovery workshop", "due_percent": 10},
+                {"title": "Confirm target KPI baseline", "due_percent": 20},
+            ],
+        },
+        {
+            "title": "Implementation Rollout",
+            "priority": "medium",
+            "due_percent": 100,
+            "subtasks": [
+                {"title": "Launch production workflow", "due_percent": 85},
+                {"title": "Handover operations checklist", "due_percent": 100},
+            ],
+        },
+    ]
+
+    update_response = client.post(
+        "/internal/projects/starter-plan",
+        data={
+            "csrf_token": csrf_token,
+            "starter_plan_category": "legal",
+            "starter_plan_template": json.dumps(custom_template),
+        },
+        follow_redirects=False,
+    )
+    assert update_response.status_code == 302
+    assert update_response.headers["Location"].endswith(
+        "/internal/projects?starter_plan_category=legal#starter-plan-template"
+    )
+
+    with client.application.app_context():
+        template_record = InternalProjectStarterPlan.query.filter_by(name="legal").first()
+        assert template_record is not None
+        assert "Consultation Kickoff" in template_record.template_json
+
+        client_record = InternalClient.query.filter_by(name="Test Client").first()
+        assert client_record is not None
+        client_id = client_record.id
+
+    project_response = client.post(
+        "/internal/projects/add",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Custom Starter Plan Project",
+            "client_mode": "existing",
+            "client_id": str(client_id),
+            "owner_id": "self",
+            "timeline_days": "30",
+            "industry_category": "legal",
+            "stage": "discovery",
+            "status": "on-track",
+            "summary": "Project created with custom starter plan template.",
+            "create_starter_plan": "1",
+        },
+        follow_redirects=False,
+    )
+    assert project_response.status_code == 302
+
+    with client.application.app_context():
+        created_project = InternalProject.query.filter_by(name="Custom Starter Plan Project").first()
+        assert created_project is not None
+        task_titles = {task.title for task in created_project.tasks}
+        assert "Consultation Kickoff" in task_titles
+        assert "Implementation Rollout" in task_titles
+        assert "Kickoff and Discovery" not in task_titles
+        assert created_project.industry_category == "legal"
+
+
+def test_internal_project_add_uses_default_industry_starter_plan(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/projects")
+
+    with client.application.app_context():
+        client_record = InternalClient.query.filter_by(name="Test Client").first()
+        assert client_record is not None
+        client_id = client_record.id
+
+    response = client.post(
+        "/internal/projects/add",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Default Finance Plan Project",
+            "client_mode": "existing",
+            "client_id": str(client_id),
+            "owner_id": "self",
+            "timeline_days": "30",
+            "industry_category": "finance",
+            "stage": "discovery",
+            "status": "on-track",
+            "summary": "Project created using default finance starter template.",
+            "create_starter_plan": "1",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with client.application.app_context():
+        created_project = InternalProject.query.filter_by(name="Default Finance Plan Project").first()
+        assert created_project is not None
+        assert created_project.industry_category == "finance"
+        task_titles = {task.title for task in created_project.tasks}
+        assert "Controls and Requirements Discovery" in task_titles
+        assert "Kickoff and Discovery" not in task_titles
+
+
+def test_internal_project_starter_plan_template_update_rejects_invalid_json(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/projects")
+
+    response = client.post(
+        "/internal/projects/starter-plan",
+        data={
+            "csrf_token": csrf_token,
+            "starter_plan_category": "healthcare",
+            "starter_plan_template": "{invalid-json}",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(
+        "/internal/projects?starter_plan_category=healthcare#starter-plan-template"
+    )
+
+    with client.application.app_context():
+        template_record = InternalProjectStarterPlan.query.filter_by(name="healthcare").first()
+        assert template_record is None
 
 
 def test_internal_messages_project_channel_auto_created(client):

@@ -247,6 +247,48 @@ function initTaskFormEnhancements() {
   });
 }
 
+function initTodoComposerToggle() {
+  const composer = document.querySelector("[data-todo-composer]");
+  if (!composer) return;
+
+  const toggleButton = composer.querySelector("[data-todo-composer-toggle]");
+  const content = composer.querySelector("[data-todo-composer-content]");
+  const label = composer.querySelector("[data-todo-composer-label]");
+  const icon = composer.querySelector("[data-todo-composer-icon]");
+
+  if (!(toggleButton instanceof HTMLButtonElement) || !(content instanceof HTMLElement)) {
+    return;
+  }
+
+  const defaultCollapsed = (composer.getAttribute("data-collapsed-default") || "true").toLowerCase() !== "false";
+
+  const setExpanded = (expanded) => {
+    content.classList.toggle("hidden", !expanded);
+    toggleButton.setAttribute("aria-expanded", expanded ? "true" : "false");
+    if (label) {
+      label.textContent = expanded ? "Collapse" : "Expand";
+    }
+    if (icon) {
+      icon.classList.toggle("fa-chevron-down", !expanded);
+      icon.classList.toggle("fa-chevron-up", expanded);
+    }
+  };
+
+  const shouldOpenForHash = window.location.hash === "#new-task";
+  setExpanded(shouldOpenForHash ? true : !defaultCollapsed);
+
+  if (shouldOpenForHash) {
+    requestAnimationFrame(() => {
+      composer.scrollIntoView({ block: "start", behavior: "auto" });
+    });
+  }
+
+  toggleButton.addEventListener("click", () => {
+    const isExpanded = toggleButton.getAttribute("aria-expanded") === "true";
+    setExpanded(!isExpanded);
+  });
+}
+
 function initOptionSearchFilters() {
   const searchInputs = document.querySelectorAll("[data-option-filter-input]");
   if (!searchInputs.length) return;
@@ -411,6 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initFilterRoots();
   initProjectFormEnhancements();
   initTaskFormEnhancements();
+  initTodoComposerToggle();
   initOptionSearchFilters();
   initMessageEnhancements();
   initComposePromptButtons();

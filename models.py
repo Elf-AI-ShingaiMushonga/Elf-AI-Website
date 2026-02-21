@@ -130,6 +130,7 @@ class InternalProject(db.Model):
     name = db.Column(db.String(200), nullable=False)
     client_id = db.Column(db.Integer, db.ForeignKey("internal_client.id"), nullable=False)
     owner_id = db.Column(db.Integer, db.ForeignKey("internal_user.id"), nullable=True)
+    industry_category = db.Column(db.String(80), nullable=False, default="general", index=True)
     stage = db.Column(db.String(64), nullable=False, default="discovery")
     status = db.Column(db.String(32), nullable=False, default="on-track")
     due_date = db.Column(db.Date, nullable=True)
@@ -273,6 +274,20 @@ class InternalAnnouncement(db.Model):
     title = db.Column(db.String(200), nullable=False)
     body = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+
+class InternalProjectStarterPlan(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), nullable=False, unique=True, index=True)
+    template_json = db.Column(db.Text, nullable=False)
+    updated_by_id = db.Column(db.Integer, db.ForeignKey("internal_user.id"), nullable=True, index=True)
+    updated_by = db.relationship("InternalUser", lazy=True, foreign_keys=[updated_by_id])
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
 
 class InternalMessageChannel(db.Model):
