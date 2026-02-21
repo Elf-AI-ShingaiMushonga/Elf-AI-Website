@@ -1,14 +1,27 @@
 import hmac
+import os
 import re
 import secrets
 from datetime import date, datetime, timedelta, timezone
 from functools import wraps
 from urllib.parse import urlparse
 
-from flask import Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+    url_for,
+)
 from flask_mail import Message
 from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
+from werkzeug.utils import secure_filename
 
 from extension import mail
 from models import (
@@ -80,6 +93,20 @@ PROJECT_TIMELINE_MIN_DAYS = 7
 PROJECT_TIMELINE_MAX_DAYS = 365
 CSRF_TOKEN_SESSION_KEY = "_internal_csrf_token"
 SAFE_RESOURCE_LINK_SCHEMES = {"http", "https"}
+RESOURCE_UPLOAD_ALLOWED_EXTENSIONS = {
+    "csv",
+    "doc",
+    "docx",
+    "md",
+    "pdf",
+    "ppt",
+    "pptx",
+    "rtf",
+    "txt",
+    "xls",
+    "xlsx",
+}
+DEFAULT_RESOURCE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
 
 
 def _site_url() -> str:
@@ -293,6 +320,90 @@ def _is_safe_resource_link(raw_value: str | None) -> bool:
 
     parsed = urlparse(candidate)
     return parsed.scheme.lower() in SAFE_RESOURCE_LINK_SCHEMES and bool(parsed.netloc)
+
+
+def _resource_upload_directory() -> str:
+    configured_directory = (current_app.config.get("INTERNAL_RESOURCE_UPLOAD_DIR") or "").strip()
+    upload_directory = configured_directory or os.path.join(
+        current_app.instance_path,
+        "uploads",
+        "internal_resources",
+    )
+    os.makedirs(upload_directory, exist_ok=True)
+    return upload_directory
+
+
+def _resource_upload_max_bytes() -> int:
+    configured_limit = current_app.config.get("INTERNAL_RESOURCE_UPLOAD_MAX_BYTES", DEFAULT_RESOURCE_UPLOAD_MAX_BYTES)
+    try:
+        parsed_limit = int(configured_limit)
+    except (TypeError, ValueError):
+        return DEFAULT_RESOURCE_UPLOAD_MAX_BYTES
+    return parsed_limit if parsed_limit > 0 else DEFAULT_RESOURCE_UPLOAD_MAX_BYTES
+
+
+def _resource_upload_limit_label() -> str:
+    return f"{_resource_upload_max_bytes() / (1024 * 1024):g}"
+
+
+def _allowed_resource_upload_extension(filename: str) -> str | None:
+    if "." not in filename:
+        return None
+    extension = filename.rsplit(".", 1)[1].strip().lower()
+    if extension in RESOURCE_UPLOAD_ALLOWED_EXTENSIONS:
+        return extension
+    return None
+
+
+def _resource_upload_size(uploaded_file) -> int | None:
+    stream = getattr(uploaded_file, "stream", None)
+    if stream is None:
+        return None
+
+    try:
+        current_position = stream.tell()
+        stream.seek(0, os.SEEK_END)
+        file_size = stream.tell()
+        stream.seek(current_position)
+    except (OSError, ValueError):
+        return None
+    return file_size if isinstance(file_size, int) else None
+
+
+def _save_resource_upload(uploaded_file) -> tuple[str | None, str | None]:
+    submitted_filename = (uploaded_file.filename or "").strip()
+    if not submitted_filename:
+        return None, "Select a file to upload."
+
+    safe_filename = secure_filename(submitted_filename)
+    extension = _allowed_resource_upload_extension(safe_filename)
+    if not extension:
+        allowed_extensions = ", ".join(f".{item}" for item in sorted(RESOURCE_UPLOAD_ALLOWED_EXTENSIONS))
+        return None, f"Unsupported file type. Allowed types: {allowed_extensions}."
+
+    upload_size = _resource_upload_size(uploaded_file)
+    if upload_size is None:
+        return None, "Could not read uploaded file size."
+    if upload_size <= 0:
+        return None, "Uploaded file is empty."
+
+    max_upload_bytes = _resource_upload_max_bytes()
+    if upload_size > max_upload_bytes:
+        return None, f"Uploaded file exceeds the {_resource_upload_limit_label()} MB limit."
+
+    stored_filename = (
+        f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        f"-{secrets.token_hex(8)}.{extension}"
+    )
+    upload_path = os.path.join(_resource_upload_directory(), stored_filename)
+
+    try:
+        uploaded_file.stream.seek(0)
+    except (AttributeError, OSError, ValueError):
+        pass
+
+    uploaded_file.save(upload_path)
+    return stored_filename, None
 
 
 def _parse_positive_int(raw_value: str | None) -> int | None:
@@ -1693,6 +1804,19 @@ def internal_resources():
         summary_metrics=summary_metrics,
         projects=projects,
         tasks=tasks,
+        resource_upload_accept=",".join(f".{item}" for item in sorted(RESOURCE_UPLOAD_ALLOWED_EXTENSIONS)),
+        resource_upload_limit_mb=_resource_upload_limit_label(),
+    )
+
+
+@main_bp.route("/internal/resources/files/<path:filename>")
+@internal_login_required
+def internal_resource_file_download(filename: str):
+    return send_from_directory(
+        _resource_upload_directory(),
+        filename,
+        as_attachment=False,
+        conditional=True,
     )
 
 
@@ -1701,6 +1825,8 @@ def internal_resources():
 def internal_resource_add():
     title = (request.form.get("title") or "").strip()
     link = (request.form.get("link") or "").strip()
+    uploaded_file = request.files.get("document_file")
+    has_uploaded_file = bool(uploaded_file and (uploaded_file.filename or "").strip())
     description = (request.form.get("description") or "").strip()
     category = _normalize_resource_category(request.form.get("category"))
     tag_names = _normalize_resource_tags(request.form.get("tags"))
@@ -1708,10 +1834,22 @@ def internal_resource_add():
     task_ids = _parse_int_list(request.form.getlist("task_ids"))
     project_scope = (request.form.get("project_scope") or "").strip()
 
-    if not title or not link or not description:
-        flash("Title, link, and description are required to add a resource.", "warning")
+    if not title or not description:
+        flash("Title and description are required to add a resource.", "warning")
         return redirect(url_for("main.internal_resources"))
-    if not _is_safe_resource_link(link):
+    if bool(link) and has_uploaded_file:
+        flash("Provide either a document link or a file upload, not both.", "warning")
+        return redirect(url_for("main.internal_resources"))
+    if not link and not has_uploaded_file:
+        flash("Add either a document link or a file upload.", "warning")
+        return redirect(url_for("main.internal_resources"))
+    if has_uploaded_file:
+        uploaded_filename, upload_error = _save_resource_upload(uploaded_file)
+        if upload_error:
+            flash(upload_error, "warning")
+            return redirect(url_for("main.internal_resources"))
+        link = url_for("main.internal_resource_file_download", filename=uploaded_filename)
+    elif not _is_safe_resource_link(link):
         flash("Resource link must be a relative path or an http/https URL.", "warning")
         return redirect(url_for("main.internal_resources"))
 

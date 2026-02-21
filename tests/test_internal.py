@@ -1,3 +1,4 @@
+import io
 import re
 from datetime import date, timedelta
 
@@ -632,6 +633,85 @@ def test_internal_resource_add_with_tags_and_links(client):
         assert {tag.name for tag in created_resource.tags} == {"qa", "runbook", "delivery"}
         assert project.id in {linked_project.id for linked_project in created_resource.projects}
         assert task.id in {linked_task.id for linked_task in created_resource.tasks}
+
+
+def test_internal_resource_add_with_uploaded_file(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/resources")
+
+    response = client.post(
+        "/internal/resources/add",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Uploaded Delivery Checklist",
+            "category": "operations",
+            "description": "Checklist uploaded directly from the portal",
+            "document_file": (io.BytesIO(b"delivery-checklist"), "delivery-checklist.pdf"),
+        },
+        content_type="multipart/form-data",
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert "/internal/resources" in response.headers["Location"]
+
+    with client.application.app_context():
+        created_resource = InternalResource.query.filter_by(title="Uploaded Delivery Checklist").first()
+        assert created_resource is not None
+        assert created_resource.link.startswith("/internal/resources/files/")
+        resource_link = created_resource.link
+
+    file_response = client.get(resource_link, follow_redirects=False)
+    assert file_response.status_code == 200
+    assert file_response.data == b"delivery-checklist"
+
+    anon_client = client.application.test_client()
+    unauthorized_response = anon_client.get(resource_link, follow_redirects=False)
+    assert unauthorized_response.status_code == 302
+    assert "/internal/login" in unauthorized_response.headers["Location"]
+
+
+def test_internal_resource_add_requires_link_or_uploaded_file(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/resources")
+
+    response = client.post(
+        "/internal/resources/add",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Missing Link Or File",
+            "category": "operations",
+            "description": "Should be rejected when no link or upload is provided",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with client.application.app_context():
+        created_resource = InternalResource.query.filter_by(title="Missing Link Or File").first()
+        assert created_resource is None
+
+
+def test_internal_resource_add_rejects_unsupported_uploaded_file_type(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/resources")
+
+    response = client.post(
+        "/internal/resources/add",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Unsafe Uploaded File",
+            "category": "operations",
+            "description": "Upload with unsupported extension should be rejected",
+            "document_file": (io.BytesIO(b"binary-content"), "unsafe.exe"),
+        },
+        content_type="multipart/form-data",
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+    with client.application.app_context():
+        created_resource = InternalResource.query.filter_by(title="Unsafe Uploaded File").first()
+        assert created_resource is None
 
 
 def test_internal_resource_search_and_tag_filter(client):

@@ -203,17 +203,24 @@
 
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
         <h2 class="text-xl font-bold text-white mb-4">Add Doc</h2>
-        <form action="{{ url_for('main.internal_resource_add') }}" method="post" class="space-y-3">
+        <form action="{{ url_for('main.internal_resource_add') }}" method="post" enctype="multipart/form-data" class="space-y-3">
             <input type="hidden" name="project_scope" value="{{ selected_project_filter if selected_project_filter != 'all' else '' }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <p class="text-[11px] text-slate-500">Provide a document link or upload a file.</p>
             <div class="space-y-2">
                 <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Title</label>
                 <input name="title" type="text" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
             </div>
 
             <div class="space-y-2">
-                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Document Link</label>
-                <input name="link" type="text" required placeholder="https://... or /internal/resources#..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Document Link (Optional)</label>
+                <input name="link" type="text" placeholder="https://... or /internal/resources#..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Upload File (Optional)</label>
+                <input name="document_file" type="file" accept="{{ resource_upload_accept }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition file:mr-3 file:rounded-md file:border-0 file:bg-slate-800 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-100 hover:file:bg-slate-700">
+                <p class="text-[11px] text-slate-500">Allowed: {{ resource_upload_accept }} · Max {{ resource_upload_limit_mb }} MB</p>
             </div>
 
             <div class="space-y-2">
