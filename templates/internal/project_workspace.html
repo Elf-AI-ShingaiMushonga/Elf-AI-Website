@@ -1,0 +1,623 @@
+{% extends "internal/base.html" %}
+
+{% block title %}{{ project.name }} | ELF-AI Internal{% endblock %}
+
+{% block content %}
+<section class="mb-8">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+        <div>
+            <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">
+                <a href="{{ url_for('main.internal_projects') }}" class="hover:text-blue-300 transition">Projects</a>
+                <span class="mx-2 text-slate-600">/</span>
+                Workspace
+            </p>
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+                <h1 class="text-3xl md:text-4xl font-black text-white">{{ project.name }}</h1>
+                <span class="text-xs px-2.5 py-1 rounded-full {{ internal_status_class(project.status) }}">{{ project.status|replace('-', ' ')|title }}</span>
+                <span class="text-xs px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-200">{{ project.stage|title }}</span>
+            </div>
+            <p class="text-slate-300 max-w-3xl">{{ project.summary }}</p>
+            <div class="flex flex-wrap gap-4 mt-4 text-sm text-slate-400">
+                <span><span class="text-slate-500">Client:</span> <span class="text-slate-100">{{ project.client.name }}</span></span>
+                <span><span class="text-slate-500">Owner:</span> <span class="text-slate-100">{{ project.owner.full_name if project.owner else 'Unassigned' }}</span></span>
+                <span><span class="text-slate-500">Due:</span> <span class="text-slate-100">{{ project.due_date.strftime('%d %b %Y') if project.due_date else 'TBD' }}</span></span>
+                <span><span class="text-slate-500">Value:</span> <span class="text-slate-100">{% if project.value_estimate is not none %}${{ "{:,.0f}".format(project.value_estimate) }}{% else %}Not set{% endif %}</span></span>
+            </div>
+        </div>
+
+        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 min-w-[300px] lg:max-w-sm">
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <p class="text-xs uppercase tracking-[0.16em] text-blue-300">Project Pulse</p>
+                <span class="text-sm font-bold text-white">{{ workspace_metrics.progress }}%</span>
+            </div>
+            <div class="h-2.5 rounded-full bg-slate-800 overflow-hidden mb-3">
+                <div class="h-full bg-blue-500" style="width: {{ workspace_metrics.progress }}%;"></div>
+            </div>
+            {% if latest_update %}
+            <p class="text-sm font-semibold text-white mb-1">{{ latest_update.headline }}</p>
+            <p class="text-xs text-slate-400 mb-3">{{ latest_update.created_at.strftime('%d %b %Y') if latest_update.created_at else '' }}{% if latest_update.author %} · {{ latest_update.author.full_name }}{% endif %}</p>
+            <p class="text-sm text-slate-300">{{ latest_update.summary }}</p>
+            {% else %}
+            <p class="text-sm text-slate-400">No project status update logged yet.</p>
+            {% endif %}
+            {% if project.next_milestone %}
+            <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-1">Next Milestone</p>
+                <p class="text-sm font-semibold text-white">{{ project.next_milestone.title }}</p>
+                <p class="text-xs text-slate-400 mt-1">{{ project.next_milestone.owner_name }}{% if project.next_milestone.due_date %} · Due {{ project.next_milestone.due_date.strftime('%d %b %Y') }}{% endif %}</p>
+            </div>
+            {% endif %}
+        </article>
+    </div>
+</section>
+
+<section class="flex flex-wrap gap-2 mb-8 text-xs">
+    <a href="#overview" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition">Overview</a>
+    <a href="#milestones" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition">Milestones</a>
+    <a href="#deliverables" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition">Deliverables</a>
+    <a href="#status-updates" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition">Status Updates</a>
+    <a href="#risks" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition">Risks</a>
+    <a href="#stakeholders" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition">Stakeholders</a>
+    <a href="#tasks" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition">Task Focus</a>
+    <a href="#knowledge" class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-200 hover:border-blue-500/40 transition">Knowledge</a>
+</section>
+
+<section class="grid sm:grid-cols-2 xl:grid-cols-6 gap-4 mb-8">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Open Tasks</p>
+        <p class="text-3xl font-black text-white">{{ workspace_metrics.open_tasks }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Blocked Tasks</p>
+        <p class="text-3xl font-black text-amber-300">{{ workspace_metrics.blocked_tasks }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Milestones</p>
+        <p class="text-3xl font-black text-blue-300">{{ workspace_metrics.milestones }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Deliverables</p>
+        <p class="text-3xl font-black text-emerald-300">{{ workspace_metrics.deliverables }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Open Risks</p>
+        <p class="text-3xl font-black text-rose-300">{{ workspace_metrics.open_risks }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Stakeholders</p>
+        <p class="text-3xl font-black text-slate-100">{{ workspace_metrics.stakeholders }}</p>
+    </article>
+</section>
+
+<section class="grid xl:grid-cols-[1.1fr_0.9fr] gap-6 mb-8">
+    <article id="overview" class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Project Overview</h2>
+                <p class="text-sm text-slate-400 mt-1">Keep the scope, owner, and commercial baseline current.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ url_for('main.internal_todos', view='nested', project_id=project.id) }}" class="px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">Task Plan</a>
+                <a href="{{ url_for('main.internal_todos', view='priority', project_id=project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-semibold transition">Priority Queue</a>
+                <a href="{{ url_for('main.internal_messages', channel_id=project.message_channel.id if project.message_channel else None) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-semibold transition">Project Channel</a>
+                <a href="{{ url_for('main.internal_resources', project_id=project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-semibold transition">Project Docs</a>
+            </div>
+        </div>
+
+        <div class="grid sm:grid-cols-4 gap-3 mb-5">
+            {% for stage in project_stages %}
+            <div class="rounded-xl border px-3 py-3 {% if project.stage == stage %}border-blue-500/40 bg-blue-500/10{% else %}border-slate-800 bg-slate-950/70{% endif %}">
+                <p class="text-[11px] uppercase tracking-[0.12em] {% if project.stage == stage %}text-blue-300{% else %}text-slate-500{% endif %}">Stage {{ loop.index }}</p>
+                <p class="text-sm font-semibold {% if project.stage == stage %}text-white{% else %}text-slate-300{% endif %} mt-1">{{ stage|title }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <form action="{{ url_for('main.internal_project_overview_update', project_id=project.id) }}" method="post" class="space-y-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="grid sm:grid-cols-2 gap-3">
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Project Name</label>
+                    <input name="name" type="text" value="{{ project.name }}" required maxlength="200" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Value Estimate</label>
+                    <input name="value_estimate" type="text" value="{{ value_estimate_input }}" placeholder="50000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                </div>
+            </div>
+            <div class="grid sm:grid-cols-3 gap-3">
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Stage</label>
+                    <select name="stage" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        {% for stage in project_stages %}
+                        <option value="{{ stage }}" {% if project.stage == stage %}selected{% endif %}>{{ stage|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Status</label>
+                    <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        {% for status in project_statuses %}
+                        <option value="{{ status }}" {% if project.status == status %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Owner</label>
+                    <select name="owner_id" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        <option value="self" {% if project.owner and current_internal_user and project.owner.id == current_internal_user.id %}selected{% endif %}>Me ({{ current_internal_user.full_name if current_internal_user else 'Current User' }})</option>
+                        <option value="unassigned" {% if not project.owner %}selected{% endif %}>Unassigned</option>
+                        {% for user in active_internal_users %}
+                        {% if not current_internal_user or current_internal_user.id != user.id %}
+                        <option value="{{ user.id }}" {% if project.owner and project.owner.id == user.id %}selected{% endif %}>{{ user.full_name }} · {{ user.role|title }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Due Date</label>
+                <input name="due_date" type="date" value="{{ project.due_date.isoformat() if project.due_date else '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Project Summary</label>
+                <textarea name="summary" rows="4" maxlength="3000" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">{{ project.summary }}</textarea>
+            </div>
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Update Overview</button>
+        </form>
+    </article>
+
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 class="text-xl font-bold text-white mb-4">Team Load</h2>
+        {% if team_workload_cards %}
+        <div class="space-y-3 mb-5">
+            {% for card in team_workload_cards %}
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-sm font-semibold text-white">{{ card.assignee }}</p>
+                    <span class="text-xs text-slate-400">{{ card.open_tasks }} open</span>
+                </div>
+                <div class="flex flex-wrap gap-2 mt-2 text-[11px]">
+                    <span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ card.high_priority }} high priority</span>
+                    <span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ card.blocked }} blocked</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-400 mb-5">No active task allocation yet.</p>
+        {% endif %}
+
+        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <div class="flex items-center justify-between gap-3 mb-2">
+                <p class="text-sm font-semibold text-white">Milestone Progress</p>
+                <span class="text-xs text-slate-400">{{ milestone_stats.complete }}/{{ workspace_metrics.milestones }} complete</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-center">
+                <div>
+                    <p class="text-lg font-black text-emerald-300">{{ milestone_stats.complete }}</p>
+                    <p class="text-[11px] text-slate-500 uppercase tracking-[0.12em]">Done</p>
+                </div>
+                <div>
+                    <p class="text-lg font-black text-blue-300">{{ milestone_stats.open }}</p>
+                    <p class="text-[11px] text-slate-500 uppercase tracking-[0.12em]">Open</p>
+                </div>
+                <div>
+                    <p class="text-lg font-black text-rose-300">{{ milestone_stats.overdue }}</p>
+                    <p class="text-[11px] text-slate-500 uppercase tracking-[0.12em]">Overdue</p>
+                </div>
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="grid xl:grid-cols-[1.05fr_0.95fr] gap-6 mb-8">
+    <article id="milestones" class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Milestone Plan</h2>
+                <p class="text-sm text-slate-400 mt-1">Track major client checkpoints and approval points.</p>
+            </div>
+            <span class="text-xs text-slate-400">{{ milestone_stats.complete }} complete · {{ milestone_stats.open }} open</span>
+        </div>
+
+        <div class="space-y-3 mb-5">
+            {% for milestone in milestones %}
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-semibold text-white">{{ milestone.title }}</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ milestone.owner_name }}{% if milestone.due_date %} · Due {{ milestone.due_date.strftime('%d %b %Y') }}{% endif %}</p>
+                        {% if milestone.notes %}
+                        <p class="text-sm text-slate-300 mt-3">{{ milestone.notes }}</p>
+                        {% endif %}
+                    </div>
+                    <form action="{{ url_for('main.internal_project_milestone_update_status', project_id=project.id, milestone_id=milestone.id) }}" method="post" class="flex gap-2 lg:min-w-[220px]">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="status" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                            {% for status in milestone_statuses %}
+                            <option value="{{ status }}" {% if milestone.status == status %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Save</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-400">No milestones added yet.</p>
+            {% endfor %}
+        </div>
+
+        <form action="{{ url_for('main.internal_project_milestone_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Add Milestone</p>
+            <div class="grid sm:grid-cols-2 gap-3">
+                <input name="title" type="text" required maxlength="200" placeholder="e.g. Pilot signed off" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                <input name="owner_name" type="text" required maxlength="120" value="{{ current_internal_user.full_name if current_internal_user else '' }}" placeholder="Owner" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+                <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    {% for status in milestone_statuses %}
+                    <option value="{{ status }}" {% if status == 'planned' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+                <input name="due_date" type="date" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <textarea name="notes" rows="3" maxlength="2000" placeholder="What should be true when this milestone is complete?" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Add Milestone</button>
+        </form>
+    </article>
+
+    <article id="deliverables" class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Deliverables</h2>
+                <p class="text-sm text-slate-400 mt-1">Manage output commitments, review state, and delivery links.</p>
+            </div>
+            <span class="text-xs text-slate-400">{{ deliverable_stats.delivered }} delivered · {{ deliverable_stats.in_flight }} in flight</span>
+        </div>
+
+        <div class="space-y-3 mb-5">
+            {% for deliverable in deliverables %}
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <p class="text-sm font-semibold text-white">{{ deliverable.title }}</p>
+                            {% if deliverable.link %}
+                            <a href="{{ deliverable.safe_link }}" target="_blank" rel="noopener noreferrer" class="text-[11px] px-2 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-200 hover:bg-blue-500/20 transition">Open Link</a>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">{{ deliverable.owner_name }}{% if deliverable.due_date %} · Due {{ deliverable.due_date.strftime('%d %b %Y') }}{% endif %}</p>
+                        <p class="text-sm text-slate-300 mt-3">{{ deliverable.description }}</p>
+                    </div>
+                    <form action="{{ url_for('main.internal_project_deliverable_update_status', project_id=project.id, deliverable_id=deliverable.id) }}" method="post" class="flex gap-2 lg:min-w-[220px]">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="status" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                            {% for status in deliverable_statuses %}
+                            <option value="{{ status }}" {% if deliverable.status == status %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Save</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-400">No deliverables tracked yet.</p>
+            {% endfor %}
+        </div>
+
+        <form action="{{ url_for('main.internal_project_deliverable_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Add Deliverable</p>
+            <div class="grid sm:grid-cols-2 gap-3">
+                <input name="title" type="text" required maxlength="200" placeholder="e.g. Weekly executive update" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                <input name="owner_name" type="text" required maxlength="120" value="{{ current_internal_user.full_name if current_internal_user else '' }}" placeholder="Owner" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+                <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    {% for status in deliverable_statuses %}
+                    <option value="{{ status }}" {% if status == 'planned' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+                <input name="due_date" type="date" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <input name="link" type="text" maxlength="500" placeholder="Optional: https://... or /internal/..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+            <textarea name="description" rows="3" maxlength="3000" required placeholder="Definition of done, format, and expected audience." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Add Deliverable</button>
+        </form>
+    </article>
+</section>
+
+<section class="grid xl:grid-cols-[1.1fr_0.9fr] gap-6 mb-8">
+    <article id="status-updates" class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Status Updates</h2>
+                <p class="text-sm text-slate-400 mt-1">Capture the weekly narrative: wins, risks, and next actions.</p>
+            </div>
+            <span class="text-xs text-slate-400">{{ status_updates|length }} logged</span>
+        </div>
+
+        <div class="space-y-4 mb-5">
+            {% for update in status_updates %}
+            <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                    <div>
+                        <p class="text-sm font-semibold text-white">{{ update.headline }}</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ update.created_at.strftime('%d %b %Y') if update.created_at else '' }}{% if update.author %} · {{ update.author.full_name }}{% endif %}</p>
+                    </div>
+                    <span class="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-200">{{ update.progress_percent }}% progress</span>
+                </div>
+                <p class="text-sm text-slate-300">{{ update.summary }}</p>
+                {% if update.wins %}
+                <div class="mt-3">
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-emerald-300 mb-1">Wins</p>
+                    <p class="text-sm text-slate-300 whitespace-pre-line">{{ update.wins }}</p>
+                </div>
+                {% endif %}
+                {% if update.risks %}
+                <div class="mt-3">
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-amber-300 mb-1">Risks</p>
+                    <p class="text-sm text-slate-300 whitespace-pre-line">{{ update.risks }}</p>
+                </div>
+                {% endif %}
+                {% if update.next_steps %}
+                <div class="mt-3">
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-blue-300 mb-1">Next Steps</p>
+                    <p class="text-sm text-slate-300 whitespace-pre-line">{{ update.next_steps }}</p>
+                </div>
+                {% endif %}
+            </article>
+            {% else %}
+            <p class="text-sm text-slate-400">No updates posted yet.</p>
+            {% endfor %}
+        </div>
+
+        <form action="{{ url_for('main.internal_project_status_update_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Log New Update</p>
+            <div class="grid sm:grid-cols-[1fr_120px] gap-3">
+                <input name="headline" type="text" required maxlength="200" placeholder="Headline for this reporting cycle" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                <input name="progress_percent" type="number" min="0" max="100" value="{{ project.progress_percent }}" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <textarea name="summary" rows="3" maxlength="3000" required placeholder="What changed, what matters, and what leadership should know." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+            <div class="grid sm:grid-cols-2 gap-3">
+                <textarea name="wins" rows="3" maxlength="2000" placeholder="Wins / completed work" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+                <textarea name="risks" rows="3" maxlength="2000" placeholder="Risks / issues to watch" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+            </div>
+            <textarea name="next_steps" rows="3" maxlength="2000" placeholder="Next actions and expected owner commitments" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Publish Update</button>
+        </form>
+    </article>
+
+    <div class="space-y-6">
+        <article id="risks" class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Risk Register</h2>
+                    <p class="text-sm text-slate-400 mt-1">Track client delivery risks, owners, and mitigation plans.</p>
+                </div>
+                <span class="text-xs text-slate-400">{{ workspace_metrics.open_risks }} open</span>
+            </div>
+
+            <div class="space-y-3 mb-5">
+                {% for risk in risks %}
+                <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-white">{{ risk.title }}</p>
+                                <span class="text-[11px] px-2 py-1 rounded-full {{ internal_risk_severity_class(risk.severity) }}">{{ risk.severity|title }}</span>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-1">{{ risk.owner_name }}{% if risk.due_date %} · Target {{ risk.due_date.strftime('%d %b %Y') }}{% endif %}</p>
+                            <p class="text-sm text-slate-300 mt-3">{{ risk.mitigation }}</p>
+                        </div>
+                        <form action="{{ url_for('main.internal_project_risk_update_status', project_id=project.id, risk_id=risk.id) }}" method="post" class="flex gap-2 sm:min-w-[220px]">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="status" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                                {% for status in risk_statuses %}
+                                <option value="{{ status }}" {% if risk.status == status %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Save</button>
+                        </form>
+                    </div>
+                </article>
+                {% else %}
+                <p class="text-sm text-slate-400">No risks captured yet.</p>
+                {% endfor %}
+            </div>
+
+            <form action="{{ url_for('main.internal_project_risk_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Add Risk</p>
+                <input name="title" type="text" required maxlength="200" placeholder="Risk statement" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <input name="owner_name" type="text" required maxlength="120" value="{{ current_internal_user.full_name if current_internal_user else '' }}" placeholder="Owner" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <input name="due_date" type="date" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <select name="severity" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        {% for severity in risk_severities %}
+                        <option value="{{ severity }}" {% if severity == 'medium' %}selected{% endif %}>{{ severity|title }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        {% for status in risk_statuses %}
+                        <option value="{{ status }}" {% if status == 'open' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <textarea name="mitigation" rows="3" maxlength="2000" required placeholder="Mitigation plan, trigger, and review path" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+                <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Add Risk</button>
+            </form>
+        </article>
+
+        <article id="stakeholders" class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Stakeholder Register</h2>
+                    <p class="text-sm text-slate-400 mt-1">Keep the decision chain visible and current.</p>
+                </div>
+                <span class="text-xs text-slate-400">{{ stakeholders|length }} contacts</span>
+            </div>
+
+            <div class="space-y-3 mb-5">
+                {% for stakeholder in stakeholders %}
+                <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <p class="text-sm font-semibold text-white">{{ stakeholder.name }}</p>
+                        <span class="text-[11px] px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ stakeholder.influence_level|replace('-', ' ')|title }}</span>
+                        <span class="text-[11px] px-2 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-200">{{ stakeholder.stakeholder_type|title }}</span>
+                    </div>
+                    <p class="text-sm text-slate-300">{{ stakeholder.role_title }} · {{ stakeholder.organisation }}</p>
+                    {% if stakeholder.email %}
+                    <p class="text-xs text-slate-400 mt-1">{{ stakeholder.email }}</p>
+                    {% endif %}
+                    {% if stakeholder.notes %}
+                    <p class="text-sm text-slate-400 mt-3">{{ stakeholder.notes }}</p>
+                    {% endif %}
+                </article>
+                {% else %}
+                <p class="text-sm text-slate-400">No stakeholders recorded yet.</p>
+                {% endfor %}
+            </div>
+
+            <form action="{{ url_for('main.internal_project_stakeholder_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Add Stakeholder</p>
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <input name="name" type="text" required maxlength="120" placeholder="Name" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                    <input name="role_title" type="text" required maxlength="120" placeholder="Role" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <input name="organisation" type="text" required maxlength="160" value="{{ project.client.name }}" placeholder="Organisation" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <input name="email" type="email" maxlength="255" placeholder="Email (optional)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <select name="stakeholder_type" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        {% for stakeholder_type in stakeholder_types %}
+                        <option value="{{ stakeholder_type }}" {% if stakeholder_type == 'client' %}selected{% endif %}>{{ stakeholder_type|title }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="influence_level" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        {% for influence_level in stakeholder_influence_levels %}
+                        <option value="{{ influence_level }}" {% if influence_level == 'core' %}selected{% endif %}>{{ influence_level|replace('-', ' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <textarea name="notes" rows="3" maxlength="1500" placeholder="Decision rights, communication preference, or constraints" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+                <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Add Stakeholder</button>
+            </form>
+        </article>
+    </div>
+</section>
+
+<section class="grid xl:grid-cols-[1.15fr_0.85fr] gap-6">
+    <article id="tasks" class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Task Focus</h2>
+                <p class="text-sm text-slate-400 mt-1">The next work that will move this project forward.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ url_for('main.internal_todos', view='nested', project_id=project.id) }}" class="px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">Open Task Plan</a>
+                <a href="{{ url_for('main.internal_todos', view='priority', project_id=project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-semibold transition">Priority Queue</a>
+            </div>
+        </div>
+
+        <div class="space-y-3 mb-5">
+            {% for task in focus_tasks %}
+            <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-semibold text-white">{{ task.title }}</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ task.assignee }}{% if task.due_date %} · Due {{ task.due_date.strftime('%d %b %Y') }}{% endif %}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs px-2.5 py-1 rounded-full {{ internal_priority_class(task.priority) }} bg-slate-900 border border-slate-700">{{ task.priority|title }}</span>
+                        <span class="text-xs px-2.5 py-1 rounded-full {{ internal_status_class(task.status) }}">{{ task.status|replace('-', ' ')|title }}</span>
+                    </div>
+                </div>
+                {% if task.resources %}
+                <div class="flex flex-wrap gap-1 mt-3">
+                    {% for resource in task.resources %}
+                    <a href="{{ resource.safe_link }}" target="_blank" rel="noopener noreferrer" class="text-[11px] px-2 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-200 hover:bg-blue-500/20 transition">{{ resource.title }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </article>
+            {% else %}
+            <p class="text-sm text-slate-400">No open tasks for this project.</p>
+            {% endfor %}
+        </div>
+
+        {% if completed_tasks_recent %}
+        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <p class="text-xs uppercase tracking-[0.12em] text-slate-500 mb-3">Recently Completed</p>
+            <div class="space-y-2">
+                {% for task in completed_tasks_recent %}
+                <div class="flex items-center justify-between gap-3 text-sm">
+                    <span class="text-slate-300">{{ task.title }}</span>
+                    <span class="text-xs px-2.5 py-1 rounded-full {{ internal_status_class(task.status) }}">{{ task.status|replace('-', ' ')|title }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </article>
+
+    <article id="knowledge" class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Knowledge and Reuse</h2>
+                <p class="text-sm text-slate-400 mt-1">Keep project context linked to the delivery workspace.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ url_for('main.internal_docs', project_id=project.id) }}" class="px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">Project Docs</a>
+                <a href="{{ url_for('main.internal_resources', project_id=project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-semibold transition">Open Library</a>
+            </div>
+        </div>
+
+        {% if doc_pages %}
+        <div class="mb-5">
+            <p class="text-xs uppercase tracking-[0.12em] text-blue-300 mb-3">Workspace Pages</p>
+            <div class="space-y-3">
+                {% for page in doc_pages %}
+                <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                    <a href="{{ url_for('main.internal_docs', doc_slug=page.slug) }}" class="text-sm font-semibold text-white hover:text-blue-300 transition">{{ page.title }}</a>
+                    <p class="text-xs text-slate-400 mt-1">{{ page.status|title }}{% if page.author %} · {{ page.author.full_name }}{% endif %}</p>
+                    <p class="text-sm text-slate-300 mt-3">{{ page.summary }}</p>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="space-y-3 mb-5">
+            {% for resource in project.resources %}
+            <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <a href="{{ resource.safe_link }}" target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-white hover:text-blue-300 transition">{{ resource.title }}</a>
+                <p class="text-xs text-slate-400 mt-1">{{ resource.category|replace('-', ' ')|title }}</p>
+                <p class="text-sm text-slate-300 mt-3">{{ resource.description }}</p>
+                {% if resource.tags %}
+                <div class="flex flex-wrap gap-1 mt-3">
+                    {% for tag in resource.tags %}
+                    <span class="text-[11px] px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">#{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </article>
+            {% else %}
+            <p class="text-sm text-slate-400">No documents linked to this project yet.</p>
+        {% endfor %}
+        </div>
+
+        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <p class="text-xs uppercase tracking-[0.12em] text-slate-500 mb-2">Next Library Move</p>
+            <p class="text-sm text-slate-300">Add the project brief, meeting notes, and client-ready output pack so this workspace behaves like a reusable internal handbook.</p>
+        </div>
+    </article>
+</section>
+{% endblock %}

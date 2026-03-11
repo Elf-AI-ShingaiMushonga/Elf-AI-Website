@@ -5,8 +5,14 @@ from datetime import date, timedelta
 
 from models import (
     InternalClient,
+    InternalDocPage,
     InternalMessage,
     InternalMessageChannel,
+    InternalProjectDeliverable,
+    InternalProjectMilestone,
+    InternalProjectRisk,
+    InternalProjectStakeholder,
+    InternalProjectStatusUpdate,
     InternalProject,
     InternalProjectStarterPlan,
     InternalResource,
@@ -69,8 +75,9 @@ def test_internal_login_and_dashboard_access(client):
     dashboard_response = client.get("/internal/dashboard")
     assert dashboard_response.status_code == 200
     html = dashboard_response.get_data(as_text=True)
-    assert "Delivery Dashboard" in html
+    assert "Delivery Command Center" in html
     assert "Operational Priorities" in html
+    assert "Projects Requiring Attention" in html
 
 
 def test_internal_sections_access_when_logged_in(client):
@@ -96,6 +103,10 @@ def test_internal_sections_access_when_logged_in(client):
     assert messages_response.status_code == 200
     assert "Consultant Messaging" in messages_response.get_data(as_text=True)
 
+    docs_response = client.get("/internal/docs")
+    assert docs_response.status_code == 200
+    assert "Workspace Docs" in docs_response.get_data(as_text=True)
+
 
 def test_internal_omnibar_requires_authentication(client):
     response = client.get("/internal/go?q=projects", follow_redirects=False)
@@ -110,6 +121,10 @@ def test_internal_omnibar_quick_target_navigation(client):
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/internal/projects")
 
+    docs_response = client.get("/internal/go?q=docs", follow_redirects=False)
+    assert docs_response.status_code == 302
+    assert docs_response.headers["Location"].endswith("/internal/docs")
+
 
 def test_internal_omnibar_project_match_navigation(client):
     _login(client)
@@ -121,7 +136,7 @@ def test_internal_omnibar_project_match_navigation(client):
 
     response = client.get("/internal/go?q=project:%20Test%20Internal%20Project", follow_redirects=False)
     assert response.status_code == 302
-    assert response.headers["Location"].endswith(f"/internal/todos?view=nested&project_id={project_id}")
+    assert response.headers["Location"].endswith(f"/internal/projects/{project_id}")
 
 
 def test_internal_omnibar_task_match_navigation(client):
@@ -137,6 +152,14 @@ def test_internal_omnibar_task_match_navigation(client):
     assert response.headers["Location"].endswith(f"/internal/todos?view=priority&project_id={project_id}")
 
 
+def test_internal_omnibar_doc_page_match_navigation(client):
+    _login(client)
+
+    response = client.get("/internal/go?q=page:%20Delivery%20Handbook", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/internal/docs/delivery-handbook")
+
+
 def test_internal_omnibar_unknown_query_shows_feedback(client):
     _login(client)
 
@@ -144,7 +167,7 @@ def test_internal_omnibar_unknown_query_shows_feedback(client):
     assert response.status_code == 200
     html = response.get_data(as_text=True)
     assert "No exact match found. Try page names or prefixes:" in html
-    assert "Delivery Dashboard" in html
+    assert "Delivery Command Center" in html
 
 
 def test_internal_logout(client):
@@ -371,6 +394,289 @@ def test_internal_project_add_can_disable_starter_plan(client):
         created_project = InternalProject.query.filter_by(name="No Starter Plan Project").first()
         assert created_project is not None
         assert len(created_project.tasks) == 0
+
+
+def test_internal_project_workspace_page(client):
+    _login(client)
+
+    with client.application.app_context():
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        assert project is not None
+        project_id = project.id
+
+    response = client.get(f"/internal/projects/{project_id}")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Project Overview" in html
+    assert "Milestone Plan" in html
+    assert "Deliverables" in html
+    assert "Risk Register" in html
+    assert "Stakeholder Register" in html
+    assert "Pilot execution is underway" in html
+    assert "Delivery Handbook" in html
+
+
+def test_internal_project_workspace_overview_update(client):
+    _login(client)
+
+    with client.application.app_context():
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        assert project is not None
+        project_id = project.id
+        delivery_user = InternalUser.query.filter_by(email="delivery-consultant@elf-ai.co.za").first()
+        assert delivery_user is not None
+        delivery_user_id = delivery_user.id
+
+    csrf_token = _csrf_token_for_path(client, f"/internal/projects/{project_id}")
+    response = client.post(
+        f"/internal/projects/{project_id}/overview",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Updated Internal Project",
+            "summary": "Expanded scope and commercial baseline.",
+            "stage": "operations",
+            "status": "at-risk",
+            "owner_id": str(delivery_user_id),
+            "due_date": (date.today() + timedelta(days=14)).isoformat(),
+            "value_estimate": "18000",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(f"/internal/projects/{project_id}#overview")
+
+    with client.application.app_context():
+        updated_project = db.session.get(InternalProject, project_id)
+        assert updated_project is not None
+        assert updated_project.name == "Updated Internal Project"
+        assert updated_project.stage == "operations"
+        assert updated_project.status == "at-risk"
+        assert updated_project.owner_id == delivery_user_id
+        assert float(updated_project.value_estimate) == 18000.0
+
+
+def test_internal_project_workspace_add_operating_records(client):
+    _login(client)
+
+    with client.application.app_context():
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        assert project is not None
+        project_id = project.id
+
+    csrf_token = _csrf_token_for_path(client, f"/internal/projects/{project_id}")
+
+    milestone_response = client.post(
+        f"/internal/projects/{project_id}/milestones/add",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Go-Live Decision",
+            "owner_name": "Internal Admin",
+            "status": "planned",
+            "due_date": (date.today() + timedelta(days=8)).isoformat(),
+            "notes": "Approve production launch after QA sign-off.",
+        },
+        follow_redirects=False,
+    )
+    assert milestone_response.status_code == 302
+
+    deliverable_response = client.post(
+        f"/internal/projects/{project_id}/deliverables/add",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Launch Checklist",
+            "owner_name": "Internal Admin",
+            "status": "in-progress",
+            "due_date": (date.today() + timedelta(days=6)).isoformat(),
+            "link": "https://example.com/launch-checklist",
+            "description": "Checklist for launch readiness and rollback plan.",
+        },
+        follow_redirects=False,
+    )
+    assert deliverable_response.status_code == 302
+
+    risk_response = client.post(
+        f"/internal/projects/{project_id}/risks/add",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Client review cycle could slip by a week",
+            "owner_name": "Internal Admin",
+            "severity": "medium",
+            "status": "open",
+            "due_date": (date.today() + timedelta(days=4)).isoformat(),
+            "mitigation": "Pre-book client review slot and circulate materials early.",
+        },
+        follow_redirects=False,
+    )
+    assert risk_response.status_code == 302
+
+    stakeholder_response = client.post(
+        f"/internal/projects/{project_id}/stakeholders/add",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Jordan Sponsor",
+            "role_title": "Programme Sponsor",
+            "organisation": "Test Client",
+            "email": "jordan.sponsor@example.com",
+            "stakeholder_type": "client",
+            "influence_level": "core",
+            "notes": "Needs weekly summary before steering review.",
+        },
+        follow_redirects=False,
+    )
+    assert stakeholder_response.status_code == 302
+
+    status_update_response = client.post(
+        f"/internal/projects/{project_id}/status-updates/add",
+        data={
+            "csrf_token": csrf_token,
+            "headline": "Launch preparation has started",
+            "summary": "The team is preparing launch readiness artefacts and closing final QA items.",
+            "wins": "Drafted launch checklist.",
+            "risks": "Client review cycle remains tight.",
+            "next_steps": "Close QA and confirm go-live date.",
+            "progress_percent": "55",
+        },
+        follow_redirects=False,
+    )
+    assert status_update_response.status_code == 302
+
+    with client.application.app_context():
+        assert InternalProjectMilestone.query.filter_by(title="Go-Live Decision", project_id=project_id).first() is not None
+        assert InternalProjectDeliverable.query.filter_by(title="Launch Checklist", project_id=project_id).first() is not None
+        assert InternalProjectRisk.query.filter_by(title="Client review cycle could slip by a week", project_id=project_id).first() is not None
+        assert InternalProjectStakeholder.query.filter_by(name="Jordan Sponsor", project_id=project_id).first() is not None
+        latest_update = InternalProjectStatusUpdate.query.filter_by(
+            headline="Launch preparation has started",
+            project_id=project_id,
+        ).first()
+        assert latest_update is not None
+        assert latest_update.progress_percent == 55
+
+
+def test_internal_project_workspace_inline_status_updates(client):
+    _login(client)
+
+    with client.application.app_context():
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        milestone = InternalProjectMilestone.query.filter_by(title="Pilot Review").first()
+        deliverable = InternalProjectDeliverable.query.filter_by(title="Weekly Client Update").first()
+        risk = InternalProjectRisk.query.filter_by(title="Edge-case routing may delay launch").first()
+        assert project is not None
+        assert milestone is not None
+        assert deliverable is not None
+        assert risk is not None
+        project_id = project.id
+        milestone_id = milestone.id
+        deliverable_id = deliverable.id
+        risk_id = risk.id
+
+    csrf_token = _csrf_token_for_path(client, f"/internal/projects/{project_id}")
+    milestone_response = client.post(
+        f"/internal/projects/{project_id}/milestones/{milestone_id}/status",
+        data={"csrf_token": csrf_token, "status": "done"},
+        follow_redirects=False,
+    )
+    assert milestone_response.status_code == 302
+
+    deliverable_response = client.post(
+        f"/internal/projects/{project_id}/deliverables/{deliverable_id}/status",
+        data={"csrf_token": csrf_token, "status": "delivered"},
+        follow_redirects=False,
+    )
+    assert deliverable_response.status_code == 302
+
+    risk_response = client.post(
+        f"/internal/projects/{project_id}/risks/{risk_id}/status",
+        data={"csrf_token": csrf_token, "status": "mitigated"},
+        follow_redirects=False,
+    )
+    assert risk_response.status_code == 302
+
+    with client.application.app_context():
+        assert db.session.get(InternalProjectMilestone, milestone_id).status == "done"
+        assert db.session.get(InternalProjectDeliverable, deliverable_id).status == "delivered"
+        assert db.session.get(InternalProjectRisk, risk_id).status == "mitigated"
+
+
+def test_internal_docs_workspace_page(client):
+    _login(client)
+
+    response = client.get("/internal/docs")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Workspace Docs" in html
+    assert "Delivery Handbook" in html
+    assert "Project Brief" in html
+    assert "Weekly rhythm" in html
+
+
+def test_internal_docs_create_page(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/docs")
+
+    with client.application.app_context():
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        parent_page = InternalDocPage.query.filter_by(slug="delivery-handbook").first()
+        assert project is not None
+        assert parent_page is not None
+
+    response = client.post(
+        "/internal/docs/add",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Steering Meeting Notes",
+            "summary": "Notes and decisions from the weekly steering call.",
+            "body": "# Steering Meeting Notes\n\n- [x] Reviewed pilot quality\n- [ ] Confirm launch window",
+            "status": "published",
+            "project_id": str(project.id),
+            "parent_id": str(parent_page.id),
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/internal/docs/steering-meeting-notes")
+
+    with client.application.app_context():
+        created_page = InternalDocPage.query.filter_by(slug="steering-meeting-notes").first()
+        assert created_page is not None
+        assert created_page.project_id == project.id
+        assert created_page.parent_id == parent_page.id
+
+
+def test_internal_docs_update_page(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/docs/delivery-handbook")
+
+    with client.application.app_context():
+        page = InternalDocPage.query.filter_by(slug="delivery-handbook").first()
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        assert page is not None
+        assert project is not None
+        page_id = page.id
+        project_id = project.id
+
+    response = client.post(
+        f"/internal/docs/{page_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Delivery Operating Handbook",
+            "summary": "Updated handbook for delivery operating rules.",
+            "body": "# Delivery Operating Handbook\n\n## Weekly rhythm\n- [x] Publish the update\n\n> Keep the client team aligned.",
+            "status": "published",
+            "project_id": str(project_id),
+            "parent_id": "",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/internal/docs/delivery-operating-handbook")
+
+    with client.application.app_context():
+        updated_page = db.session.get(InternalDocPage, page_id)
+        assert updated_page is not None
+        assert updated_page.slug == "delivery-operating-handbook"
+        assert updated_page.title == "Delivery Operating Handbook"
+        assert "Keep the client team aligned" in updated_page.body
 
 
 def test_internal_project_starter_plan_template_update_changes_generated_tasks_for_industry(client):

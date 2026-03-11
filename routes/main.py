@@ -4,6 +4,7 @@ import json
 import os
 import re
 import secrets
+from decimal import Decimal, InvalidOperation
 from datetime import date, datetime, timedelta, timezone
 from functools import wraps
 from urllib.parse import urlparse
@@ -21,6 +22,7 @@ from flask import (
     url_for,
 )
 from flask_mail import Message
+from markupsafe import Markup, escape
 from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 from werkzeug.utils import secure_filename
@@ -30,8 +32,14 @@ from models import (
     Branding,
     InternalAnnouncement,
     InternalClient,
+    InternalDocPage,
     InternalMessage,
     InternalMessageChannel,
+    InternalProjectDeliverable,
+    InternalProjectMilestone,
+    InternalProjectRisk,
+    InternalProjectStakeholder,
+    InternalProjectStatusUpdate,
     InternalProject,
     InternalProjectStarterPlan,
     InternalResource,
@@ -87,6 +95,13 @@ INTERNAL_TASK_PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
 INTERNAL_TASK_STATUS_RANK = {"todo": 0, "in-progress": 1, "blocked": 2, "done": 3}
 INTERNAL_PROJECT_STAGES = ("discovery", "build", "delivery", "operations")
 INTERNAL_PROJECT_STATUSES = ("on-track", "at-risk", "blocked", "completed")
+INTERNAL_MILESTONE_STATUSES = ("planned", "in-progress", "at-risk", "done")
+INTERNAL_DELIVERABLE_STATUSES = ("planned", "in-progress", "review", "delivered")
+INTERNAL_RISK_SEVERITIES = ("critical", "high", "medium", "low")
+INTERNAL_RISK_STATUSES = ("open", "monitoring", "mitigated", "closed")
+INTERNAL_STAKEHOLDER_TYPES = ("client", "internal", "partner", "vendor")
+INTERNAL_STAKEHOLDER_INFLUENCE_LEVELS = ("decision-maker", "core", "support", "observer")
+INTERNAL_DOC_STATUSES = ("published", "draft", "archived")
 INTERNAL_MESSAGE_CHANNEL_TYPES = ("project", "direct", "group")
 INTERNAL_RESOURCE_STATES = ("all", "linked", "unlinked", "untagged")
 RESOURCE_CATEGORY_FALLBACK = "general"
@@ -429,6 +444,278 @@ def _normalize_internal_project_stage(raw_value: str | None) -> str:
 def _normalize_internal_project_status(raw_value: str | None) -> str:
     normalized = (raw_value or "on-track").strip().lower()
     return normalized if normalized in INTERNAL_PROJECT_STATUSES else "on-track"
+
+
+def _normalize_internal_milestone_status(raw_value: str | None) -> str:
+    normalized = (raw_value or "planned").strip().lower()
+    return normalized if normalized in INTERNAL_MILESTONE_STATUSES else "planned"
+
+
+def _normalize_internal_deliverable_status(raw_value: str | None) -> str:
+    normalized = (raw_value or "planned").strip().lower()
+    return normalized if normalized in INTERNAL_DELIVERABLE_STATUSES else "planned"
+
+
+def _normalize_internal_risk_severity(raw_value: str | None) -> str:
+    normalized = (raw_value or "medium").strip().lower()
+    return normalized if normalized in INTERNAL_RISK_SEVERITIES else "medium"
+
+
+def _normalize_internal_risk_status(raw_value: str | None) -> str:
+    normalized = (raw_value or "open").strip().lower()
+    return normalized if normalized in INTERNAL_RISK_STATUSES else "open"
+
+
+def _normalize_internal_stakeholder_type(raw_value: str | None) -> str:
+    normalized = (raw_value or "client").strip().lower()
+    return normalized if normalized in INTERNAL_STAKEHOLDER_TYPES else "client"
+
+
+def _normalize_internal_stakeholder_influence(raw_value: str | None) -> str:
+    normalized = (raw_value or "core").strip().lower()
+    return normalized if normalized in INTERNAL_STAKEHOLDER_INFLUENCE_LEVELS else "core"
+
+
+def _normalize_internal_doc_status(raw_value: str | None) -> str:
+    normalized = (raw_value or "published").strip().lower()
+    return normalized if normalized in INTERNAL_DOC_STATUSES else "published"
+
+
+def _slugify_text(raw_value: str | None, fallback: str = "page") -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "-", (raw_value or "").strip().lower()).strip("-")
+    return normalized or fallback
+
+
+def _unique_internal_doc_slug(title: str, *, page_id: int | None = None) -> str:
+    base_slug = _slugify_text(title, fallback="page")
+    candidate = base_slug
+    suffix = 2
+    while True:
+        existing_page = InternalDocPage.query.filter_by(slug=candidate).first()
+        if not existing_page or existing_page.id == page_id:
+            return candidate
+        candidate = f"{base_slug}-{suffix}"
+        suffix += 1
+
+
+def _render_internal_doc_inline(text: str) -> str:
+    if not text:
+        return ""
+
+    rendered_parts: list[str] = []
+    cursor = 0
+    token_pattern = re.compile(r"\[([^\]]+)\]\(([^)]+)\)|`([^`]+)`|\*\*(.+?)\*\*")
+
+    for match in token_pattern.finditer(text):
+        rendered_parts.append(str(escape(text[cursor:match.start()])))
+        label, href, code_text, strong_text = match.groups()
+        if label is not None and href is not None:
+            safe_href = href.strip()
+            if _is_safe_resource_link(safe_href):
+                rendered_parts.append(
+                    f'<a href="{escape(safe_href)}" class="text-blue-300 underline underline-offset-2" '
+                    f'target="_blank" rel="noopener noreferrer">{escape(label)}</a>'
+                )
+            else:
+                rendered_parts.append(str(escape(label)))
+        elif code_text is not None:
+            rendered_parts.append(
+                f'<code class="rounded-md bg-slate-900 px-1.5 py-0.5 text-[0.92em] text-blue-200">{escape(code_text)}</code>'
+            )
+        elif strong_text is not None:
+            rendered_parts.append(f"<strong>{escape(strong_text)}</strong>")
+        cursor = match.end()
+
+    rendered_parts.append(str(escape(text[cursor:])))
+    return "".join(rendered_parts)
+
+
+def _render_internal_doc_body(raw_text: str | None) -> Markup:
+    lines = (raw_text or "").splitlines()
+    html_blocks: list[str] = []
+    index = 0
+
+    while index < len(lines):
+        line = lines[index]
+        stripped = line.strip()
+        if not stripped:
+            index += 1
+            continue
+
+        if stripped.startswith("```"):
+            code_lines: list[str] = []
+            index += 1
+            while index < len(lines) and not lines[index].strip().startswith("```"):
+                code_lines.append(lines[index])
+                index += 1
+            if index < len(lines):
+                index += 1
+            html_blocks.append(
+                '<pre class="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950 px-4 py-4 text-sm text-slate-200"><code>'
+                f"{escape(chr(10).join(code_lines))}</code></pre>"
+            )
+            continue
+
+        heading_match = re.match(r"^(#{1,3})\s+(.+)$", stripped)
+        if heading_match:
+            level = len(heading_match.group(1))
+            heading_text = heading_match.group(2).strip()
+            anchor = _slugify_text(heading_text, fallback="section")
+            heading_classes = {
+                1: "text-3xl font-black text-white mt-2",
+                2: "text-2xl font-bold text-white mt-2",
+                3: "text-xl font-bold text-white mt-2",
+            }
+            html_blocks.append(
+                f'<h{level} id="{anchor}" class="{heading_classes[level]}">{_render_internal_doc_inline(heading_text)}</h{level}>'
+            )
+            index += 1
+            continue
+
+        if re.match(r"^[-*]\s+\[[ xX]\]\s+", stripped):
+            items: list[str] = []
+            while index < len(lines):
+                candidate = lines[index].strip()
+                match = re.match(r"^[-*]\s+\[([ xX])\]\s+(.+)$", candidate)
+                if not match:
+                    break
+                checked = match.group(1).lower() == "x"
+                item_text = _render_internal_doc_inline(match.group(2).strip())
+                checkbox_class = "bg-blue-500 border-blue-500 text-white" if checked else "border-slate-600"
+                checkmark = '<i class="fa-solid fa-check text-[10px]"></i>' if checked else ""
+                items.append(
+                    '<li class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2">'
+                    f'<span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-md border {checkbox_class}">{checkmark}</span>'
+                    f'<span class="text-slate-200">{item_text}</span>'
+                    "</li>"
+                )
+                index += 1
+            html_blocks.append(f'<ul class="space-y-2">{"".join(items)}</ul>')
+            continue
+
+        if re.match(r"^[-*]\s+.+$", stripped):
+            items: list[str] = []
+            while index < len(lines):
+                candidate = lines[index].strip()
+                if not re.match(r"^[-*]\s+.+$", candidate) or re.match(r"^[-*]\s+\[[ xX]\]\s+", candidate):
+                    break
+                item_text = _render_internal_doc_inline(re.sub(r"^[-*]\s+", "", candidate, count=1))
+                items.append(f'<li class="text-slate-200">{item_text}</li>')
+                index += 1
+            html_blocks.append(f'<ul class="list-disc space-y-2 pl-5">{"".join(items)}</ul>')
+            continue
+
+        if re.match(r"^\d+\.\s+.+$", stripped):
+            items: list[str] = []
+            while index < len(lines):
+                candidate = lines[index].strip()
+                if not re.match(r"^\d+\.\s+.+$", candidate):
+                    break
+                item_text = _render_internal_doc_inline(re.sub(r"^\d+\.\s+", "", candidate, count=1))
+                items.append(f'<li class="text-slate-200">{item_text}</li>')
+                index += 1
+            html_blocks.append(f'<ol class="list-decimal space-y-2 pl-5">{"".join(items)}</ol>')
+            continue
+
+        if stripped.startswith(">"):
+            quote_lines: list[str] = []
+            while index < len(lines) and lines[index].strip().startswith(">"):
+                quote_lines.append(lines[index].strip().lstrip(">").strip())
+                index += 1
+            quote_html = "<br>".join(_render_internal_doc_inline(item) for item in quote_lines if item)
+            html_blocks.append(
+                '<blockquote class="rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-slate-200">'
+                f"{quote_html}</blockquote>"
+            )
+            continue
+
+        paragraph_lines: list[str] = []
+        while index < len(lines):
+            candidate = lines[index].strip()
+            if not candidate:
+                break
+            if candidate.startswith("```") or re.match(r"^(#{1,3})\s+(.+)$", candidate):
+                break
+            if candidate.startswith(">") or re.match(r"^[-*]\s+.+$", candidate) or re.match(r"^\d+\.\s+.+$", candidate):
+                break
+            paragraph_lines.append(candidate)
+            index += 1
+        paragraph_html = " ".join(_render_internal_doc_inline(item) for item in paragraph_lines)
+        html_blocks.append(f'<p class="text-base leading-7 text-slate-200">{paragraph_html}</p>')
+
+    return Markup("\n".join(html_blocks))
+
+
+def _internal_doc_outline(raw_text: str | None) -> list[dict]:
+    outline: list[dict] = []
+    for line in (raw_text or "").splitlines():
+        stripped = line.strip()
+        match = re.match(r"^(#{1,3})\s+(.+)$", stripped)
+        if not match:
+            continue
+        level = len(match.group(1))
+        text = match.group(2).strip()
+        outline.append({"level": level, "text": text, "anchor": _slugify_text(text, fallback="section")})
+    return outline
+
+
+def _normalize_progress_percent(raw_value: str | None) -> int | None:
+    if raw_value is None:
+        return None
+    try:
+        progress_percent = int(str(raw_value).strip())
+    except (TypeError, ValueError):
+        return None
+    if progress_percent < 0 or progress_percent > 100:
+        return None
+    return progress_percent
+
+
+def _parse_currency_value(raw_value: str | None) -> Decimal | None | object:
+    candidate = (raw_value or "").strip().replace(",", "")
+    if not candidate:
+        return None
+    try:
+        parsed = Decimal(candidate)
+    except (InvalidOperation, ValueError):
+        return ...
+    if parsed < 0:
+        return ...
+    return parsed
+
+
+def _serialize_currency(value) -> str:
+    if value is None:
+        return ""
+    try:
+        return format(Decimal(value), "f").rstrip("0").rstrip(".")
+    except (InvalidOperation, ValueError, TypeError):
+        return str(value)
+
+
+def _timeline_status_sort_rank(status: str | None) -> int:
+    normalized = (status or "").strip().lower()
+    rank = {
+        "planned": 0,
+        "in-progress": 1,
+        "review": 2,
+        "at-risk": 3,
+        "done": 4,
+        "delivered": 4,
+        "closed": 4,
+    }
+    return rank.get(normalized, 5)
+
+
+def _internal_risk_severity_class(severity: str | None) -> str:
+    normalized = (severity or "").strip().lower()
+    if normalized == "critical":
+        return "bg-rose-500/20 text-rose-200 border border-rose-500/40"
+    if normalized == "high":
+        return "bg-orange-500/20 text-orange-200 border border-orange-500/40"
+    if normalized == "medium":
+        return "bg-amber-500/20 text-amber-200 border border-amber-500/40"
+    return "bg-blue-500/20 text-blue-200 border border-blue-500/40"
 
 
 def _normalize_project_timeline_days(raw_value: str | None) -> int:
@@ -914,6 +1201,7 @@ def inject_internal_user_context():
         "current_internal_user": getattr(g, "internal_user", None),
         "internal_status_class": _internal_status_class,
         "internal_priority_class": _internal_priority_class,
+        "internal_risk_severity_class": _internal_risk_severity_class,
         "csrf_token": _internal_csrf_token,
     }
 
@@ -1047,6 +1335,7 @@ def internal_logout():
 @main_bp.route("/internal/dashboard")
 @internal_login_required
 def internal_dashboard():
+    current_user = g.internal_user
     open_tasks = InternalTask.query.filter(InternalTask.status != "done").count()
     clients_count = InternalClient.query.count()
     active_projects = InternalProject.query.filter(InternalProject.status != "completed").count()
@@ -1066,13 +1355,49 @@ def internal_dashboard():
     ).count()
 
     upcoming_tasks = (
-        InternalTask.query.filter(InternalTask.status != "done")
+        InternalTask.query.options(selectinload(InternalTask.project)).filter(InternalTask.status != "done")
         .order_by(InternalTask.due_date.is_(None), InternalTask.due_date.asc(), InternalTask.created_at.desc())
         .limit(8)
         .all()
     )
-    recent_projects = InternalProject.query.order_by(InternalProject.created_at.desc()).limit(6).all()
+    open_task_records = (
+        InternalTask.query.options(selectinload(InternalTask.project))
+        .filter(InternalTask.status != "done")
+        .all()
+    )
+    recent_projects = (
+        InternalProject.query.options(
+            selectinload(InternalProject.client),
+            selectinload(InternalProject.tasks),
+            selectinload(InternalProject.milestones),
+            selectinload(InternalProject.risks),
+            selectinload(InternalProject.status_updates),
+        )
+        .order_by(InternalProject.created_at.desc())
+        .limit(6)
+        .all()
+    )
+    portfolio_projects = (
+        InternalProject.query.options(
+            selectinload(InternalProject.client),
+            selectinload(InternalProject.tasks),
+            selectinload(InternalProject.milestones),
+            selectinload(InternalProject.risks),
+            selectinload(InternalProject.status_updates),
+        )
+        .order_by(InternalProject.name.asc())
+        .all()
+    )
     announcements = InternalAnnouncement.query.order_by(InternalAnnouncement.created_at.desc()).limit(4).all()
+    recent_updates = (
+        InternalProjectStatusUpdate.query.options(
+            selectinload(InternalProjectStatusUpdate.project).selectinload(InternalProject.client),
+            selectinload(InternalProjectStatusUpdate.author),
+        )
+        .order_by(InternalProjectStatusUpdate.created_at.desc())
+        .limit(5)
+        .all()
+    )
     total_resources = InternalResource.query.count()
     resources_without_tags = InternalResource.query.filter(~InternalResource.tags.any()).count()
     resources_without_links = InternalResource.query.filter(
@@ -1080,6 +1405,77 @@ def internal_dashboard():
         ~InternalResource.tasks.any(),
     ).count()
     resources_linked = total_resources - resources_without_links
+    active_portfolio_projects = [
+        project for project in portfolio_projects if (project.status or "").strip().lower() != "completed"
+    ]
+    portfolio_progress = (
+        int(sum(project.progress_percent for project in active_portfolio_projects) / len(active_portfolio_projects))
+        if active_portfolio_projects
+        else 0
+    )
+    stage_breakdown = [
+        {
+            "stage": stage,
+            "label": stage.title(),
+            "count": sum(
+                1
+                for project in active_portfolio_projects
+                if (project.stage or "").strip().lower() == stage
+            ),
+        }
+        for stage in INTERNAL_PROJECT_STAGES
+    ]
+    at_risk_project_records = [
+        project
+        for project in active_portfolio_projects
+        if (project.status or "").strip().lower() in {"at-risk", "blocked"}
+        or project.open_risks_count > 0
+        or project.overdue_milestones_count > 0
+    ]
+    at_risk_projects = sorted(
+        at_risk_project_records,
+        key=lambda project: (
+            0 if (project.status or "").strip().lower() == "blocked" else 1,
+            -project.open_risks_count,
+            -project.overdue_milestones_count,
+            project.next_milestone.due_date if project.next_milestone and project.next_milestone.due_date else date.max,
+            project.name.lower(),
+        ),
+    )[:5]
+    upcoming_milestones = sorted(
+        [
+            {"project": project, "milestone": milestone}
+            for project in active_portfolio_projects
+            for milestone in project.milestones
+            if not milestone.is_done and milestone.due_date is not None
+        ],
+        key=lambda item: (
+            item["milestone"].due_date or date.max,
+            _timeline_status_sort_rank(item["milestone"].status),
+            item["project"].name.lower(),
+        ),
+    )[:8]
+    workload_by_assignee: dict[str, dict] = {}
+    current_user_name = (current_user.full_name or "").strip().lower() if current_user else ""
+    my_focus_tasks = []
+    for task in open_task_records:
+        assignee_label = (task.assignee or "Unassigned").strip() or "Unassigned"
+        workload = workload_by_assignee.setdefault(
+            assignee_label,
+            {"assignee": assignee_label, "open_tasks": 0, "high_priority": 0, "blocked": 0},
+        )
+        workload["open_tasks"] += 1
+        if (task.priority or "").strip().lower() == "high":
+            workload["high_priority"] += 1
+        if (task.status or "").strip().lower() == "blocked":
+            workload["blocked"] += 1
+        if current_user_name and assignee_label.lower() == current_user_name:
+            my_focus_tasks.append(task)
+    team_workload_cards = sorted(
+        workload_by_assignee.values(),
+        key=lambda item: (-item["open_tasks"], -item["high_priority"], item["assignee"].lower()),
+    )[:6]
+    my_focus_tasks = sorted(my_focus_tasks, key=_task_sort_key)[:5]
     journey_steps = [
         {
             "title": "Capture Lead Context",
@@ -1116,6 +1512,8 @@ def internal_dashboard():
             "blocked": blocked_tasks,
             "due_soon": due_soon_tasks,
             "overdue": overdue_tasks,
+            "at_risk_projects": len(at_risk_project_records),
+            "portfolio_progress": portfolio_progress,
             "requirements": sum(len(item["items"]) for item in INTERNAL_SITE_REQUIREMENTS),
             "resources": total_resources,
         },
@@ -1130,6 +1528,12 @@ def internal_dashboard():
         announcements=announcements,
         due_soon_cutoff=due_soon_cutoff,
         journey_steps=journey_steps,
+        recent_updates=recent_updates,
+        at_risk_projects=at_risk_projects,
+        upcoming_milestones=upcoming_milestones,
+        team_workload_cards=team_workload_cards,
+        my_focus_tasks=my_focus_tasks,
+        stage_breakdown=stage_breakdown,
     )
 
 
@@ -1150,8 +1554,12 @@ def internal_go():
         ("client ", "client"),
         ("task:", "task"),
         ("task ", "task"),
-        ("doc:", "resource"),
-        ("docs:", "resource"),
+        ("page:", "docpage"),
+        ("page ", "docpage"),
+        ("wiki:", "docpage"),
+        ("wiki ", "docpage"),
+        ("doc:", "docpage"),
+        ("docs:", "docpage"),
         ("resource:", "resource"),
         ("message:", "message"),
         ("channel:", "message"),
@@ -1177,6 +1585,7 @@ def internal_go():
         "projects": url_for("main.internal_projects"),
         "project": url_for("main.internal_projects"),
         "new project": f"{url_for('main.internal_projects')}#new-project",
+        "workspace": url_for("main.internal_projects"),
         "clients": url_for("main.internal_clients"),
         "client": url_for("main.internal_clients"),
         "new client": f"{url_for('main.internal_clients')}#new-client",
@@ -1184,9 +1593,12 @@ def internal_go():
         "new task": f"{url_for('main.internal_todos')}#new-task",
         "messages": url_for("main.internal_messages"),
         "message": url_for("main.internal_messages"),
+        "docs": url_for("main.internal_docs"),
+        "doc": url_for("main.internal_docs"),
+        "wiki": url_for("main.internal_docs"),
+        "pages": url_for("main.internal_docs"),
         "resources": url_for("main.internal_resources"),
         "resource": url_for("main.internal_resources"),
-        "docs": url_for("main.internal_resources"),
         "knowledge": url_for("main.internal_resources"),
         "library": url_for("main.internal_resources"),
     }
@@ -1211,7 +1623,7 @@ def internal_go():
         )
         if project_match:
             flash(f"Opened project '{project_match.name}'.", "success")
-            return redirect(url_for("main.internal_todos", view="nested", project_id=project_match.id))
+            return redirect(url_for("main.internal_project_workspace", project_id=project_match.id))
 
     if scope_allows("client"):
         client_match = (
@@ -1244,6 +1656,22 @@ def internal_go():
         if task_match:
             flash(f"Opened task queue for '{task_match.project.name}'.", "success")
             return redirect(url_for("main.internal_todos", view="priority", project_id=task_match.project_id))
+
+    if scope_allows("docpage"):
+        doc_page_match = (
+            InternalDocPage.query.filter(
+                or_(
+                    InternalDocPage.title.ilike(query_pattern),
+                    InternalDocPage.summary.ilike(query_pattern),
+                    InternalDocPage.body.ilike(query_pattern),
+                )
+            )
+            .order_by(InternalDocPage.updated_at.desc(), InternalDocPage.title.asc())
+            .first()
+        )
+        if doc_page_match:
+            flash(f"Opened workspace doc '{doc_page_match.title}'.", "success")
+            return redirect(url_for("main.internal_docs", doc_slug=doc_page_match.slug))
 
     if scope_allows("resource"):
         resource_match = (
@@ -1289,7 +1717,7 @@ def internal_go():
             return redirect(url_for("main.internal_messages"))
 
     flash(
-        "No exact match found. Try page names or prefixes: project:, client:, task:, doc:, message:.",
+        "No exact match found. Try page names or prefixes: project:, client:, task:, page:, resource:, message:.",
         "warning",
     )
     return redirect(url_for("main.internal_dashboard"))
@@ -1360,23 +1788,33 @@ def internal_projects():
 
     projects = (
         InternalProject.query.options(
+            selectinload(InternalProject.client),
+            selectinload(InternalProject.owner),
             selectinload(InternalProject.resources),
             selectinload(InternalProject.message_channel),
+            selectinload(InternalProject.milestones),
+            selectinload(InternalProject.deliverables),
+            selectinload(InternalProject.risks),
+            selectinload(InternalProject.status_updates),
         )
         .order_by(InternalProject.status.asc(), InternalProject.name.asc())
         .all()
     )
     project_cards = []
     for project in projects:
-        total_tasks = len(project.tasks)
-        completed_tasks = sum(1 for task in project.tasks if (task.status or "").lower() == "done")
-        progress = int((completed_tasks / total_tasks) * 100) if total_tasks else 0
+        total_tasks = project.total_tasks_count
+        completed_tasks = project.completed_tasks_count
+        progress = project.progress_percent
         project_cards.append(
             {
                 "project": project,
                 "total_tasks": total_tasks,
                 "completed_tasks": completed_tasks,
                 "progress": progress,
+                "open_risks": project.open_risks_count,
+                "milestones": len(project.milestones),
+                "deliverables": len(project.deliverables),
+                "latest_update": project.latest_status_update,
             }
         )
 
@@ -1584,6 +2022,433 @@ def internal_project_add():
         success_notes.append("Starter delivery plan generated.")
     flash(" ".join(success_notes), "success")
     return redirect(url_for("main.internal_projects", client_id=redirect_client_id))
+
+
+@main_bp.route("/internal/projects/<int:project_id>")
+@internal_login_required
+def internal_project_workspace(project_id: int):
+    project = (
+        InternalProject.query.options(
+            selectinload(InternalProject.client),
+            selectinload(InternalProject.owner),
+            selectinload(InternalProject.doc_pages).selectinload(InternalDocPage.author),
+            selectinload(InternalProject.resources).selectinload(InternalResource.tags),
+            selectinload(InternalProject.message_channel),
+            selectinload(InternalProject.tasks).selectinload(InternalTask.resources),
+            selectinload(InternalProject.milestones),
+            selectinload(InternalProject.deliverables),
+            selectinload(InternalProject.stakeholders),
+            selectinload(InternalProject.risks),
+            selectinload(InternalProject.status_updates).selectinload(InternalProjectStatusUpdate.author),
+        )
+        .filter_by(id=project_id)
+        .first_or_404()
+    )
+    if not project.message_channel:
+        _ensure_project_message_channel(project, created_by=g.internal_user)
+        db.session.commit()
+
+    today = date.today()
+    open_tasks = [task for task in project.tasks if not task.is_done]
+    completed_tasks = [task for task in project.tasks if task.is_done]
+    focus_tasks = sorted(open_tasks, key=_task_sort_key)[:7]
+    completed_tasks_recent = sorted(
+        completed_tasks,
+        key=lambda task: (
+            task.due_date or date.min,
+            task.created_at or datetime.min.replace(tzinfo=timezone.utc),
+            task.id or 0,
+        ),
+        reverse=True,
+    )[:5]
+    blocked_tasks = [task for task in open_tasks if (task.status or "").strip().lower() == "blocked"]
+    overdue_tasks = [task for task in open_tasks if task.due_date is not None and task.due_date < today]
+    team_workload: dict[str, dict] = {}
+    for task in open_tasks:
+        assignee_label = (task.assignee or "Unassigned").strip() or "Unassigned"
+        workload = team_workload.setdefault(
+            assignee_label,
+            {"assignee": assignee_label, "open_tasks": 0, "high_priority": 0, "blocked": 0},
+        )
+        workload["open_tasks"] += 1
+        if (task.priority or "").strip().lower() == "high":
+            workload["high_priority"] += 1
+        if (task.status or "").strip().lower() == "blocked":
+            workload["blocked"] += 1
+    team_workload_cards = sorted(
+        team_workload.values(),
+        key=lambda item: (-item["open_tasks"], -item["high_priority"], item["assignee"].lower()),
+    )
+
+    milestones = project.ordered_milestones
+    deliverables = project.ordered_deliverables
+    risks = project.ordered_risks
+    stakeholders = project.ordered_stakeholders
+    status_updates = sorted(
+        project.status_updates,
+        key=lambda update: (
+            update.created_at or datetime.min.replace(tzinfo=timezone.utc),
+            update.id or 0,
+        ),
+        reverse=True,
+    )
+
+    active_internal_users = (
+        InternalUser.query.filter_by(is_active=True).order_by(InternalUser.full_name.asc()).all()
+    )
+
+    workspace_metrics = {
+        "progress": project.progress_percent,
+        "open_tasks": len(open_tasks),
+        "blocked_tasks": len(blocked_tasks),
+        "overdue_tasks": len(overdue_tasks),
+        "milestones": len(milestones),
+        "deliverables": len(deliverables),
+        "open_risks": sum(1 for risk in risks if risk.is_open),
+        "stakeholders": len(stakeholders),
+        "resources": len(project.resources),
+        "doc_pages": len(project.doc_pages),
+    }
+    milestone_stats = {
+        "complete": sum(1 for milestone in milestones if milestone.is_done),
+        "open": sum(1 for milestone in milestones if not milestone.is_done),
+        "overdue": sum(
+            1
+            for milestone in milestones
+            if milestone.due_date is not None and milestone.due_date < today and not milestone.is_done
+        ),
+    }
+    deliverable_stats = {
+        "delivered": sum(1 for deliverable in deliverables if deliverable.is_delivered),
+        "in_flight": sum(1 for deliverable in deliverables if not deliverable.is_delivered),
+    }
+    latest_update = project.latest_status_update
+
+    return render_template(
+        "internal/project_workspace.html",
+        project=project,
+        workspace_metrics=workspace_metrics,
+        milestone_stats=milestone_stats,
+        deliverable_stats=deliverable_stats,
+        focus_tasks=focus_tasks,
+        completed_tasks_recent=completed_tasks_recent,
+        milestones=milestones,
+        deliverables=deliverables,
+        risks=risks,
+        stakeholders=stakeholders,
+        doc_pages=sorted(project.doc_pages, key=lambda page: page.sort_key),
+        status_updates=status_updates,
+        latest_update=latest_update,
+        active_internal_users=active_internal_users,
+        project_stages=INTERNAL_PROJECT_STAGES,
+        project_statuses=INTERNAL_PROJECT_STATUSES,
+        milestone_statuses=INTERNAL_MILESTONE_STATUSES,
+        deliverable_statuses=INTERNAL_DELIVERABLE_STATUSES,
+        risk_severities=INTERNAL_RISK_SEVERITIES,
+        risk_statuses=INTERNAL_RISK_STATUSES,
+        stakeholder_types=INTERNAL_STAKEHOLDER_TYPES,
+        stakeholder_influence_levels=INTERNAL_STAKEHOLDER_INFLUENCE_LEVELS,
+        team_workload_cards=team_workload_cards,
+        today=today,
+        value_estimate_input=_serialize_currency(project.value_estimate),
+    )
+
+
+@main_bp.route("/internal/projects/<int:project_id>/overview", methods=["POST"])
+@internal_login_required
+def internal_project_overview_update(project_id: int):
+    project = db.session.get(InternalProject, project_id)
+    if not project:
+        flash("Project not found.", "warning")
+        return redirect(url_for("main.internal_projects"))
+
+    name = " ".join((request.form.get("name") or "").strip().split())
+    summary = (request.form.get("summary") or "").strip()
+    stage = _normalize_internal_project_stage(request.form.get("stage"))
+    status = _normalize_internal_project_status(request.form.get("status"))
+    due_date_raw = (request.form.get("due_date") or "").strip()
+    due_date = _parse_date(due_date_raw)
+    owner_id_raw = (request.form.get("owner_id") or "").strip()
+    value_estimate_raw = request.form.get("value_estimate")
+    parsed_value_estimate = _parse_currency_value(value_estimate_raw)
+    anchor = "#overview"
+
+    if not name or not summary:
+        flash("Project name and summary are required.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+    if due_date_raw and not due_date:
+        flash("Provide a valid project due date.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+    if parsed_value_estimate is ...:
+        flash("Value estimate must be a valid positive number.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+    owner_record = None
+    if owner_id_raw == "unassigned":
+        owner_record = None
+    elif owner_id_raw == "self" or not owner_id_raw:
+        owner_record = getattr(g, "internal_user", None)
+    else:
+        owner_id = _parse_positive_int(owner_id_raw)
+        if not owner_id:
+            flash("Select a valid project owner.", "warning")
+            return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+        owner_record = db.session.get(InternalUser, owner_id)
+        if not owner_record or not owner_record.is_active:
+            flash("Selected project owner is not available.", "warning")
+            return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+    project.name = name
+    project.summary = summary
+    project.stage = stage
+    project.status = status
+    project.owner = owner_record
+    project.due_date = due_date
+    project.value_estimate = parsed_value_estimate
+    db.session.commit()
+    flash("Project overview updated.", "success")
+    return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+
+@main_bp.route("/internal/projects/<int:project_id>/status-updates/add", methods=["POST"])
+@internal_login_required
+def internal_project_status_update_add(project_id: int):
+    project = db.session.get(InternalProject, project_id)
+    if not project:
+        flash("Project not found.", "warning")
+        return redirect(url_for("main.internal_projects"))
+
+    headline = " ".join((request.form.get("headline") or "").strip().split())
+    summary = (request.form.get("summary") or "").strip()
+    wins = (request.form.get("wins") or "").strip()
+    risks_text = (request.form.get("risks") or "").strip()
+    next_steps = (request.form.get("next_steps") or "").strip()
+    progress_percent = _normalize_progress_percent(request.form.get("progress_percent"))
+    anchor = "#status-updates"
+
+    if not headline or not summary:
+        flash("Status headline and summary are required.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+    if progress_percent is None:
+        flash("Progress percent must be between 0 and 100.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+    db.session.add(
+        InternalProjectStatusUpdate(
+            project=project,
+            author=getattr(g, "internal_user", None),
+            headline=headline,
+            summary=summary,
+            wins=wins or None,
+            risks=risks_text or None,
+            next_steps=next_steps or None,
+            progress_percent=progress_percent,
+        )
+    )
+    db.session.commit()
+    flash("Project status update published.", "success")
+    return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+
+@main_bp.route("/internal/projects/<int:project_id>/milestones/add", methods=["POST"])
+@internal_login_required
+def internal_project_milestone_add(project_id: int):
+    project = db.session.get(InternalProject, project_id)
+    if not project:
+        flash("Project not found.", "warning")
+        return redirect(url_for("main.internal_projects"))
+
+    title = " ".join((request.form.get("title") or "").strip().split())
+    owner_name = " ".join((request.form.get("owner_name") or "").strip().split())
+    status = _normalize_internal_milestone_status(request.form.get("status"))
+    due_date_raw = (request.form.get("due_date") or "").strip()
+    due_date = _parse_date(due_date_raw)
+    notes = (request.form.get("notes") or "").strip()
+    anchor = "#milestones"
+
+    if not title or not owner_name:
+        flash("Milestone title and owner are required.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+    if due_date_raw and not due_date:
+        flash("Provide a valid milestone due date.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+    db.session.add(
+        InternalProjectMilestone(
+            project=project,
+            title=title,
+            owner_name=owner_name,
+            status=status,
+            due_date=due_date,
+            notes=notes or None,
+        )
+    )
+    db.session.commit()
+    flash("Milestone added to the project plan.", "success")
+    return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+
+@main_bp.route("/internal/projects/<int:project_id>/milestones/<int:milestone_id>/status", methods=["POST"])
+@internal_login_required
+def internal_project_milestone_update_status(project_id: int, milestone_id: int):
+    milestone = db.session.get(InternalProjectMilestone, milestone_id)
+    if not milestone or milestone.project_id != project_id:
+        flash("Milestone not found.", "warning")
+        return redirect(url_for("main.internal_project_workspace", project_id=project_id))
+
+    milestone.status = _normalize_internal_milestone_status(request.form.get("status"))
+    db.session.commit()
+    flash("Milestone status updated.", "success")
+    return redirect(f"{url_for('main.internal_project_workspace', project_id=project_id)}#milestones")
+
+
+@main_bp.route("/internal/projects/<int:project_id>/deliverables/add", methods=["POST"])
+@internal_login_required
+def internal_project_deliverable_add(project_id: int):
+    project = db.session.get(InternalProject, project_id)
+    if not project:
+        flash("Project not found.", "warning")
+        return redirect(url_for("main.internal_projects"))
+
+    title = " ".join((request.form.get("title") or "").strip().split())
+    owner_name = " ".join((request.form.get("owner_name") or "").strip().split())
+    status = _normalize_internal_deliverable_status(request.form.get("status"))
+    due_date_raw = (request.form.get("due_date") or "").strip()
+    due_date = _parse_date(due_date_raw)
+    link = (request.form.get("link") or "").strip()
+    description = (request.form.get("description") or "").strip()
+    anchor = "#deliverables"
+
+    if not title or not owner_name or not description:
+        flash("Deliverable title, owner, and description are required.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+    if due_date_raw and not due_date:
+        flash("Provide a valid deliverable due date.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+    if link and not _is_safe_resource_link(link):
+        flash("Deliverable link must be a relative path or an http/https URL.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+    db.session.add(
+        InternalProjectDeliverable(
+            project=project,
+            title=title,
+            owner_name=owner_name,
+            status=status,
+            due_date=due_date,
+            link=link or None,
+            description=description,
+        )
+    )
+    db.session.commit()
+    flash("Deliverable added to the project workspace.", "success")
+    return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+
+@main_bp.route("/internal/projects/<int:project_id>/deliverables/<int:deliverable_id>/status", methods=["POST"])
+@internal_login_required
+def internal_project_deliverable_update_status(project_id: int, deliverable_id: int):
+    deliverable = db.session.get(InternalProjectDeliverable, deliverable_id)
+    if not deliverable or deliverable.project_id != project_id:
+        flash("Deliverable not found.", "warning")
+        return redirect(url_for("main.internal_project_workspace", project_id=project_id))
+
+    deliverable.status = _normalize_internal_deliverable_status(request.form.get("status"))
+    db.session.commit()
+    flash("Deliverable status updated.", "success")
+    return redirect(f"{url_for('main.internal_project_workspace', project_id=project_id)}#deliverables")
+
+
+@main_bp.route("/internal/projects/<int:project_id>/risks/add", methods=["POST"])
+@internal_login_required
+def internal_project_risk_add(project_id: int):
+    project = db.session.get(InternalProject, project_id)
+    if not project:
+        flash("Project not found.", "warning")
+        return redirect(url_for("main.internal_projects"))
+
+    title = " ".join((request.form.get("title") or "").strip().split())
+    owner_name = " ".join((request.form.get("owner_name") or "").strip().split())
+    severity = _normalize_internal_risk_severity(request.form.get("severity"))
+    status = _normalize_internal_risk_status(request.form.get("status"))
+    mitigation = (request.form.get("mitigation") or "").strip()
+    due_date_raw = (request.form.get("due_date") or "").strip()
+    due_date = _parse_date(due_date_raw)
+    anchor = "#risks"
+
+    if not title or not owner_name or not mitigation:
+        flash("Risk title, owner, and mitigation are required.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+    if due_date_raw and not due_date:
+        flash("Provide a valid target date for the risk plan.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+    db.session.add(
+        InternalProjectRisk(
+            project=project,
+            title=title,
+            owner_name=owner_name,
+            severity=severity,
+            status=status,
+            mitigation=mitigation,
+            due_date=due_date,
+        )
+    )
+    db.session.commit()
+    flash("Risk added to the project register.", "success")
+    return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+
+@main_bp.route("/internal/projects/<int:project_id>/risks/<int:risk_id>/status", methods=["POST"])
+@internal_login_required
+def internal_project_risk_update_status(project_id: int, risk_id: int):
+    risk = db.session.get(InternalProjectRisk, risk_id)
+    if not risk or risk.project_id != project_id:
+        flash("Risk not found.", "warning")
+        return redirect(url_for("main.internal_project_workspace", project_id=project_id))
+
+    risk.status = _normalize_internal_risk_status(request.form.get("status"))
+    db.session.commit()
+    flash("Risk status updated.", "success")
+    return redirect(f"{url_for('main.internal_project_workspace', project_id=project_id)}#risks")
+
+
+@main_bp.route("/internal/projects/<int:project_id>/stakeholders/add", methods=["POST"])
+@internal_login_required
+def internal_project_stakeholder_add(project_id: int):
+    project = db.session.get(InternalProject, project_id)
+    if not project:
+        flash("Project not found.", "warning")
+        return redirect(url_for("main.internal_projects"))
+
+    name = " ".join((request.form.get("name") or "").strip().split())
+    role_title = " ".join((request.form.get("role_title") or "").strip().split())
+    email = (request.form.get("email") or "").strip().lower()
+    organisation = " ".join((request.form.get("organisation") or "").strip().split())
+    stakeholder_type = _normalize_internal_stakeholder_type(request.form.get("stakeholder_type"))
+    influence_level = _normalize_internal_stakeholder_influence(request.form.get("influence_level"))
+    notes = (request.form.get("notes") or "").strip()
+    anchor = "#stakeholders"
+
+    if not name or not role_title or not organisation:
+        flash("Stakeholder name, role, and organisation are required.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+    db.session.add(
+        InternalProjectStakeholder(
+            project=project,
+            name=name,
+            role_title=role_title,
+            email=email or None,
+            organisation=organisation,
+            stakeholder_type=stakeholder_type,
+            influence_level=influence_level,
+            notes=notes or None,
+        )
+    )
+    db.session.commit()
+    flash("Stakeholder added to the project register.", "success")
+    return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
 
 
 @main_bp.route("/internal/messages")
@@ -2027,6 +2892,208 @@ def internal_todo_update_priority(task_id: int):
     return redirect(url_for("main.internal_todos", **redirect_kwargs))
 
 
+@main_bp.route("/internal/docs")
+@main_bp.route("/internal/docs/<string:doc_slug>")
+@internal_login_required
+def internal_docs(doc_slug: str | None = None):
+    query_term = (request.args.get("q") or "").strip()
+    query_term_lower = query_term.lower()
+    selected_status = (request.args.get("status") or "all").strip().lower()
+    selected_project_raw = (request.args.get("project_id") or "all").strip()
+    selected_project_filter: int | str = "all"
+
+    pages = (
+        InternalDocPage.query.options(
+            selectinload(InternalDocPage.project),
+            selectinload(InternalDocPage.author),
+            selectinload(InternalDocPage.children),
+        )
+        .order_by(InternalDocPage.updated_at.desc(), InternalDocPage.title.asc())
+        .all()
+    )
+    projects = InternalProject.query.order_by(InternalProject.name.asc()).all()
+    project_options = [{"value": "all", "label": "All projects"}] + [
+        {"value": str(project.id), "label": project.name} for project in projects
+    ]
+    if selected_project_raw != "all":
+        try:
+            selected_project_candidate = int(selected_project_raw)
+        except ValueError:
+            selected_project_candidate = None
+        valid_project_ids = {project.id for project in projects}
+        if selected_project_candidate in valid_project_ids:
+            selected_project_filter = selected_project_candidate
+
+    if selected_status not in {"all", *INTERNAL_DOC_STATUSES}:
+        selected_status = "all"
+
+    filtered_pages: list[InternalDocPage] = []
+    for page in pages:
+        if selected_status != "all" and (page.status or "").strip().lower() != selected_status:
+            continue
+        if selected_project_filter != "all" and page.project_id != selected_project_filter:
+            continue
+        if query_term_lower and query_term_lower not in page.searchable_text:
+            continue
+        filtered_pages.append(page)
+
+    filtered_page_ids = {page.id for page in filtered_pages}
+    visible_tree_ids: set[int] = set()
+    for page in filtered_pages:
+        current_page = page
+        while current_page:
+            visible_tree_ids.add(current_page.id)
+            current_page = current_page.parent
+
+    selected_page = None
+    if doc_slug:
+        selected_page = InternalDocPage.query.options(
+            selectinload(InternalDocPage.project),
+            selectinload(InternalDocPage.author),
+            selectinload(InternalDocPage.children),
+            selectinload(InternalDocPage.parent),
+        ).filter_by(slug=doc_slug).first_or_404()
+        current_page = selected_page
+        while current_page:
+            visible_tree_ids.add(current_page.id)
+            current_page = current_page.parent
+    elif filtered_pages:
+        selected_page = sorted(filtered_pages, key=lambda page: page.sort_key)[0]
+
+    root_pages = sorted(
+        [
+            page
+            for page in pages
+            if page.parent_id is None and (not visible_tree_ids or page.id in visible_tree_ids)
+        ],
+        key=lambda page: page.sort_key,
+    )
+
+    summary_metrics = {
+        "total_pages": len(pages),
+        "visible_pages": len(filtered_pages) if (query_term or selected_status != "all" or selected_project_filter != "all") else len(pages),
+        "draft_pages": sum(1 for page in pages if (page.status or "").strip().lower() == "draft"),
+        "linked_projects": len({page.project_id for page in pages if page.project_id}),
+    }
+    selected_page_body = _render_internal_doc_body(selected_page.body) if selected_page else None
+    selected_page_outline = _internal_doc_outline(selected_page.body) if selected_page else []
+    page_status_options = [{"value": "all", "label": "All statuses"}] + [
+        {"value": status, "label": status.title()} for status in INTERNAL_DOC_STATUSES
+    ]
+    parent_page_options = sorted(pages, key=lambda page: page.sort_key)
+
+    return render_template(
+        "internal/docs.html",
+        pages=pages,
+        root_pages=root_pages,
+        visible_tree_ids=visible_tree_ids,
+        filtered_page_ids=filtered_page_ids,
+        selected_page=selected_page,
+        selected_page_body=selected_page_body,
+        selected_page_outline=selected_page_outline,
+        summary_metrics=summary_metrics,
+        query_term=query_term,
+        selected_status=selected_status,
+        page_status_options=page_status_options,
+        project_options=project_options,
+        selected_project_filter=str(selected_project_filter),
+        projects=projects,
+        parent_page_options=parent_page_options,
+    )
+
+
+@main_bp.route("/internal/docs/add", methods=["POST"])
+@internal_login_required
+def internal_doc_add():
+    title = " ".join((request.form.get("title") or "").strip().split())
+    summary = (request.form.get("summary") or "").strip()
+    body = (request.form.get("body") or "").strip()
+    status = _normalize_internal_doc_status(request.form.get("status"))
+    project_id = _parse_positive_int(request.form.get("project_id"))
+    parent_id = _parse_positive_int(request.form.get("parent_id"))
+
+    if not title or not summary or not body:
+        flash("Doc title, summary, and body are required.", "warning")
+        return redirect(url_for("main.internal_docs"))
+
+    project = db.session.get(InternalProject, project_id) if project_id else None
+    if project_id and not project:
+        flash("Selected project does not exist.", "warning")
+        return redirect(url_for("main.internal_docs"))
+
+    parent_page = db.session.get(InternalDocPage, parent_id) if parent_id else None
+    if parent_id and not parent_page:
+        flash("Selected parent page does not exist.", "warning")
+        return redirect(url_for("main.internal_docs"))
+
+    page = InternalDocPage(
+        title=title,
+        slug=_unique_internal_doc_slug(title),
+        summary=summary,
+        body=body,
+        status=status,
+        project=project,
+        parent=parent_page,
+        author=getattr(g, "internal_user", None),
+    )
+    db.session.add(page)
+    db.session.commit()
+    flash("Workspace doc created.", "success")
+    return redirect(url_for("main.internal_docs", doc_slug=page.slug))
+
+
+@main_bp.route("/internal/docs/<int:page_id>/update", methods=["POST"])
+@internal_login_required
+def internal_doc_update(page_id: int):
+    page = db.session.get(InternalDocPage, page_id)
+    if not page:
+        flash("Doc page not found.", "warning")
+        return redirect(url_for("main.internal_docs"))
+
+    title = " ".join((request.form.get("title") or "").strip().split())
+    summary = (request.form.get("summary") or "").strip()
+    body = (request.form.get("body") or "").strip()
+    status = _normalize_internal_doc_status(request.form.get("status"))
+    project_id = _parse_positive_int(request.form.get("project_id"))
+    parent_id = _parse_positive_int(request.form.get("parent_id"))
+
+    if not title or not summary or not body:
+        flash("Doc title, summary, and body are required.", "warning")
+        return redirect(url_for("main.internal_docs", doc_slug=page.slug))
+
+    project = db.session.get(InternalProject, project_id) if project_id else None
+    if project_id and not project:
+        flash("Selected project does not exist.", "warning")
+        return redirect(url_for("main.internal_docs", doc_slug=page.slug))
+
+    parent_page = db.session.get(InternalDocPage, parent_id) if parent_id else None
+    if parent_id and not parent_page:
+        flash("Selected parent page does not exist.", "warning")
+        return redirect(url_for("main.internal_docs", doc_slug=page.slug))
+    if parent_page and parent_page.id == page.id:
+        flash("A page cannot be its own parent.", "warning")
+        return redirect(url_for("main.internal_docs", doc_slug=page.slug))
+
+    current_parent = parent_page
+    while current_parent:
+        if current_parent.id == page.id:
+            flash("A page cannot be nested inside one of its own descendants.", "warning")
+            return redirect(url_for("main.internal_docs", doc_slug=page.slug))
+        current_parent = current_parent.parent
+
+    page.title = title
+    page.slug = _unique_internal_doc_slug(title, page_id=page.id)
+    page.summary = summary
+    page.body = body
+    page.status = status
+    page.project = project
+    page.parent = parent_page
+    page.author = getattr(g, "internal_user", None)
+    db.session.commit()
+    flash("Workspace doc updated.", "success")
+    return redirect(url_for("main.internal_docs", doc_slug=page.slug))
+
+
 @main_bp.route("/internal/resources")
 @internal_login_required
 def internal_resources():
@@ -2048,6 +3115,12 @@ def internal_resources():
         .all()
     )
     announcements = InternalAnnouncement.query.order_by(InternalAnnouncement.created_at.desc()).all()
+    recent_doc_pages = (
+        InternalDocPage.query.options(selectinload(InternalDocPage.project))
+        .order_by(InternalDocPage.updated_at.desc(), InternalDocPage.title.asc())
+        .limit(4)
+        .all()
+    )
     projects = InternalProject.query.order_by(InternalProject.name.asc()).all()
     project_options = [{"value": "all", "label": "All projects"}] + [
         {"value": str(project.id), "label": project.name} for project in projects
@@ -2141,6 +3214,7 @@ def internal_resources():
         "linked_docs": linked_docs,
         "unlinked_docs": unlinked_docs,
         "untagged_docs": untagged_docs,
+        "workspace_pages": InternalDocPage.query.count(),
     }
 
     return render_template(
@@ -2160,6 +3234,7 @@ def internal_resources():
         query_term=query_term,
         requirements=INTERNAL_SITE_REQUIREMENTS,
         announcements=announcements,
+        recent_doc_pages=recent_doc_pages,
         summary_metrics=summary_metrics,
         projects=projects,
         tasks=tasks,

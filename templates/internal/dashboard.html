@@ -8,8 +8,8 @@
         <i class="fa-solid fa-gauge-high"></i>
         Internal Operations
     </p>
-    <h1 class="text-3xl md:text-4xl font-black text-white mb-3">Delivery Dashboard</h1>
-    <p class="text-slate-400 max-w-3xl">Live view of client delivery, risk, and next actions.</p>
+    <h1 class="text-3xl md:text-4xl font-black text-white mb-3">Delivery Command Center</h1>
+    <p class="text-slate-400 max-w-3xl">Portfolio health, project risk, and the next actions required to keep consultancy delivery moving.</p>
 </section>
 
 <section class="grid lg:grid-cols-[1.2fr_0.8fr] gap-4 mb-8">
@@ -27,7 +27,7 @@
     </article>
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
         <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-3">Attention Queue</p>
-        <div class="grid sm:grid-cols-3 gap-3">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-5 gap-3">
             <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
                 <p class="text-xs text-slate-400 mb-1">Due in 7 days</p>
                 <p class="text-xl font-black text-amber-300">{{ stats.due_soon }}</p>
@@ -39,6 +39,14 @@
             <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
                 <p class="text-xs text-slate-400 mb-1">Blocked Tasks</p>
                 <p class="text-xl font-black text-orange-300">{{ stats.blocked }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-xs text-slate-400 mb-1">At-Risk Projects</p>
+                <p class="text-xl font-black text-rose-300">{{ stats.at_risk_projects }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                <p class="text-xs text-slate-400 mb-1">Portfolio Progress</p>
+                <p class="text-xl font-black text-blue-300">{{ stats.portfolio_progress }}%</p>
             </div>
         </div>
     </article>
@@ -62,6 +70,91 @@
         </article>
         {% endfor %}
     </div>
+</section>
+
+<section class="grid xl:grid-cols-[0.95fr_1.05fr] gap-6 mb-8">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Portfolio Coverage</h2>
+                <p class="text-sm text-slate-400 mt-1">Where active work sits across the consultancy lifecycle.</p>
+            </div>
+            <span class="text-xs text-slate-400">{{ stats.portfolio_progress }}% average progress</span>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-3 mb-5">
+            {% for item in stage_breakdown %}
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-1">{{ item.label }}</p>
+                <p class="text-2xl font-black text-white">{{ item.count }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div>
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <h3 class="text-sm font-bold uppercase tracking-[0.12em] text-blue-300">Upcoming Milestones</h3>
+                <span class="text-xs text-slate-400">Earliest due first</span>
+            </div>
+            <div class="space-y-3">
+                {% for item in upcoming_milestones %}
+                <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <p class="text-sm font-semibold text-white">{{ item.milestone.title }}</p>
+                            <p class="text-xs text-slate-400 mt-1">{{ item.project.name }} · {{ item.project.client.name }}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs px-2.5 py-1 rounded-full {{ internal_status_class(item.milestone.status) }}">{{ item.milestone.status|replace('-', ' ')|title }}</span>
+                            <p class="text-xs text-slate-400 mt-1">{{ item.milestone.due_date.strftime('%d %b %Y') if item.milestone.due_date else 'No due date' }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-sm text-slate-400">No upcoming milestones yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </article>
+
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Projects Requiring Attention</h2>
+                <p class="text-sm text-slate-400 mt-1">Projects with delivery risk, overdue checkpoints, or open escalation items.</p>
+            </div>
+            <span class="text-xs text-slate-400">{{ stats.at_risk_projects }} active flags</span>
+        </div>
+
+        <div class="space-y-3">
+            {% for project in at_risk_projects %}
+            <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <a href="{{ url_for('main.internal_project_workspace', project_id=project.id) }}" class="text-sm font-semibold text-white hover:text-blue-300 transition">{{ project.name }}</a>
+                            <span class="text-xs px-2.5 py-1 rounded-full {{ internal_status_class(project.status) }}">{{ project.status|replace('-', ' ')|title }}</span>
+                        </div>
+                        <p class="text-xs text-slate-400">{{ project.client.name }} · {{ project.stage|title }}</p>
+                        <div class="flex flex-wrap gap-2 mt-3 text-[11px]">
+                            <span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ project.progress_percent }}% progress</span>
+                            <span class="px-2 py-1 rounded-full bg-rose-500/10 border border-rose-500/25 text-rose-200">{{ project.open_risks_count }} open risks</span>
+                            <span class="px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-200">{{ project.overdue_milestones_count }} overdue milestones</span>
+                        </div>
+                    </div>
+                    {% if project.next_milestone %}
+                    <div class="rounded-xl border border-slate-800 bg-slate-900 p-3 sm:min-w-[190px]">
+                        <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-1">Next Milestone</p>
+                        <p class="text-sm font-semibold text-white">{{ project.next_milestone.title }}</p>
+                        <p class="text-xs text-slate-400 mt-1">{{ project.next_milestone.due_date.strftime('%d %b %Y') if project.next_milestone.due_date else 'No due date' }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+            {% else %}
+            <p class="text-sm text-slate-400">No active project attention flags.</p>
+            {% endfor %}
+        </div>
+    </article>
 </section>
 
 <section class="grid sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
@@ -116,15 +209,20 @@
     </article>
 
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <h2 class="text-xl font-bold text-white mb-4">Announcements</h2>
+        <h2 class="text-xl font-bold text-white mb-4">Recent Project Updates</h2>
         <div class="space-y-3">
-            {% for item in announcements %}
+            {% for item in recent_updates %}
             <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-                <p class="text-white font-semibold text-sm">{{ item.title }}</p>
-                <p class="text-slate-400 text-xs mt-1">{{ item.body }}</p>
+                <div class="flex items-center justify-between gap-3 mb-1">
+                    <p class="text-white font-semibold text-sm">{{ item.project.name }}</p>
+                    <span class="text-[11px] px-2 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-200">{{ item.progress_percent }}%</span>
+                </div>
+                <p class="text-slate-200 text-sm">{{ item.headline }}</p>
+                <p class="text-slate-400 text-xs mt-1">{{ item.created_at.strftime('%d %b %Y') if item.created_at else '' }}{% if item.author %} · {{ item.author.full_name }}{% endif %}</p>
+                <p class="text-slate-400 text-xs mt-2">{{ item.summary }}</p>
             </div>
             {% else %}
-            <p class="text-slate-400 text-sm">No announcements published.</p>
+            <p class="text-slate-400 text-sm">No status updates published yet.</p>
             {% endfor %}
         </div>
     </article>
@@ -169,19 +267,52 @@
     </article>
 
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <h2 class="text-xl font-bold text-white mb-4">Operating Notes</h2>
-        <div class="space-y-3 text-sm">
+        <h2 class="text-xl font-bold text-white mb-4">Team Operations</h2>
+        <div class="space-y-3 mb-5">
+            {% for item in team_workload_cards %}
             <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-                <p class="text-slate-200 font-semibold mb-1">Delivery focus</p>
-                <p class="text-slate-400">Clear overdue and blocked tasks first.</p>
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-slate-200 font-semibold">{{ item.assignee }}</p>
+                    <p class="text-xs text-slate-400">{{ item.open_tasks }} open</p>
+                </div>
+                <div class="flex flex-wrap gap-2 mt-2 text-[11px]">
+                    <span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ item.high_priority }} high priority</span>
+                    <span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ item.blocked }} blocked</span>
+                </div>
             </div>
-            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-                <p class="text-slate-200 font-semibold mb-1">Knowledge hygiene</p>
-                <p class="text-slate-400">Tag and link each doc when it is added.</p>
+            {% else %}
+            <p class="text-slate-400 text-sm">No active team workload yet.</p>
+            {% endfor %}
+        </div>
+
+        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4 mb-4">
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <p class="text-sm font-semibold text-white">My Focus</p>
+                <span class="text-xs text-slate-400">{{ my_focus_tasks|length }} tasks</span>
             </div>
-            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
-                <p class="text-slate-200 font-semibold mb-1">Review cadence</p>
-                <p class="text-slate-400">Use this dashboard for weekly delivery reviews.</p>
+            <div class="space-y-2">
+                {% for task in my_focus_tasks %}
+                <div class="flex items-center justify-between gap-3 text-sm">
+                    <span class="text-slate-300">{{ task.title }}</span>
+                    <span class="text-[11px] px-2 py-1 rounded-full {{ internal_status_class(task.status) }}">{{ task.status|replace('-', ' ')|title }}</span>
+                </div>
+                {% else %}
+                <p class="text-sm text-slate-400">Nothing assigned directly to you right now.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <p class="text-sm font-semibold text-white mb-3">Announcements</p>
+            <div class="space-y-3">
+                {% for item in announcements %}
+                <div>
+                    <p class="text-sm text-slate-200">{{ item.title }}</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ item.body }}</p>
+                </div>
+                {% else %}
+                <p class="text-sm text-slate-400">No announcements published.</p>
+                {% endfor %}
             </div>
         </div>
     </article>
@@ -192,9 +323,13 @@
     <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         {% for project in recent_projects %}
         <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-            <p class="text-white font-semibold mb-1">{{ project.name }}</p>
+            <a href="{{ url_for('main.internal_project_workspace', project_id=project.id) }}" class="text-white font-semibold mb-1 hover:text-blue-300 transition inline-block">{{ project.name }}</a>
             <p class="text-xs text-slate-400 mb-3">{{ project.client.name }} · {{ project.stage|title }}</p>
             <span class="inline-flex px-2.5 py-1 rounded-full text-xs {{ internal_status_class(project.status) }}">{{ project.status|replace('-', ' ')|title }}</span>
+            <div class="flex flex-wrap gap-2 mt-3 text-[11px]">
+                <span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ project.progress_percent }}% progress</span>
+                <span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ project.open_risks_count }} open risks</span>
+            </div>
             <p class="text-xs text-slate-400 mt-3">{{ project.summary }}</p>
         </article>
         {% else %}

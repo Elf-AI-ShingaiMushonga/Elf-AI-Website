@@ -9,12 +9,23 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+os.environ["APP_ENV"] = "testing"
+os.environ["DATABASE_URL"] = "sqlite://"
+os.environ["SECRET_KEY"] = "test-secret"
+os.environ["AUTO_INIT_DB"] = "false"
+
 from app import create_app  # noqa: E402
 from models import (
     Branding,
     Feature,
     InternalAnnouncement,
     InternalClient,
+    InternalDocPage,
+    InternalProjectDeliverable,
+    InternalProjectMilestone,
+    InternalProjectRisk,
+    InternalProjectStakeholder,
+    InternalProjectStatusUpdate,
     InternalProject,
     InternalResource,
     InternalResourceTag,
@@ -29,9 +40,6 @@ from models import (
 
 @pytest.fixture()
 def app():
-    os.environ["APP_ENV"] = "testing"
-    os.environ["DATABASE_URL"] = "sqlite://"
-    os.environ["SECRET_KEY"] = "test-secret"
     with tempfile.TemporaryDirectory() as upload_dir:
         app = create_app("testing")
         app.config["INTERNAL_RESOURCE_UPLOAD_DIR"] = upload_dir
@@ -133,6 +141,7 @@ def app():
                 stage="delivery",
                 status="on-track",
                 due_date=date.today() + timedelta(days=5),
+                value_estimate=12500,
                 summary="Internal project summary",
             )
             db.session.add(project_record)
@@ -186,6 +195,85 @@ def app():
                 InternalAnnouncement(
                     title="Test Announcement",
                     body="Internal test announcement",
+                )
+            )
+            db.session.add(
+                InternalProjectMilestone(
+                    project=project_record,
+                    title="Pilot Review",
+                    owner_name="Internal Admin",
+                    status="in-progress",
+                    due_date=date.today() + timedelta(days=4),
+                    notes="Review automation output quality with the client.",
+                )
+            )
+            db.session.add(
+                InternalProjectDeliverable(
+                    project=project_record,
+                    title="Weekly Client Update",
+                    owner_name="Internal Admin",
+                    status="review",
+                    due_date=date.today() + timedelta(days=3),
+                    link="https://example.com/client-update",
+                    description="Summary deck for the client steering meeting.",
+                )
+            )
+            db.session.add(
+                InternalProjectStakeholder(
+                    project=project_record,
+                    name="Casey Client",
+                    role_title="Operations Director",
+                    email="casey.client@example.com",
+                    organisation="Test Client",
+                    stakeholder_type="client",
+                    influence_level="decision-maker",
+                    notes="Final sign-off authority.",
+                )
+            )
+            db.session.add(
+                InternalProjectRisk(
+                    project=project_record,
+                    title="Edge-case routing may delay launch",
+                    owner_name="Internal Admin",
+                    severity="high",
+                    status="open",
+                    due_date=date.today() + timedelta(days=2),
+                    mitigation="Expand QA coverage and review fallback routing.",
+                )
+            )
+            db.session.add(
+                InternalProjectStatusUpdate(
+                    project=project_record,
+                    author=internal_user,
+                    headline="Pilot execution is underway",
+                    summary="The team is validating routing quality before the steering review.",
+                    wins="Discovery completed and client cadence agreed.",
+                    risks="Edge-case routing remains under review.",
+                    next_steps="Finish QA and prepare the weekly update deck.",
+                    progress_percent=38,
+                )
+            )
+            wiki_root = InternalDocPage(
+                title="Delivery Handbook",
+                slug="delivery-handbook",
+                summary="Shared delivery conventions and project operating guidance.",
+                body="# Delivery Handbook\n\n## Weekly rhythm\n- [x] Review priorities\n- [ ] Publish client update",
+                status="published",
+                project=project_record,
+                author=internal_user,
+            )
+            db.session.add(wiki_root)
+            db.session.flush()
+            db.session.add(
+                InternalDocPage(
+                    title="Project Brief",
+                    slug="project-brief",
+                    summary="Working brief for the current project.",
+                    body="# Project Brief\n\n## Objective\nDeliver the pilot.\n\n> Keep the steering group aligned.",
+                    status="draft",
+                    project=project_record,
+                    parent=wiki_root,
+                    author=internal_user,
                 )
             )
             db.session.commit()

@@ -1,0 +1,223 @@
+{% extends "internal/base.html" %}
+
+{% block title %}Workspace Docs | ELF-AI Internal{% endblock %}
+
+{% macro render_doc_node(page, selected_page, visible_tree_ids, depth=0) %}
+    {% if not visible_tree_ids or page.id in visible_tree_ids %}
+    <div class="space-y-2">
+        <a
+            href="{{ url_for('main.internal_docs', doc_slug=page.slug) }}"
+            class="block rounded-xl border px-3 py-2.5 transition {% if selected_page and selected_page.id == page.id %}border-blue-500/40 bg-blue-500/10{% else %}border-slate-800 bg-slate-950/70 hover:border-blue-500/30{% endif %}"
+            style="margin-left: {{ depth * 0.8 }}rem;"
+        >
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-sm font-semibold {% if selected_page and selected_page.id == page.id %}text-white{% else %}text-slate-200{% endif %}">{{ page.title }}</p>
+                    <p class="text-[11px] text-slate-400 mt-1">{{ page.project.name if page.project else 'Internal knowledge' }} · {{ page.status|title }}</p>
+                </div>
+                {% if page.children %}
+                <span class="text-[11px] px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ page.children|length }}</span>
+                {% endif %}
+            </div>
+        </a>
+        {% for child in page.ordered_children %}
+            {{ render_doc_node(child, selected_page, visible_tree_ids, depth + 1) }}
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endmacro %}
+
+{% block content %}
+<section class="mb-8">
+    <h1 class="text-3xl md:text-4xl font-black text-white mb-3">Workspace Docs</h1>
+    <p class="text-slate-400 max-w-3xl">Native internal documentation for playbooks, briefs, meeting notes, and project operating pages. This is the Notion-style layer inside the portal.</p>
+</section>
+
+<section class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Visible Pages</p>
+        <p class="text-3xl font-black text-white">{{ summary_metrics.visible_pages }} <span class="text-sm font-semibold text-slate-400">/ {{ summary_metrics.total_pages }}</span></p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Draft Pages</p>
+        <p class="text-3xl font-black text-amber-300">{{ summary_metrics.draft_pages }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Linked Projects</p>
+        <p class="text-3xl font-black text-blue-300">{{ summary_metrics.linked_projects }}</p>
+    </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Current View</p>
+        <p class="text-lg font-bold text-slate-100">{{ selected_page.title if selected_page else 'Select a page' }}</p>
+    </article>
+</section>
+
+<section class="grid xl:grid-cols-[0.32fr_0.68fr] gap-6 mb-8">
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Doc Finder</h2>
+                <p class="text-sm text-slate-400 mt-1">Filter the wiki tree by title, project, or publishing state.</p>
+            </div>
+            <span class="text-xs text-slate-400">Notion-style internal pages</span>
+        </div>
+
+        <form method="get" action="{{ url_for('main.internal_docs') }}" class="grid md:grid-cols-[1fr_0.8fr_0.8fr_auto] gap-3">
+            <input name="q" type="search" value="{{ query_term }}" placeholder="Search pages..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+            <select name="project_id" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
+                {% for project_option in project_options %}
+                <option value="{{ project_option.value }}" {% if selected_project_filter == project_option.value %}selected{% endif %}>{{ project_option.label }}</option>
+                {% endfor %}
+            </select>
+            <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition">
+                {% for status in page_status_options %}
+                <option value="{{ status.value }}" {% if selected_status == status.value %}selected{% endif %}>{{ status.label }}</option>
+                {% endfor %}
+            </select>
+            <div class="flex gap-2">
+                <button type="submit" class="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Filter</button>
+                <a href="{{ url_for('main.internal_docs') }}" class="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 text-sm font-semibold transition">Reset</a>
+            </div>
+        </form>
+    </article>
+
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 class="text-xl font-bold text-white mb-4">Writing Blocks</h2>
+        <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <p class="text-slate-200 font-semibold mb-1">Headings</p>
+                <p class="text-slate-400 text-xs">Use <code>#</code>, <code>##</code>, or <code>###</code>.</p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <p class="text-slate-200 font-semibold mb-1">Checklists</p>
+                <p class="text-slate-400 text-xs">Use <code>- [ ]</code> and <code>- [x]</code>.</p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <p class="text-slate-200 font-semibold mb-1">Callouts</p>
+                <p class="text-slate-400 text-xs">Use <code>&gt;</code> for highlighted notes.</p>
+            </div>
+            <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                <p class="text-slate-200 font-semibold mb-1">Links + Code</p>
+                <p class="text-slate-400 text-xs">Supports <code>[label](url)</code> and inline code.</p>
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="grid xl:grid-cols-[0.28fr_0.46fr_0.26fr] gap-6">
+    <aside class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <h2 class="text-lg font-bold text-white">Page Tree</h2>
+            <span class="text-xs text-slate-400">{{ summary_metrics.visible_pages }} visible</span>
+        </div>
+
+        <div class="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+            {% for page in root_pages %}
+                {{ render_doc_node(page, selected_page, visible_tree_ids, 0) }}
+            {% else %}
+            <p class="text-sm text-slate-400">No docs found for the current filters.</p>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        {% if selected_page %}
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
+            <div>
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <h2 class="text-3xl font-black text-white">{{ selected_page.title }}</h2>
+                    <span class="text-xs px-2.5 py-1 rounded-full {{ 'bg-blue-500/10 text-blue-200 border border-blue-500/25' if selected_page.status == 'published' else 'bg-amber-500/10 text-amber-200 border border-amber-500/25' if selected_page.status == 'draft' else 'bg-slate-500/20 text-slate-200 border border-slate-500/30' }}">{{ selected_page.status|title }}</span>
+                </div>
+                <p class="text-slate-300 max-w-3xl">{{ selected_page.summary }}</p>
+                <div class="flex flex-wrap gap-4 mt-4 text-sm text-slate-400">
+                    <span><span class="text-slate-500">Project:</span> <span class="text-slate-100">{{ selected_page.project.name if selected_page.project else 'Internal knowledge' }}</span></span>
+                    <span><span class="text-slate-500">Author:</span> <span class="text-slate-100">{{ selected_page.author.full_name if selected_page.author else 'Unknown' }}</span></span>
+                    <span><span class="text-slate-500">Updated:</span> <span class="text-slate-100">{{ selected_page.updated_at.strftime('%d %b %Y') if selected_page.updated_at else '' }}</span></span>
+                    {% if selected_page.parent %}
+                    <span><span class="text-slate-500">Parent:</span> <span class="text-slate-100">{{ selected_page.parent.title }}</span></span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                {% if selected_page.project %}
+                <a href="{{ url_for('main.internal_project_workspace', project_id=selected_page.project.id) }}" class="px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">Open Project</a>
+                <a href="{{ url_for('main.internal_resources', project_id=selected_page.project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-semibold transition">Project Library</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-800 bg-slate-950/70 px-6 py-6 space-y-5 prose prose-invert max-w-none prose-p:my-0 prose-pre:my-0">
+            {{ selected_page_body }}
+        </div>
+        {% else %}
+        <div class="rounded-2xl border border-dashed border-slate-800 bg-slate-950/50 px-6 py-10 text-center">
+            <h2 class="text-2xl font-bold text-white mb-2">Start with a workspace page</h2>
+            <p class="text-slate-400 max-w-xl mx-auto">Create briefs, SOPs, meeting notes, or project operating pages here. The page editor on the right writes directly into the internal portal.</p>
+        </div>
+        {% endif %}
+    </article>
+
+    <aside class="space-y-6">
+        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <h2 class="text-lg font-bold text-white mb-4">{{ 'Edit Page' if selected_page else 'Create Page' }}</h2>
+            <form action="{{ url_for('main.internal_doc_update', page_id=selected_page.id) if selected_page else url_for('main.internal_doc_add') }}" method="post" class="space-y-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Title</label>
+                    <input name="title" type="text" required maxlength="200" value="{{ selected_page.title if selected_page else '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Summary</label>
+                    <textarea name="summary" rows="3" required maxlength="2000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">{{ selected_page.summary if selected_page else '' }}</textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-2">
+                        <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Status</label>
+                        <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                            {% for status in page_status_options if status.value != 'all' %}
+                            <option value="{{ status.value }}" {% if selected_page and selected_page.status == status.value %}selected{% elif not selected_page and status.value == 'published' %}selected{% endif %}>{{ status.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Project</label>
+                        <select name="project_id" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                            <option value="">Internal knowledge</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}" {% if selected_page and selected_page.project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Parent Page</label>
+                    <select name="parent_id" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                        <option value="">None</option>
+                        {% for page in parent_page_options %}
+                        {% if not selected_page or page.id != selected_page.id %}
+                        <option value="{{ page.id }}" {% if selected_page and selected_page.parent_id == page.id %}selected{% endif %}>{{ page.title }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Body</label>
+                    <textarea name="body" rows="16" required spellcheck="false" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-blue-500 transition">{{ selected_page.body if selected_page else '# New Internal Page\n\n## Context\nDescribe the purpose of this page.\n\n## Checklist\n- [ ] Capture the next step.\n' }}</textarea>
+                </div>
+                <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">{{ 'Save Page' if selected_page else 'Create Page' }}</button>
+            </form>
+        </article>
+
+        {% if selected_page_outline %}
+        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <h2 class="text-lg font-bold text-white mb-4">Outline</h2>
+            <div class="space-y-2">
+                {% for item in selected_page_outline %}
+                <a href="#{{ item.anchor }}" class="block text-sm text-slate-300 hover:text-blue-300 transition" style="margin-left: {{ (item.level - 1) * 0.65 }}rem;">{{ item.text }}</a>
+                {% endfor %}
+            </div>
+        </article>
+        {% endif %}
+    </aside>
+</section>
+{% endblock %}

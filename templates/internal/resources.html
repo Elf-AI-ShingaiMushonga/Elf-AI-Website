@@ -8,7 +8,7 @@
     <p class="text-slate-400 max-w-3xl">Find reusable docs, tag them, and link them to projects and tasks.</p>
 </section>
 
-<section class="grid sm:grid-cols-2 xl:grid-cols-9 gap-4 mb-8">
+<section class="grid sm:grid-cols-2 xl:grid-cols-10 gap-4 mb-8">
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover xl:col-span-2">
         <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Visible Documents</p>
         <p class="text-3xl font-black text-white">{{ summary_metrics.visible_docs }} <span class="text-sm font-semibold text-slate-400">/ {{ summary_metrics.total_docs }}</span></p>
@@ -41,6 +41,10 @@
         <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Linked To-Do Items</p>
         <p class="text-3xl font-black text-rose-300">{{ summary_metrics.linked_tasks }}</p>
     </article>
+    <article class="rounded-2xl border border-slate-800 bg-slate-900 p-4 card-hover">
+        <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Workspace Pages</p>
+        <p class="text-3xl font-black text-blue-300">{{ summary_metrics.workspace_pages }}</p>
+    </article>
 </section>
 
 <section class="grid xl:grid-cols-[1.2fr_0.8fr] gap-6 mb-8">
@@ -64,7 +68,23 @@
     </article>
 
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <h2 class="text-xl font-bold text-white mb-4">Announcements</h2>
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <h2 class="text-xl font-bold text-white">Workspace Docs</h2>
+            <a href="{{ url_for('main.internal_docs') }}" class="text-xs text-blue-300 hover:text-blue-200 transition">Open Docs</a>
+        </div>
+        <div class="space-y-3 mb-5">
+            {% for page in recent_doc_pages %}
+            <a href="{{ url_for('main.internal_docs', doc_slug=page.slug) }}" class="block rounded-xl border border-slate-800 bg-slate-950/70 p-3 hover:border-blue-500/30 transition">
+                <p class="text-sm font-semibold text-white">{{ page.title }}</p>
+                <p class="text-xs text-slate-400 mt-1">{{ page.project.name if page.project else 'Internal knowledge' }}</p>
+                <p class="text-xs text-slate-400 mt-2">{{ page.summary }}</p>
+            </a>
+            {% else %}
+            <p class="text-slate-400 text-sm">No workspace pages available yet.</p>
+            {% endfor %}
+        </div>
+
+        <h3 class="text-sm font-bold uppercase tracking-[0.12em] text-blue-300 mb-3">Announcements</h3>
         <div class="space-y-3">
             {% for item in announcements %}
             <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">

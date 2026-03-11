@@ -59,11 +59,14 @@
             <option value="todos"></option>
             <option value="priority queue"></option>
             <option value="messages"></option>
+            <option value="docs"></option>
             <option value="resources"></option>
+            <option value="wiki"></option>
             <option value="project: [project name]"></option>
             <option value="client: [client name]"></option>
             <option value="task: [task title]"></option>
-            <option value="doc: [document title]"></option>
+            <option value="page: [page title]"></option>
+            <option value="resource: [document title]"></option>
             <option value="message: [channel or teammate]"></option>
         </datalist>
 
@@ -73,6 +76,7 @@
                 <a href="{{ url_for('main.internal_todos') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/todos') else '' }}">To-Do</a>
                 <a href="{{ url_for('main.internal_projects') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/projects') else '' }}">Projects</a>
                 <a href="{{ url_for('main.internal_messages') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/messages') else '' }}">Messages</a>
+                <a href="{{ url_for('main.internal_docs') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/docs') else '' }}">Docs</a>
                 <a href="{{ url_for('main.internal_clients') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/clients') else '' }}">Clients</a>
                 <a href="{{ url_for('main.internal_resources') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/resources') else '' }}">Resources</a>
                 <a href="/" class="nav-pill">Public Site</a>
@@ -99,6 +103,7 @@
                 <a href="{{ url_for('main.internal_todos') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/todos') else '' }}">To-Do</a>
                 <a href="{{ url_for('main.internal_projects') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/projects') else '' }}">Projects</a>
                 <a href="{{ url_for('main.internal_messages') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/messages') else '' }}">Messages</a>
+                <a href="{{ url_for('main.internal_docs') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/docs') else '' }}">Docs</a>
                 <a href="{{ url_for('main.internal_clients') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/clients') else '' }}">Clients</a>
                 <a href="{{ url_for('main.internal_resources') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/resources') else '' }}">Resources</a>
                 <a href="/" class="nav-pill">Public</a>
@@ -126,6 +131,10 @@
                 <a href="{{ url_for('main.internal_resources') }}" class="quick-action-pill focus-ring">
                     <i class="fa-solid fa-book-open"></i>
                     Knowledge Library
+                </a>
+                <a href="{{ url_for('main.internal_docs') }}" class="quick-action-pill focus-ring">
+                    <i class="fa-solid fa-file-lines"></i>
+                    Workspace Docs
                 </a>
                 <a href="{{ url_for('main.internal_messages') }}" class="quick-action-pill focus-ring">
                     <i class="fa-solid fa-comments"></i>

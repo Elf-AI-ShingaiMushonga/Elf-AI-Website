@@ -35,7 +35,7 @@
         {% if project_cards %}
         <div class="grid xl:grid-cols-2 gap-5 mt-5">
             {% for card in project_cards %}
-            <article class="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 card-hover" data-filter-item data-status="{{ (card.project.status or '')|lower }}" data-stage="{{ (card.project.stage or '')|lower }}" data-filter-text="{{ card.project.name }} {{ card.project.client.name }} {{ card.project.owner.full_name if card.project.owner else '' }} {{ card.project.summary }} {{ card.project.industry_category or 'general' }}">
+            <article class="rounded-2xl border border-slate-800 bg-slate-950/80 p-5 card-hover" data-filter-item data-status="{{ (card.project.status or '')|lower }}" data-stage="{{ (card.project.stage or '')|lower }}" data-filter-text="{{ card.project.name }} {{ card.project.client.name }} {{ card.project.owner.full_name if card.project.owner else '' }} {{ card.project.summary }} {{ card.project.industry_category or 'general' }} {{ card.latest_update.headline if card.latest_update else '' }}">
                 <div class="flex items-start justify-between gap-4 mb-3">
                     <div>
                         <h2 class="text-lg font-bold text-white">{{ card.project.name }}</h2>
@@ -74,6 +74,21 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-3 gap-3 text-xs mb-4">
+                    <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                        <p class="text-slate-400 mb-1">Milestones</p>
+                        <p class="text-slate-100 font-semibold">{{ card.milestones }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                        <p class="text-slate-400 mb-1">Deliverables</p>
+                        <p class="text-slate-100 font-semibold">{{ card.deliverables }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                        <p class="text-slate-400 mb-1">Open Risks</p>
+                        <p class="text-slate-100 font-semibold {% if card.open_risks %}text-rose-300{% endif %}">{{ card.open_risks }}</p>
+                    </div>
+                </div>
+
                 <div class="mb-3">
                     <div class="flex items-center justify-between text-xs mb-1.5">
                         <span class="text-slate-400">Progress</span>
@@ -85,7 +100,8 @@
                 </div>
 
                 <div class="flex flex-wrap gap-2 mb-3">
-                    <a href="{{ url_for('main.internal_todos', view='nested', project_id=card.project.id) }}" class="px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">Plan Tasks</a>
+                    <a href="{{ url_for('main.internal_project_workspace', project_id=card.project.id) }}" class="px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">Open Workspace</a>
+                    <a href="{{ url_for('main.internal_todos', view='nested', project_id=card.project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">Plan Tasks</a>
                     <a href="{{ url_for('main.internal_todos', view='priority', project_id=card.project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">Priority Queue</a>
                     {% if card.project.message_channel %}
                     <a href="{{ url_for('main.internal_messages', channel_id=card.project.message_channel.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">Project Channel</a>
@@ -94,6 +110,14 @@
                     {% endif %}
                     <a href="{{ url_for('main.internal_resources', project_id=card.project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">Project Docs</a>
                 </div>
+
+                {% if card.latest_update %}
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-3 mb-3">
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-blue-300 mb-1">Latest Update</p>
+                    <p class="text-sm font-semibold text-white">{{ card.latest_update.headline }}</p>
+                    <p class="text-xs text-slate-400 mt-1">{{ card.latest_update.progress_percent }}% progress</p>
+                </div>
+                {% endif %}
 
                 {% if card.project.tasks %}
                 <div class="space-y-2 mt-4">

@@ -11,9 +11,14 @@
 - Central project board with stage, status, owner, and progress.
 - Task visibility with assignees, priorities, and due dates.
 - Client registry with account ownership and engagement status.
+- Unified project workspace with milestones, deliverables, and weekly status updates.
+- Risk register with mitigation ownership and target resolution dates.
+- Stakeholder register for client and internal decision-makers.
+- Clear project-level commercial context, including value estimate and due date tracking.
 
 ## 3. Knowledge and Reuse
 - Shared resource library for templates, playbooks, and checklists.
+- Native internal documentation pages for briefs, SOPs, and meeting notes.
 - Standard internal operating requirements visible to delivery teams.
 - Internal announcements for process and delivery updates.
 

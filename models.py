@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from urllib.parse import urlparse
 
 from flask_sqlalchemy import SQLAlchemy
@@ -139,6 +139,42 @@ class InternalProject(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     tasks = db.relationship("InternalTask", backref="project", lazy=True, cascade="all, delete-orphan")
+    milestones = db.relationship(
+        "InternalProjectMilestone",
+        backref="project",
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
+    deliverables = db.relationship(
+        "InternalProjectDeliverable",
+        backref="project",
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
+    stakeholders = db.relationship(
+        "InternalProjectStakeholder",
+        backref="project",
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
+    doc_pages = db.relationship(
+        "InternalDocPage",
+        backref="project",
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
+    risks = db.relationship(
+        "InternalProjectRisk",
+        backref="project",
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
+    status_updates = db.relationship(
+        "InternalProjectStatusUpdate",
+        backref="project",
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
     resources = db.relationship(
         "InternalResource",
         secondary=internal_resource_project_links,
@@ -152,6 +188,268 @@ class InternalProject(db.Model):
         lazy=True,
         cascade="all, delete-orphan",
     )
+
+    @property
+    def total_tasks_count(self) -> int:
+        return len(self.tasks)
+
+    @property
+    def completed_tasks_count(self) -> int:
+        return sum(1 for task in self.tasks if task.is_done)
+
+    @property
+    def progress_percent(self) -> int:
+        latest_update = self.latest_status_update
+        if latest_update and latest_update.progress_percent is not None:
+            return max(0, min(int(latest_update.progress_percent), 100))
+        if not self.total_tasks_count:
+            return 0
+        return int((self.completed_tasks_count / self.total_tasks_count) * 100)
+
+    @property
+    def latest_status_update(self) -> "InternalProjectStatusUpdate | None":
+        if not self.status_updates:
+            return None
+        return sorted(
+            self.status_updates,
+            key=lambda update: (
+                update.created_at or datetime.min.replace(tzinfo=timezone.utc),
+                update.id or 0,
+            ),
+            reverse=True,
+        )[0]
+
+    @property
+    def ordered_milestones(self) -> list["InternalProjectMilestone"]:
+        return sorted(
+            self.milestones,
+            key=lambda milestone: (
+                milestone.is_done,
+                milestone.due_date or date.max,
+                milestone.created_at or datetime.min.replace(tzinfo=timezone.utc),
+                milestone.id or 0,
+            ),
+        )
+
+    @property
+    def ordered_deliverables(self) -> list["InternalProjectDeliverable"]:
+        return sorted(
+            self.deliverables,
+            key=lambda deliverable: (
+                deliverable.is_delivered,
+                deliverable.due_date or date.max,
+                deliverable.created_at or datetime.min.replace(tzinfo=timezone.utc),
+                deliverable.id or 0,
+            ),
+        )
+
+    @property
+    def ordered_risks(self) -> list["InternalProjectRisk"]:
+        return sorted(
+            self.risks,
+            key=lambda risk: risk.sort_key,
+        )
+
+    @property
+    def ordered_stakeholders(self) -> list["InternalProjectStakeholder"]:
+        return sorted(
+            self.stakeholders,
+            key=lambda stakeholder: stakeholder.sort_key,
+        )
+
+    @property
+    def next_milestone(self) -> "InternalProjectMilestone | None":
+        for milestone in self.ordered_milestones:
+            if not milestone.is_done:
+                return milestone
+        return None
+
+    @property
+    def open_risks_count(self) -> int:
+        return sum(1 for risk in self.risks if risk.is_open)
+
+    @property
+    def overdue_milestones_count(self) -> int:
+        today = date.today()
+        return sum(
+            1
+            for milestone in self.milestones
+            if milestone.due_date is not None and milestone.due_date < today and not milestone.is_done
+        )
+
+
+class InternalProjectMilestone(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("internal_project.id"), nullable=False, index=True)
+    title = db.Column(db.String(200), nullable=False)
+    owner_name = db.Column(db.String(120), nullable=False)
+    status = db.Column(db.String(32), nullable=False, default="planned")
+    due_date = db.Column(db.Date, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    @property
+    def is_done(self) -> bool:
+        return (self.status or "").strip().lower() == "done"
+
+
+class InternalProjectDeliverable(db.Model):
+    SAFE_SCHEMES = {"http", "https"}
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("internal_project.id"), nullable=False, index=True)
+    title = db.Column(db.String(200), nullable=False)
+    owner_name = db.Column(db.String(120), nullable=False)
+    status = db.Column(db.String(32), nullable=False, default="planned")
+    due_date = db.Column(db.Date, nullable=True)
+    link = db.Column(db.String(500), nullable=True)
+    description = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    @property
+    def is_delivered(self) -> bool:
+        return (self.status or "").strip().lower() == "delivered"
+
+    @property
+    def safe_link(self) -> str:
+        raw_link = (self.link or "").strip()
+        if not raw_link:
+            return "#"
+        if raw_link.startswith("/"):
+            return raw_link
+        parsed = urlparse(raw_link)
+        if parsed.scheme.lower() in self.SAFE_SCHEMES and parsed.netloc:
+            return raw_link
+        return "#"
+
+
+class InternalProjectStakeholder(db.Model):
+    INFLUENCE_RANK = {"decision-maker": 0, "core": 1, "support": 2, "observer": 3}
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("internal_project.id"), nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    role_title = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(255), nullable=True)
+    organisation = db.Column(db.String(160), nullable=False)
+    stakeholder_type = db.Column(db.String(32), nullable=False, default="client")
+    influence_level = db.Column(db.String(32), nullable=False, default="core")
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    @property
+    def sort_key(self):
+        normalized_influence = (self.influence_level or "").strip().lower()
+        return (
+            self.INFLUENCE_RANK.get(normalized_influence, 4),
+            (self.organisation or "").lower(),
+            (self.name or "").lower(),
+            self.id or 0,
+        )
+
+
+class InternalProjectRisk(db.Model):
+    SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    STATUS_RANK = {"open": 0, "monitoring": 1, "mitigated": 2, "closed": 3}
+
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("internal_project.id"), nullable=False, index=True)
+    title = db.Column(db.String(200), nullable=False)
+    owner_name = db.Column(db.String(120), nullable=False)
+    severity = db.Column(db.String(32), nullable=False, default="medium")
+    status = db.Column(db.String(32), nullable=False, default="open")
+    mitigation = db.Column(db.Text, nullable=False)
+    due_date = db.Column(db.Date, nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    @property
+    def is_open(self) -> bool:
+        return (self.status or "").strip().lower() not in {"mitigated", "closed"}
+
+    @property
+    def sort_key(self):
+        normalized_status = (self.status or "").strip().lower()
+        normalized_severity = (self.severity or "").strip().lower()
+        return (
+            self.STATUS_RANK.get(normalized_status, 4),
+            self.SEVERITY_RANK.get(normalized_severity, 4),
+            self.due_date or date.max,
+            self.created_at or datetime.min.replace(tzinfo=timezone.utc),
+            self.id or 0,
+        )
+
+
+class InternalProjectStatusUpdate(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("internal_project.id"), nullable=False, index=True)
+    author_id = db.Column(db.Integer, db.ForeignKey("internal_user.id"), nullable=True, index=True)
+    headline = db.Column(db.String(200), nullable=False)
+    summary = db.Column(db.Text, nullable=False)
+    wins = db.Column(db.Text, nullable=True)
+    risks = db.Column(db.Text, nullable=True)
+    next_steps = db.Column(db.Text, nullable=True)
+    progress_percent = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    author = db.relationship("InternalUser", lazy=True, foreign_keys=[author_id])
+
+
+class InternalDocPage(db.Model):
+    STATUS_RANK = {"published": 0, "draft": 1, "archived": 2}
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(220), nullable=False, unique=True, index=True)
+    summary = db.Column(db.Text, nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(16), nullable=False, default="published")
+    project_id = db.Column(db.Integer, db.ForeignKey("internal_project.id"), nullable=True, index=True)
+    author_id = db.Column(db.Integer, db.ForeignKey("internal_user.id"), nullable=True, index=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey("internal_doc_page.id"), nullable=True, index=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    author = db.relationship("InternalUser", lazy=True, foreign_keys=[author_id])
+    children = db.relationship(
+        "InternalDocPage",
+        backref=db.backref("parent", remote_side=[id]),
+        lazy=True,
+        cascade="all, delete-orphan",
+        single_parent=True,
+    )
+
+    @property
+    def searchable_text(self) -> str:
+        parts = [self.title, self.summary, self.body, self.status]
+        if self.project:
+            parts.append(self.project.name)
+        if self.author:
+            parts.append(self.author.full_name)
+        if self.parent:
+            parts.append(self.parent.title)
+        return " ".join(part for part in parts if part).lower()
+
+    @property
+    def ordered_children(self) -> list["InternalDocPage"]:
+        return sorted(
+            self.children,
+            key=lambda child: child.sort_key,
+        )
+
+    @property
+    def sort_key(self):
+        normalized_status = (self.status or "").strip().lower()
+        return (
+            self.STATUS_RANK.get(normalized_status, 3),
+            (self.title or "").lower(),
+            self.updated_at or datetime.min.replace(tzinfo=timezone.utc),
+            self.id or 0,
+        )
 
 
 class InternalTask(db.Model):
@@ -710,6 +1008,162 @@ def _seed_internal_site_data() -> None:
                 ),
             )
         )
+        seeded_any = True
+
+    if not InternalDocPage.query.first():
+        workspace_project = InternalProject.query.filter_by(name="Matter Intake Automation").first()
+        fallback_project = InternalProject.query.order_by(InternalProject.created_at.asc()).first()
+        target_project = workspace_project or fallback_project
+        if target_project:
+            operating_system_page = InternalDocPage(
+                title="Consulting Operating System",
+                slug="consulting-operating-system",
+                summary="Shared delivery conventions, meeting cadence, and project operating rules.",
+                body=(
+                    "# ELF Delivery System\n\n"
+                    "## Weekly cadence\n"
+                    "- [x] Review project health every Monday.\n"
+                    "- [ ] Update milestones before the client steering call.\n"
+                    "- [ ] Publish a status update inside the workspace.\n\n"
+                    "## Core rules\n"
+                    "- Scope changes require written confirmation.\n"
+                    "- Every project needs a named owner, risk register, and deliverable tracker.\n"
+                    "- Link project files and pages back to the workspace for reuse.\n"
+                ),
+                status="published",
+                project=target_project,
+            )
+            project_brief_page = InternalDocPage(
+                title="Matter Intake Automation Brief",
+                slug="matter-intake-automation-brief",
+                summary="Working brief covering scope, success metrics, and go-live criteria.",
+                body=(
+                    "# Matter Intake Automation\n\n"
+                    "## Objective\n"
+                    "Reduce manual triage and improve assignment speed for incoming legal matters.\n\n"
+                    "## Success metrics\n"
+                    "- 30% reduction in manual routing time.\n"
+                    "- Routing confidence above 92% during pilot.\n\n"
+                    "## Launch checklist\n"
+                    "- [ ] Validate exception handling.\n"
+                    "- [ ] Approve fallback route.\n"
+                    "- [ ] Share steering update with the client sponsor.\n"
+                ),
+                status="published",
+                project=target_project,
+                parent=operating_system_page,
+            )
+            db.session.add_all([operating_system_page, project_brief_page])
+            seeded_any = True
+
+    if not InternalProjectMilestone.query.first():
+        project_one = InternalProject.query.filter_by(name="Matter Intake Automation").first()
+        project_two = InternalProject.query.filter_by(name="Classroom Audio Insights").first()
+        fallback_project = InternalProject.query.order_by(InternalProject.created_at.asc()).first()
+        workspace_project = project_one or fallback_project
+        secondary_project = project_two or fallback_project
+
+        if workspace_project:
+            db.session.add_all(
+                [
+                    InternalProjectMilestone(
+                        project=workspace_project,
+                        title="Discovery Readout Approved",
+                        owner_name=workspace_project.client.account_owner,
+                        status="done",
+                        due_date=date.today() - timedelta(days=3),
+                        notes="Client signed off workflow map and success metric baseline.",
+                    ),
+                    InternalProjectMilestone(
+                        project=workspace_project,
+                        title="Pilot Routing Workflow Live",
+                        owner_name="Delivery Team",
+                        status="in-progress",
+                        due_date=date.today() + timedelta(days=7),
+                        notes="Deployment window and fallback path agreed with client operations.",
+                    ),
+                ]
+            )
+            db.session.add_all(
+                [
+                    InternalProjectDeliverable(
+                        project=workspace_project,
+                        title="Current-State Workflow Report",
+                        owner_name="Research Team",
+                        status="delivered",
+                        due_date=date.today() - timedelta(days=2),
+                        description="Baseline report covering intake categories, routing rules, and volume patterns.",
+                    ),
+                    InternalProjectDeliverable(
+                        project=workspace_project,
+                        title="Pilot Automation Pack",
+                        owner_name="Delivery Team",
+                        status="review",
+                        due_date=date.today() + timedelta(days=9),
+                        description="Automation package, QA evidence, and launch checklist for pilot rollout.",
+                    ),
+                ]
+            )
+            db.session.add_all(
+                [
+                    InternalProjectStakeholder(
+                        project=workspace_project,
+                        name="Nandi Dube",
+                        role_title="Head of Operations",
+                        email="nandi.dube@example.com",
+                        organisation=workspace_project.client.name,
+                        stakeholder_type="client",
+                        influence_level="decision-maker",
+                        notes="Final approver for go-live and budget extensions.",
+                    ),
+                    InternalProjectStakeholder(
+                        project=workspace_project,
+                        name="ELF Delivery Lead",
+                        role_title="Project Lead",
+                        email=None,
+                        organisation="ELF-AI",
+                        stakeholder_type="internal",
+                        influence_level="core",
+                        notes="Owns day-to-day execution and escalation flow.",
+                    ),
+                ]
+            )
+            db.session.add(
+                InternalProjectRisk(
+                    project=workspace_project,
+                    title="Client intake edge cases may reduce automation accuracy.",
+                    owner_name="Research Team",
+                    severity="high",
+                    status="open",
+                    due_date=date.today() + timedelta(days=5),
+                    mitigation="Expand the exception library before pilot launch and review error rates daily.",
+                )
+            )
+            db.session.add(
+                InternalProjectStatusUpdate(
+                    project=workspace_project,
+                    headline="Pilot scope locked and implementation has started.",
+                    summary="Discovery is complete and the first delivery sprint is underway with the client operations team.",
+                    wins="Scope approved, baseline KPI confirmed, delivery cadence agreed.",
+                    risks="Edge-case routing still requires QA before go-live.",
+                    next_steps="Complete the automation pack, run QA, and prepare launch comms.",
+                    progress_percent=42,
+                )
+            )
+
+        if secondary_project and secondary_project.id != (workspace_project.id if workspace_project else None):
+            db.session.add(
+                InternalProjectRisk(
+                    project=secondary_project,
+                    title="Classroom hardware placement could delay validation.",
+                    owner_name="Field Ops",
+                    severity="medium",
+                    status="monitoring",
+                    due_date=date.today() + timedelta(days=10),
+                    mitigation="Confirm site-readiness checklist before field visit.",
+                )
+            )
+
         seeded_any = True
 
     admin_email = (os.getenv("INTERNAL_ADMIN_EMAIL") or "").strip().lower()
