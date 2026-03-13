@@ -112,7 +112,10 @@ PROJECT_TIMELINE_MAX_DAYS = 365
 PROJECT_STARTER_PLAN_RECORD_NAME = "default"
 DEFAULT_PROJECT_INDUSTRY_CATEGORY = "general"
 CSRF_TOKEN_SESSION_KEY = "_internal_csrf_token"
+PUBLIC_CONTACT_FORM_STATE_SESSION_KEY = "_public_contact_form_state"
+PUBLIC_CONTACT_FORM_ERRORS_SESSION_KEY = "_public_contact_form_errors"
 SAFE_RESOURCE_LINK_SCHEMES = {"http", "https"}
+DEFAULT_PUBLIC_DEMO_URL = "https://elf-ai-demo.co.za"
 RESOURCE_UPLOAD_ALLOWED_EXTENSIONS = {
     "csv",
     "doc",
@@ -294,6 +297,98 @@ DEFAULT_PROJECT_STARTER_PLANS_BY_INDUSTRY = {
     ],
 }
 DEFAULT_PROJECT_STARTER_PLAN_TEMPLATE = DEFAULT_PROJECT_STARTER_PLANS_BY_INDUSTRY[DEFAULT_PROJECT_INDUSTRY_CATEGORY]
+DEFAULT_PROJECT_AUTOMATION_VARIABLES = [
+    {
+        "key": "success_metric",
+        "label": "Success Metric",
+        "default": "Define the KPI improvement target for this engagement.",
+    },
+    {
+        "key": "delivery_scope",
+        "label": "Delivery Scope",
+        "default": "Pilot the target workflow and prepare the rollout pack.",
+    },
+]
+DEFAULT_PROJECT_AUTOMATION_MILESTONES = [
+    {
+        "title": "{{ project_name }} kickoff approved",
+        "owner_name": "{{ owner_name }}",
+        "status": "planned",
+        "due_percent": 18,
+        "notes": "Confirm scope, cadence, and named stakeholders for {{ client_name }}.",
+    },
+    {
+        "title": "{{ project_name }} pilot validated",
+        "owner_name": "{{ owner_name }}",
+        "status": "planned",
+        "due_percent": 62,
+        "notes": "Validate output quality against {{ success_metric }} and agree next-step changes.",
+    },
+    {
+        "title": "{{ project_name }} handover ready",
+        "owner_name": "{{ owner_name }}",
+        "status": "planned",
+        "due_percent": 100,
+        "notes": "Confirm delivery assets, training notes, and launch readiness for {{ client_name }}.",
+    },
+]
+DEFAULT_PROJECT_AUTOMATION_DELIVERABLES = [
+    {
+        "title": "{{ project_name }} kickoff pack",
+        "owner_name": "{{ owner_name }}",
+        "status": "planned",
+        "due_percent": 20,
+        "description": "Briefing pack covering scope, owners, cadence, and {{ delivery_scope }}.",
+        "link": "",
+    },
+    {
+        "title": "{{ project_name }} delivery pack",
+        "owner_name": "{{ owner_name }}",
+        "status": "planned",
+        "due_percent": 78,
+        "description": "Working delivery package for {{ client_name }} including the pilot workflow and QA notes.",
+        "link": "",
+    },
+    {
+        "title": "{{ project_name }} handover summary",
+        "owner_name": "{{ owner_name }}",
+        "status": "planned",
+        "due_percent": 100,
+        "description": "Final handover summary linked to {{ success_metric }} and the agreed operating cadence.",
+        "link": "",
+    },
+]
+DEFAULT_PROJECT_AUTOMATION_DOCUMENTS = [
+    {
+        "ref": "project-brief",
+        "title": "{{ project_name }} Brief",
+        "summary": "Working brief for {{ client_name }} covering scope, owners, and success criteria.",
+        "status": "published",
+        "body": (
+            "# {{ project_name }}\n\n"
+            "## Objective\n"
+            "{{ project_summary }}\n\n"
+            "## Client\n"
+            "{{ client_name }}\n\n"
+            "## Success Metric\n"
+            "{{ success_metric }}\n\n"
+            "## Delivery Scope\n"
+            "{{ delivery_scope }}\n"
+        ),
+    },
+    {
+        "parent_ref": "project-brief",
+        "title": "{{ project_name }} Launch Checklist",
+        "summary": "Checklist for kickoff, validation, and handover readiness.",
+        "status": "draft",
+        "body": (
+            "# Launch Checklist\n\n"
+            "- [ ] Confirm stakeholders and cadence with {{ client_name }}.\n"
+            "- [ ] Align milestones to {{ success_metric }}.\n"
+            "- [ ] Publish the delivery pack and handover notes.\n"
+        ),
+    },
+]
 
 
 def _site_url() -> str:
@@ -363,6 +458,11 @@ def _render_page(template_name: str, *, path: str, title: str, description: str,
     return render_template(template_name, seo=seo, **context)
 
 
+def _public_demo_url() -> str:
+    configured_demo_url = (current_app.config.get("PUBLIC_DEMO_URL") or "").strip()
+    return configured_demo_url or DEFAULT_PUBLIC_DEMO_URL
+
+
 def _safe_next_url(next_target: str | None) -> str | None:
     if next_target and next_target.startswith("/"):
         return next_target
@@ -383,6 +483,36 @@ def _safe_public_return_target(raw_target: str | None) -> str | None:
     if candidate.startswith("/internal"):
         return None
     return candidate
+
+
+def _is_valid_public_email(raw_value: str | None) -> bool:
+    candidate = (raw_value or "").strip()
+    if not candidate or "\n" in candidate or "\r" in candidate:
+        return False
+    return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", candidate))
+
+
+def _store_public_contact_feedback(form_state: dict[str, str], errors: dict[str, str] | None = None) -> None:
+    session[PUBLIC_CONTACT_FORM_STATE_SESSION_KEY] = form_state
+    if errors:
+        session[PUBLIC_CONTACT_FORM_ERRORS_SESSION_KEY] = errors
+    else:
+        session.pop(PUBLIC_CONTACT_FORM_ERRORS_SESSION_KEY, None)
+
+
+def _pop_public_contact_feedback() -> tuple[dict[str, str], dict[str, str]]:
+    form_state = session.pop(PUBLIC_CONTACT_FORM_STATE_SESSION_KEY, None) or {}
+    form_errors = session.pop(PUBLIC_CONTACT_FORM_ERRORS_SESSION_KEY, None) or {}
+    if not isinstance(form_state, dict):
+        form_state = {}
+    if not isinstance(form_errors, dict):
+        form_errors = {}
+    return form_state, form_errors
+
+
+def _clear_public_contact_feedback() -> None:
+    session.pop(PUBLIC_CONTACT_FORM_STATE_SESSION_KEY, None)
+    session.pop(PUBLIC_CONTACT_FORM_ERRORS_SESSION_KEY, None)
 
 
 def _internal_status_class(status: str | None) -> str:
@@ -764,6 +894,32 @@ def _normalize_resource_tags(raw_value: str | None) -> list[str]:
     return normalized_tags
 
 
+def _internal_user_is_senior(user: InternalUser | None) -> bool:
+    if not user:
+        return False
+
+    normalized_role = " ".join((user.role or "").strip().lower().split())
+    if not normalized_role:
+        return False
+
+    role_tokens = {token for token in re.split(r"[\s/_-]+", normalized_role) if token}
+    if "admin" in role_tokens:
+        return True
+
+    senior_role_tokens = {
+        "chief",
+        "director",
+        "head",
+        "lead",
+        "manager",
+        "operations",
+        "partner",
+        "principal",
+        "senior",
+    }
+    return bool(role_tokens & senior_role_tokens)
+
+
 def _parse_int_list(raw_values: list[str]) -> list[int]:
     parsed_ids: list[int] = []
     seen: set[int] = set()
@@ -876,6 +1032,34 @@ def _save_resource_upload(uploaded_file) -> tuple[str | None, str | None]:
     return stored_filename, None
 
 
+def _internal_resource_uploaded_filename(raw_link: str | None) -> str | None:
+    candidate = (raw_link or "").strip()
+    if not candidate:
+        return None
+
+    download_prefix = url_for("main.internal_resource_file_download", filename="")
+    if not candidate.startswith(download_prefix):
+        return None
+
+    filename = candidate.removeprefix(download_prefix).strip().lstrip("/")
+    if not filename or "/" in filename or filename != secure_filename(filename):
+        return None
+    return filename
+
+
+def _delete_internal_resource_upload(raw_link: str | None) -> None:
+    uploaded_filename = _internal_resource_uploaded_filename(raw_link)
+    if not uploaded_filename:
+        return
+
+    upload_path = os.path.join(_resource_upload_directory(), uploaded_filename)
+    try:
+        if os.path.isfile(upload_path):
+            os.remove(upload_path)
+    except OSError:
+        current_app.logger.warning("Failed to remove internal resource upload: %s", upload_path)
+
+
 def _parse_positive_int(raw_value: str | None) -> int | None:
     if raw_value is None:
         return None
@@ -884,6 +1068,96 @@ def _parse_positive_int(raw_value: str | None) -> int | None:
     except (TypeError, ValueError):
         return None
     return value if value > 0 else None
+
+
+def _project_workspace_url(project_id: int, anchor: str = "", **query_params) -> str:
+    filtered_params = {key: value for key, value in query_params.items() if value not in {None, "", 0}}
+    target = url_for("main.internal_project_workspace", project_id=project_id, **filtered_params)
+    return f"{target}{anchor}" if anchor else target
+
+
+def _project_list_redirect(selected_client_id: int | None = None, anchor: str = "") -> str:
+    kwargs = {}
+    if selected_client_id:
+        kwargs["client_id"] = selected_client_id
+    target = url_for("main.internal_projects", **kwargs)
+    return f"{target}{anchor}" if anchor else target
+
+
+def _prepare_project_for_delete(project: InternalProject) -> None:
+    for task in project.tasks:
+        task.resources = []
+    project.resources = []
+    if project.message_channel:
+        project.message_channel.members = []
+
+
+def _internal_todos_redirect_kwargs(
+    view_mode_raw: str | None,
+    project_scope_raw: str | None,
+    *,
+    edit_task_id: int | None = None,
+) -> dict[str, str | int]:
+    view_mode = (view_mode_raw or "nested").strip().lower()
+    if view_mode not in {"nested", "priority"}:
+        view_mode = "nested"
+
+    redirect_kwargs: dict[str, str | int] = {"view": view_mode}
+    project_scope_id = _parse_positive_int(project_scope_raw)
+    if project_scope_id:
+        redirect_kwargs["project_id"] = project_scope_id
+    if edit_task_id:
+        redirect_kwargs["edit_task_id"] = edit_task_id
+    return redirect_kwargs
+
+
+def _internal_resources_redirect_kwargs(
+    *,
+    default_query: str | None = None,
+    edit_resource_id: int | None = None,
+) -> dict[str, str | int]:
+    redirect_kwargs: dict[str, str | int] = {}
+
+    query_term = (request.form.get("redirect_q") or default_query or "").strip()
+    if query_term:
+        redirect_kwargs["q"] = query_term
+
+    selected_category = (request.form.get("redirect_category") or "all").strip().lower()
+    if selected_category and selected_category != "all":
+        redirect_kwargs["category"] = selected_category
+
+    selected_tag = (request.form.get("redirect_tag") or "all").strip().lower()
+    if selected_tag and selected_tag != "all":
+        redirect_kwargs["tag"] = selected_tag
+
+    selected_state = (request.form.get("redirect_state") or "all").strip().lower()
+    if selected_state in INTERNAL_RESOURCE_STATES and selected_state != "all":
+        redirect_kwargs["state"] = selected_state
+
+    project_scope_id = _parse_positive_int(request.form.get("project_scope"))
+    if project_scope_id:
+        redirect_kwargs["project_id"] = project_scope_id
+
+    if edit_resource_id:
+        redirect_kwargs["edit_id"] = edit_resource_id
+
+    return redirect_kwargs
+
+
+def _internal_resource_tag_records(tag_names: list[str]) -> list[InternalResourceTag]:
+    existing_tags = (
+        InternalResourceTag.query.filter(InternalResourceTag.name.in_(tag_names)).all() if tag_names else []
+    )
+    existing_tags_by_name = {tag.name: tag for tag in existing_tags}
+    resource_tags: list[InternalResourceTag] = []
+    for tag_name in tag_names:
+        tag = existing_tags_by_name.get(tag_name)
+        if not tag:
+            tag = InternalResourceTag(name=tag_name)
+            db.session.add(tag)
+            existing_tags_by_name[tag_name] = tag
+        resource_tags.append(tag)
+    return resource_tags
 
 
 def _ensure_project_message_channel(
@@ -914,74 +1188,306 @@ def _normalize_percentage(raw_value) -> float | None:
     return parsed
 
 
-def _normalize_project_starter_plan_template(raw_template) -> tuple[list[dict] | None, str | None]:
-    if not isinstance(raw_template, list) or not raw_template:
-        return None, "Starter plan template must be a non-empty JSON array."
+def _normalize_template_identifier(raw_value: str | None) -> str:
+    return re.sub(r"[^a-z0-9_]+", "_", str(raw_value or "").strip().lower()).strip("_")
 
-    normalized_phases: list[dict] = []
-    for phase_index, phase in enumerate(raw_template, start=1):
-        if not isinstance(phase, dict):
-            return None, f"Phase {phase_index} must be a JSON object."
 
-        title = " ".join(str(phase.get("title") or "").strip().split())
-        if not title:
-            return None, f"Phase {phase_index} is missing a valid title."
+def _normalize_project_template_variables(raw_variables) -> tuple[list[dict] | None, str | None]:
+    if raw_variables is None or raw_variables == "":
+        return [], None
+    if not isinstance(raw_variables, list):
+        return None, "Template variables must be a JSON array."
 
-        priority = str(phase.get("priority") or "medium").strip().lower()
-        if priority not in INTERNAL_TASK_PRIORITIES:
-            return None, (
-                f"Phase {phase_index} has invalid priority '{priority}'. "
-                f"Use one of: {', '.join(INTERNAL_TASK_PRIORITIES)}."
-            )
+    normalized_variables: list[dict] = []
+    seen_keys: set[str] = set()
+    for variable_index, variable in enumerate(raw_variables, start=1):
+        if isinstance(variable, str):
+            raw_key = variable
+            label = variable
+            default_value = ""
+        elif isinstance(variable, dict):
+            raw_key = variable.get("key")
+            label = str(variable.get("label") or raw_key or "").strip()
+            default_value = str(variable.get("default") or "").strip()
+        else:
+            return None, f"Template variable {variable_index} must be a string or object."
 
-        due_percent = _normalize_percentage(phase.get("due_percent", 100))
-        if due_percent is None:
-            return None, f"Phase {phase_index} requires due_percent between 0 and 100."
-
-        subtasks_raw = phase.get("subtasks") or []
-        if not isinstance(subtasks_raw, list):
-            return None, f"Phase {phase_index} subtasks must be a JSON array."
-
-        normalized_subtasks: list[dict] = []
-        for subtask_index, subtask in enumerate(subtasks_raw, start=1):
-            if isinstance(subtask, dict):
-                subtask_title = " ".join(str(subtask.get("title") or "").strip().split())
-                subtask_due_percent_raw = subtask.get("due_percent", due_percent)
-            elif isinstance(subtask, str):
-                subtask_title = " ".join(subtask.strip().split())
-                subtask_due_percent_raw = due_percent
-            else:
-                return None, f"Phase {phase_index} subtask {subtask_index} must be an object or string."
-
-            if not subtask_title:
-                return None, f"Phase {phase_index} subtask {subtask_index} is missing a valid title."
-
-            subtask_due_percent = _normalize_percentage(subtask_due_percent_raw)
-            if subtask_due_percent is None:
-                return None, (
-                    f"Phase {phase_index} subtask {subtask_index} requires due_percent between 0 and 100."
-                )
-
-            normalized_subtasks.append(
-                {
-                    "title": subtask_title,
-                    "due_percent": subtask_due_percent,
-                }
-            )
-
-        normalized_phases.append(
+        key = _normalize_template_identifier(raw_key)
+        if not key:
+            return None, f"Template variable {variable_index} requires a valid key."
+        if key in seen_keys:
+            return None, f"Template variable '{key}' is duplicated."
+        seen_keys.add(key)
+        normalized_variables.append(
             {
-                "title": title,
-                "priority": priority,
-                "due_percent": due_percent,
-                "subtasks": normalized_subtasks,
+                "key": key,
+                "label": label or key.replace("_", " ").title(),
+                "default": default_value,
             }
         )
 
-    return normalized_phases, None
+    return normalized_variables, None
 
 
-def _serialize_project_starter_plan_template(template: list[dict]) -> str:
+def _normalize_project_template_task_entry(
+    raw_task,
+    *,
+    entry_label: str,
+    default_priority: str = "medium",
+    default_status: str = "todo",
+    default_assignee: str = "{{ owner_name }}",
+    default_due_percent: float = 100,
+) -> tuple[dict | None, str | None]:
+    if not isinstance(raw_task, dict):
+        return None, f"{entry_label} must be a JSON object."
+
+    title = " ".join(str(raw_task.get("title") or "").strip().split())
+    if not title:
+        return None, f"{entry_label} is missing a valid title."
+
+    priority = _normalize_internal_task_priority(raw_task.get("priority") or default_priority)
+    status = _normalize_internal_task_status(raw_task.get("status") or default_status)
+    assignee = " ".join(str(raw_task.get("assignee") or default_assignee).strip().split()) or default_assignee
+    due_percent = _normalize_percentage(raw_task.get("due_percent", default_due_percent))
+    if due_percent is None:
+        return None, f"{entry_label} requires due_percent between 0 and 100."
+
+    subtasks_raw = raw_task.get("subtasks") or []
+    if not isinstance(subtasks_raw, list):
+        return None, f"{entry_label} subtasks must be a JSON array."
+
+    normalized_subtasks: list[dict] = []
+    for subtask_index, subtask in enumerate(subtasks_raw, start=1):
+        if isinstance(subtask, str):
+            subtask_payload = {"title": subtask}
+        elif isinstance(subtask, dict):
+            subtask_payload = subtask
+        else:
+            return None, f"{entry_label} subtask {subtask_index} must be an object or string."
+
+        normalized_subtask, error_message = _normalize_project_template_task_entry(
+            subtask_payload,
+            entry_label=f"{entry_label} subtask {subtask_index}",
+            default_priority=priority,
+            default_status=status,
+            default_assignee=assignee,
+            default_due_percent=due_percent,
+        )
+        if error_message or not normalized_subtask:
+            return None, error_message
+        normalized_subtask["subtasks"] = []
+        normalized_subtasks.append(normalized_subtask)
+
+    return {
+        "title": title,
+        "priority": priority,
+        "status": status,
+        "assignee": assignee,
+        "due_percent": due_percent,
+        "subtasks": normalized_subtasks,
+    }, None
+
+
+def _normalize_project_template_tasks(raw_tasks) -> tuple[list[dict] | None, str | None]:
+    if raw_tasks is None or raw_tasks == "":
+        return [], None
+    if not isinstance(raw_tasks, list):
+        return None, "Template tasks must be a JSON array."
+
+    normalized_tasks: list[dict] = []
+    for task_index, task in enumerate(raw_tasks, start=1):
+        normalized_task, error_message = _normalize_project_template_task_entry(
+            task,
+            entry_label=f"Task {task_index}",
+        )
+        if error_message or not normalized_task:
+            return None, error_message
+        normalized_tasks.append(normalized_task)
+    return normalized_tasks, None
+
+
+def _normalize_project_template_milestones(raw_milestones) -> tuple[list[dict] | None, str | None]:
+    if raw_milestones is None or raw_milestones == "":
+        return [], None
+    if not isinstance(raw_milestones, list):
+        return None, "Template milestones must be a JSON array."
+
+    normalized_milestones: list[dict] = []
+    for milestone_index, milestone in enumerate(raw_milestones, start=1):
+        if not isinstance(milestone, dict):
+            return None, f"Milestone {milestone_index} must be a JSON object."
+
+        title = " ".join(str(milestone.get("title") or "").strip().split())
+        if not title:
+            return None, f"Milestone {milestone_index} is missing a valid title."
+
+        owner_name = " ".join(
+            str(milestone.get("owner_name") or "{{ owner_name }}").strip().split()
+        ) or "{{ owner_name }}"
+        due_percent = _normalize_percentage(milestone.get("due_percent", 100))
+        if due_percent is None:
+            return None, f"Milestone {milestone_index} requires due_percent between 0 and 100."
+
+        normalized_milestones.append(
+            {
+                "title": title,
+                "owner_name": owner_name,
+                "status": _normalize_internal_milestone_status(milestone.get("status")),
+                "due_percent": due_percent,
+                "notes": str(milestone.get("notes") or "").strip(),
+            }
+        )
+
+    return normalized_milestones, None
+
+
+def _normalize_project_template_deliverables(raw_deliverables) -> tuple[list[dict] | None, str | None]:
+    if raw_deliverables is None or raw_deliverables == "":
+        return [], None
+    if not isinstance(raw_deliverables, list):
+        return None, "Template deliverables must be a JSON array."
+
+    normalized_deliverables: list[dict] = []
+    for deliverable_index, deliverable in enumerate(raw_deliverables, start=1):
+        if not isinstance(deliverable, dict):
+            return None, f"Deliverable {deliverable_index} must be a JSON object."
+
+        title = " ".join(str(deliverable.get("title") or "").strip().split())
+        description = str(deliverable.get("description") or "").strip()
+        if not title:
+            return None, f"Deliverable {deliverable_index} is missing a valid title."
+        if not description:
+            return None, f"Deliverable {deliverable_index} requires a description."
+
+        owner_name = " ".join(
+            str(deliverable.get("owner_name") or "{{ owner_name }}").strip().split()
+        ) or "{{ owner_name }}"
+        due_percent = _normalize_percentage(deliverable.get("due_percent", 100))
+        if due_percent is None:
+            return None, f"Deliverable {deliverable_index} requires due_percent between 0 and 100."
+
+        normalized_deliverables.append(
+            {
+                "title": title,
+                "owner_name": owner_name,
+                "status": _normalize_internal_deliverable_status(deliverable.get("status")),
+                "due_percent": due_percent,
+                "description": description,
+                "link": str(deliverable.get("link") or "").strip(),
+            }
+        )
+
+    return normalized_deliverables, None
+
+
+def _normalize_project_template_documents(raw_documents) -> tuple[list[dict] | None, str | None]:
+    if raw_documents is None or raw_documents == "":
+        return [], None
+    if not isinstance(raw_documents, list):
+        return None, "Template documents must be a JSON array."
+
+    normalized_documents: list[dict] = []
+    seen_refs: set[str] = set()
+    for document_index, document in enumerate(raw_documents, start=1):
+        if not isinstance(document, dict):
+            return None, f"Document {document_index} must be a JSON object."
+
+        title = " ".join(str(document.get("title") or "").strip().split())
+        summary = str(document.get("summary") or "").strip()
+        body = str(document.get("body") or "").strip()
+        if not title or not summary or not body:
+            return None, f"Document {document_index} requires title, summary, and body."
+
+        ref = _normalize_template_identifier(document.get("ref"))
+        if ref:
+            if ref in seen_refs:
+                return None, f"Document ref '{ref}' is duplicated."
+            seen_refs.add(ref)
+
+        parent_ref = _normalize_template_identifier(document.get("parent_ref"))
+        if parent_ref and ref and parent_ref == ref:
+            return None, f"Document {document_index} cannot reference itself as a parent."
+
+        normalized_documents.append(
+            {
+                "ref": ref,
+                "parent_ref": parent_ref,
+                "title": title,
+                "summary": summary,
+                "body": body,
+                "status": _normalize_internal_doc_status(document.get("status")),
+                "slug": _slugify_text(str(document.get("slug") or "").strip(), fallback=""),
+            }
+        )
+
+    known_refs = {document["ref"] for document in normalized_documents if document["ref"]}
+    for document_index, document in enumerate(normalized_documents, start=1):
+        parent_ref = document.get("parent_ref")
+        if parent_ref and parent_ref not in known_refs:
+            return None, f"Document {document_index} references unknown parent_ref '{parent_ref}'."
+
+    return normalized_documents, None
+
+
+def _build_project_starter_plan_template(task_template: list[dict]) -> dict:
+    template_payload = {
+        "variables": copy.deepcopy(DEFAULT_PROJECT_AUTOMATION_VARIABLES),
+        "milestones": copy.deepcopy(DEFAULT_PROJECT_AUTOMATION_MILESTONES),
+        "deliverables": copy.deepcopy(DEFAULT_PROJECT_AUTOMATION_DELIVERABLES),
+        "documents": copy.deepcopy(DEFAULT_PROJECT_AUTOMATION_DOCUMENTS),
+        "tasks": copy.deepcopy(task_template),
+    }
+    normalized_template, error_message = _normalize_project_starter_plan_template(template_payload)
+    if error_message or not normalized_template:
+        return {
+            "variables": copy.deepcopy(DEFAULT_PROJECT_AUTOMATION_VARIABLES),
+            "milestones": copy.deepcopy(DEFAULT_PROJECT_AUTOMATION_MILESTONES),
+            "deliverables": copy.deepcopy(DEFAULT_PROJECT_AUTOMATION_DELIVERABLES),
+            "documents": copy.deepcopy(DEFAULT_PROJECT_AUTOMATION_DOCUMENTS),
+            "tasks": [],
+        }
+    return normalized_template
+
+
+def _normalize_project_starter_plan_template(raw_template) -> tuple[dict | None, str | None]:
+    if isinstance(raw_template, list):
+        raw_template = {"tasks": raw_template}
+    if not isinstance(raw_template, dict):
+        return None, "Automation template must be a JSON object or legacy JSON array."
+
+    normalized_variables, error_message = _normalize_project_template_variables(raw_template.get("variables"))
+    if error_message or normalized_variables is None:
+        return None, error_message
+
+    normalized_tasks, error_message = _normalize_project_template_tasks(raw_template.get("tasks"))
+    if error_message or normalized_tasks is None:
+        return None, error_message
+
+    normalized_milestones, error_message = _normalize_project_template_milestones(raw_template.get("milestones"))
+    if error_message or normalized_milestones is None:
+        return None, error_message
+
+    normalized_deliverables, error_message = _normalize_project_template_deliverables(raw_template.get("deliverables"))
+    if error_message or normalized_deliverables is None:
+        return None, error_message
+
+    normalized_documents, error_message = _normalize_project_template_documents(raw_template.get("documents"))
+    if error_message or normalized_documents is None:
+        return None, error_message
+
+    if not any((normalized_tasks, normalized_milestones, normalized_deliverables, normalized_documents)):
+        return None, "Automation template must define at least one task, milestone, deliverable, or document."
+
+    return {
+        "variables": normalized_variables,
+        "milestones": normalized_milestones,
+        "deliverables": normalized_deliverables,
+        "documents": normalized_documents,
+        "tasks": normalized_tasks,
+    }, None
+
+
+def _serialize_project_starter_plan_template(template: dict) -> str:
     return json.dumps(template, indent=2, ensure_ascii=True)
 
 
@@ -995,15 +1501,15 @@ def _project_starter_plan_record(industry_category: str) -> InternalProjectStart
     return None
 
 
-def _default_project_starter_plan_template(industry_category: str) -> list[dict]:
+def _default_project_starter_plan_template(industry_category: str) -> dict:
     normalized_category = _normalize_industry_category(industry_category)
     industry_template = DEFAULT_PROJECT_STARTER_PLANS_BY_INDUSTRY.get(normalized_category)
     if industry_template:
-        return copy.deepcopy(industry_template)
-    return copy.deepcopy(DEFAULT_PROJECT_STARTER_PLAN_TEMPLATE)
+        return _build_project_starter_plan_template(industry_template)
+    return _build_project_starter_plan_template(DEFAULT_PROJECT_STARTER_PLAN_TEMPLATE)
 
 
-def _load_project_starter_plan_template(industry_category: str = DEFAULT_PROJECT_INDUSTRY_CATEGORY) -> list[dict]:
+def _load_project_starter_plan_template(industry_category: str = DEFAULT_PROJECT_INDUSTRY_CATEGORY) -> dict:
     normalized_category = _normalize_industry_category(industry_category)
     default_template = _default_project_starter_plan_template(normalized_category)
     record = _project_starter_plan_record(normalized_category)
@@ -1043,21 +1549,107 @@ def _project_starter_plan_editor_context(industry_category: str) -> dict:
         "starter_plan_template_text": _serialize_project_starter_plan_template(template),
         "starter_plan_updated_at": record.updated_at if record else None,
         "starter_plan_updated_by": record.updated_by.full_name if record and record.updated_by else None,
+        "starter_plan_variables": template.get("variables", []),
+        "starter_plan_stats": {
+            "tasks": len(template.get("tasks", [])),
+            "milestones": len(template.get("milestones", [])),
+            "deliverables": len(template.get("deliverables", [])),
+            "documents": len(template.get("documents", [])),
+        },
     }
 
 
-def _create_project_starter_tasks(
+def _parse_project_template_runtime_variables(raw_value: str | None) -> tuple[dict[str, str] | None, str | None]:
+    candidate = (raw_value or "").strip()
+    if not candidate:
+        return {}, None
+
+    try:
+        parsed_variables = json.loads(candidate)
+    except json.JSONDecodeError as exc:
+        return None, f"Template variables must be valid JSON (line {exc.lineno}, column {exc.colno})."
+
+    if not isinstance(parsed_variables, dict):
+        return None, "Template variables must be a JSON object."
+
+    normalized_variables: dict[str, str] = {}
+    for raw_key, raw_variable_value in parsed_variables.items():
+        normalized_key = _normalize_template_identifier(raw_key)
+        if not normalized_key:
+            return None, "Template variable keys must contain letters, numbers, or underscores."
+        if isinstance(raw_variable_value, (dict, list)):
+            return None, f"Template variable '{raw_key}' must be a string, number, or boolean."
+        normalized_variables[normalized_key] = str(raw_variable_value).strip()
+
+    return normalized_variables, None
+
+
+def _render_project_template_text(raw_value: str | None, context: dict[str, str]) -> str:
+    if raw_value is None:
+        return ""
+    return re.sub(
+        r"{{\s*([a-zA-Z0-9_]+)\s*}}",
+        lambda match: context.get(match.group(1), match.group(0)),
+        str(raw_value),
+    )
+
+
+def _project_template_context(
     project: InternalProject,
     *,
     timeline_days: int,
     owner_display_name: str,
-    plan_template: list[dict] | None = None,
+    plan_template: dict,
+    runtime_variables: dict[str, str] | None = None,
+) -> dict[str, str]:
+    project_due_date = project.due_date or (date.today() + timedelta(days=max(timeline_days, 1)))
+    context = {
+        "project_name": project.name,
+        "project_summary": project.summary,
+        "client_name": project.client.name if project.client else "",
+        "client_account_owner": project.client.account_owner if project.client else "",
+        "owner_name": owner_display_name or (project.client.account_owner if project.client else "") or "Project Team",
+        "timeline_days": str(max(timeline_days, 1)),
+        "industry_category": project.industry_category or DEFAULT_PROJECT_INDUSTRY_CATEGORY,
+        "industry_label": _industry_category_label(project.industry_category),
+        "due_date": project_due_date.isoformat(),
+        "due_date_display": project_due_date.strftime("%d %b %Y"),
+        "today": date.today().isoformat(),
+        "today_display": date.today().strftime("%d %b %Y"),
+    }
+
+    for variable in plan_template.get("variables", []):
+        key = variable.get("key")
+        if not key or key in context:
+            continue
+        rendered_default = _render_project_template_text(variable.get("default"), context).strip()
+        context[key] = rendered_default
+
+    for key, value in (runtime_variables or {}).items():
+        context[key] = value
+    return context
+
+
+def _apply_project_starter_plan(
+    project: InternalProject,
+    *,
+    timeline_days: int,
+    owner_display_name: str,
+    plan_template: dict | None = None,
+    runtime_variables: dict[str, str] | None = None,
 ) -> None:
     start_date = date.today()
     effective_timeline_days = max(timeline_days, 1)
     project_due_date = project.due_date or (start_date + timedelta(days=effective_timeline_days))
     delivery_owner = owner_display_name or project.client.account_owner or "Project Team"
     starter_plan = plan_template or _load_project_starter_plan_template(project.industry_category)
+    template_context = _project_template_context(
+        project,
+        timeline_days=timeline_days,
+        owner_display_name=delivery_owner,
+        plan_template=starter_plan,
+        runtime_variables=runtime_variables,
+    )
 
     def milestone(percentage: float) -> date:
         clamped_percentage = min(max(float(percentage), 0), 100) / 100
@@ -1066,27 +1658,111 @@ def _create_project_starter_tasks(
         target_date = start_date + timedelta(days=offset_days)
         return min(target_date, project_due_date)
 
-    for phase in starter_plan:
+    for phase in starter_plan.get("milestones", []):
+        rendered_title = " ".join(_render_project_template_text(phase["title"], template_context).strip().split())
+        rendered_owner_name = (
+            " ".join(_render_project_template_text(phase.get("owner_name"), template_context).strip().split())
+            or delivery_owner
+        )
+        rendered_notes = _render_project_template_text(phase.get("notes"), template_context).strip() or None
+        db.session.add(
+            InternalProjectMilestone(
+                project=project,
+                title=rendered_title,
+                owner_name=rendered_owner_name,
+                status=phase["status"],
+                due_date=milestone(phase.get("due_percent", 100)),
+                notes=rendered_notes,
+            )
+        )
+
+    for deliverable in starter_plan.get("deliverables", []):
+        rendered_title = " ".join(
+            _render_project_template_text(deliverable["title"], template_context).strip().split()
+        )
+        rendered_owner_name = (
+            " ".join(
+                _render_project_template_text(deliverable.get("owner_name"), template_context).strip().split()
+            )
+            or delivery_owner
+        )
+        rendered_description = _render_project_template_text(
+            deliverable.get("description"),
+            template_context,
+        ).strip()
+        rendered_link = _render_project_template_text(deliverable.get("link"), template_context).strip()
+        if rendered_link and not _is_safe_resource_link(rendered_link):
+            rendered_link = ""
+        db.session.add(
+            InternalProjectDeliverable(
+                project=project,
+                title=rendered_title,
+                owner_name=rendered_owner_name,
+                status=deliverable["status"],
+                due_date=milestone(deliverable.get("due_percent", 100)),
+                link=rendered_link or None,
+                description=rendered_description,
+            )
+        )
+
+    created_pages_by_ref: dict[str, InternalDocPage] = {}
+    pending_doc_parents: list[tuple[InternalDocPage, str | None]] = []
+    for document in starter_plan.get("documents", []):
+        rendered_title = " ".join(_render_project_template_text(document["title"], template_context).strip().split())
+        rendered_summary = _render_project_template_text(document.get("summary"), template_context).strip()
+        rendered_body = _render_project_template_text(document.get("body"), template_context).strip()
+        rendered_slug_source = _render_project_template_text(document.get("slug"), template_context).strip() or rendered_title
+        page = InternalDocPage(
+            title=rendered_title,
+            slug=_unique_internal_doc_slug(rendered_slug_source),
+            summary=rendered_summary,
+            body=rendered_body,
+            status=document["status"],
+            project=project,
+            author=getattr(g, "internal_user", None),
+        )
+        db.session.add(page)
+        if document.get("ref"):
+            created_pages_by_ref[document["ref"]] = page
+        pending_doc_parents.append((page, document.get("parent_ref")))
+
+    for page, parent_ref in pending_doc_parents:
+        if parent_ref:
+            page.parent = created_pages_by_ref.get(parent_ref)
+
+    for phase in starter_plan.get("tasks", []):
         phase_due_date = milestone(phase.get("due_percent", 100))
+        rendered_phase_title = " ".join(_render_project_template_text(phase["title"], template_context).strip().split())
+        rendered_phase_assignee = (
+            " ".join(_render_project_template_text(phase.get("assignee"), template_context).strip().split())
+            or delivery_owner
+        )
         parent_task = InternalTask(
             project=project,
-            title=phase["title"],
-            assignee=delivery_owner,
+            title=rendered_phase_title,
+            assignee=rendered_phase_assignee,
             priority=phase["priority"],
-            status="todo",
+            status=phase["status"],
             due_date=phase_due_date,
         )
         db.session.add(parent_task)
 
         for subtask in phase.get("subtasks", []):
+            rendered_subtask_title = " ".join(
+                _render_project_template_text(subtask["title"], template_context).strip().split()
+            )
+            rendered_subtask_assignee = (
+                " ".join(_render_project_template_text(subtask.get("assignee"), template_context).strip().split())
+                or rendered_phase_assignee
+            )
             db.session.add(
                 InternalTask(
                     project=project,
                     parent_task=parent_task,
-                    title=subtask["title"],
-                    assignee=delivery_owner,
-                    priority=phase["priority"],
-                    status="todo",
+                    title=rendered_subtask_title,
+                    assignee=rendered_subtask_assignee,
+                    priority=subtask["priority"],
+                    status=subtask["status"],
                     due_date=milestone(subtask.get("due_percent", phase.get("due_percent", 100))),
                 )
             )
@@ -1164,6 +1840,20 @@ def _is_valid_internal_csrf_token(raw_value: str | None) -> bool:
     return hmac.compare_digest(token, raw_value)
 
 
+def _safe_internal_referrer_url() -> str | None:
+    raw_referrer = (request.referrer or "").strip()
+    if not raw_referrer:
+        return None
+
+    parsed = urlparse(raw_referrer)
+    if not parsed.path.startswith("/internal"):
+        return None
+
+    if parsed.query:
+        return f"{parsed.path}?{parsed.query}"
+    return parsed.path
+
+
 @main_bp.before_app_request
 def load_internal_user() -> None:
     user_id = session.get("internal_user_id")
@@ -1199,10 +1889,13 @@ def verify_internal_csrf() -> None:
 def inject_internal_user_context():
     return {
         "current_internal_user": getattr(g, "internal_user", None),
+        "current_internal_user_is_senior": _internal_user_is_senior(getattr(g, "internal_user", None)),
         "internal_status_class": _internal_status_class,
         "internal_priority_class": _internal_priority_class,
         "internal_risk_severity_class": _internal_risk_severity_class,
+        "internal_user_is_senior": _internal_user_is_senior,
         "csrf_token": _internal_csrf_token,
+        "public_demo_url": _public_demo_url,
     }
 
 
@@ -1212,6 +1905,20 @@ def internal_login_required(view_func):
         if not getattr(g, "internal_user", None):
             next_target = _safe_next_url(request.path)
             return redirect(url_for("main.internal_login", next=next_target))
+        return view_func(*args, **kwargs)
+
+    return wrapped
+
+
+def internal_senior_required(view_func):
+    @wraps(view_func)
+    def wrapped(*args, **kwargs):
+        if not getattr(g, "internal_user", None):
+            next_target = _safe_next_url(request.path)
+            return redirect(url_for("main.internal_login", next=next_target))
+        if not _internal_user_is_senior(g.internal_user):
+            flash("Senior access is required for that action.", "warning")
+            return redirect(_safe_internal_referrer_url() or url_for("main.internal_dashboard"))
         return view_func(*args, **kwargs)
 
     return wrapped
@@ -1278,6 +1985,10 @@ def about():
 def enquire():
     enquiry = Page_Heading.query.filter_by(Title="enquiry").first()
     services = Service.query.all()
+    contact_form_state, contact_form_errors = _pop_public_contact_feedback()
+    selected_service = request.args.get("service")
+    if selected_service and not contact_form_state.get("service"):
+        contact_form_state["service"] = selected_service
     return _render_page(
         "enquire.html",
         path="/enquire",
@@ -1288,6 +1999,8 @@ def enquire():
         ),
         enquiry=enquiry,
         services=services,
+        contact_form_state=contact_form_state,
+        contact_form_errors=contact_form_errors,
     )
 
 
@@ -1731,11 +2444,17 @@ def internal_clients():
         InternalUser.query.filter_by(is_active=True).order_by(InternalUser.full_name.asc()).all()
     )
     client_statuses = ("active", "at-risk", "paused", "completed")
+    editable_client = None
+    if _internal_user_is_senior(getattr(g, "internal_user", None)):
+        edit_client_id = _parse_positive_int(request.args.get("edit_id"))
+        if edit_client_id:
+            editable_client = next((client for client in clients if client.id == edit_client_id), None)
     return render_template(
         "internal/clients.html",
         clients=clients,
         active_internal_users=active_internal_users,
         client_statuses=client_statuses,
+        editable_client=editable_client,
     )
 
 
@@ -1772,6 +2491,63 @@ def internal_client_add():
     return redirect(url_for("main.internal_clients"))
 
 
+@main_bp.route("/internal/clients/<int:client_id>/update", methods=["POST"])
+@internal_senior_required
+def internal_client_update(client_id: int):
+    client_record = db.session.get(InternalClient, client_id)
+    if not client_record:
+        flash("Client not found.", "warning")
+        return redirect(url_for("main.internal_clients"))
+
+    name = " ".join((request.form.get("name") or "").strip().split())
+    industry = " ".join((request.form.get("industry") or "").strip().split())
+    account_owner = " ".join((request.form.get("account_owner") or "").strip().split())
+    status = (request.form.get("status") or "active").strip().lower()
+    notes = (request.form.get("notes") or "").strip()
+    if status not in {"active", "at-risk", "paused", "completed"}:
+        status = "active"
+
+    if not name or not industry or not account_owner:
+        flash("Client name, industry, and account owner are required.", "warning")
+        return redirect(url_for("main.internal_clients", edit_id=client_id))
+
+    existing_client = InternalClient.query.filter(InternalClient.name.ilike(name)).first()
+    if existing_client and existing_client.id != client_id:
+        flash("A client with this name already exists.", "warning")
+        return redirect(url_for("main.internal_clients", edit_id=client_id))
+
+    client_record.name = name
+    client_record.industry = industry
+    client_record.account_owner = account_owner
+    client_record.status = status
+    client_record.notes = notes or None
+    db.session.commit()
+    flash(f"Client '{name}' updated.", "success")
+    return redirect(url_for("main.internal_clients"))
+
+
+@main_bp.route("/internal/clients/<int:client_id>/delete", methods=["POST"])
+@internal_senior_required
+def internal_client_delete(client_id: int):
+    client_record = db.session.get(InternalClient, client_id)
+    if not client_record:
+        flash("Client not found.", "warning")
+        return redirect(url_for("main.internal_clients"))
+
+    client_name = client_record.name
+    project_count = len(client_record.projects)
+    for project in client_record.projects:
+        _prepare_project_for_delete(project)
+
+    db.session.delete(client_record)
+    db.session.commit()
+    if project_count:
+        flash(f"Client '{client_name}' deleted with {project_count} linked project(s).", "success")
+    else:
+        flash(f"Client '{client_name}' deleted.", "success")
+    return redirect(url_for("main.internal_clients"))
+
+
 @main_bp.route("/internal/projects")
 @internal_login_required
 def internal_projects():
@@ -1786,7 +2562,7 @@ def internal_projects():
         if selected_client_candidate and db.session.get(InternalClient, selected_client_candidate):
             selected_client_id = selected_client_candidate
 
-    projects = (
+    all_projects = (
         InternalProject.query.options(
             selectinload(InternalProject.client),
             selectinload(InternalProject.owner),
@@ -1800,6 +2576,10 @@ def internal_projects():
         .order_by(InternalProject.status.asc(), InternalProject.name.asc())
         .all()
     )
+    selected_client = db.session.get(InternalClient, selected_client_id) if selected_client_id else None
+    projects = [
+        project for project in all_projects if not selected_client_id or project.client_id == selected_client_id
+    ]
     project_cards = []
     for project in projects:
         total_tasks = project.total_tasks_count
@@ -1819,7 +2599,7 @@ def internal_projects():
         )
 
     clients = InternalClient.query.order_by(InternalClient.name.asc()).all()
-    starter_plan_categories = _project_starter_plan_categories(projects, clients)
+    starter_plan_categories = _project_starter_plan_categories(all_projects, clients)
     if selected_starter_plan_category not in starter_plan_categories:
         selected_starter_plan_category = DEFAULT_PROJECT_INDUSTRY_CATEGORY
 
@@ -1840,6 +2620,7 @@ def internal_projects():
         default_project_timeline_days=default_project_timeline_days,
         default_project_due_date=default_project_due_date,
         selected_client_id=selected_client_id,
+        selected_client=selected_client,
         project_industry_categories=starter_plan_categories,
         selected_starter_plan_category=selected_starter_plan_category,
         starter_plan_categories=starter_plan_categories,
@@ -1849,16 +2630,18 @@ def internal_projects():
         starter_plan_template_text=starter_plan_editor["starter_plan_template_text"],
         starter_plan_updated_at=starter_plan_editor["starter_plan_updated_at"],
         starter_plan_updated_by=starter_plan_editor["starter_plan_updated_by"],
+        starter_plan_variables=starter_plan_editor["starter_plan_variables"],
+        starter_plan_stats=starter_plan_editor["starter_plan_stats"],
     )
 
 
 @main_bp.route("/internal/projects/starter-plan", methods=["POST"])
-@internal_login_required
+@internal_senior_required
 def internal_project_starter_plan_update():
     starter_plan_category = _normalize_industry_category(request.form.get("starter_plan_category"))
     raw_template = (request.form.get("starter_plan_template") or "").strip()
     if not raw_template:
-        flash("Starter plan template cannot be empty.", "warning")
+        flash("Automation template cannot be empty.", "warning")
         return redirect(
             f"{url_for('main.internal_projects', starter_plan_category=starter_plan_category)}#starter-plan-template"
         )
@@ -1867,7 +2650,7 @@ def internal_project_starter_plan_update():
         parsed_template = json.loads(raw_template)
     except json.JSONDecodeError as exc:
         flash(
-            f"Starter plan template must be valid JSON (line {exc.lineno}, column {exc.colno}).",
+            f"Automation template must be valid JSON (line {exc.lineno}, column {exc.colno}).",
             "warning",
         )
         return redirect(
@@ -1876,7 +2659,7 @@ def internal_project_starter_plan_update():
 
     normalized_template, error_message = _normalize_project_starter_plan_template(parsed_template)
     if error_message or not normalized_template:
-        flash(error_message or "Invalid starter plan template.", "warning")
+        flash(error_message or "Invalid automation template.", "warning")
         return redirect(
             f"{url_for('main.internal_projects', starter_plan_category=starter_plan_category)}#starter-plan-template"
         )
@@ -1897,7 +2680,7 @@ def internal_project_starter_plan_update():
 
     db.session.commit()
     flash(
-        f"Starter delivery plan template updated for {_industry_category_label(starter_plan_category)}.",
+        f"Automation template updated for {_industry_category_label(starter_plan_category)}.",
         "success",
     )
     return redirect(
@@ -1916,6 +2699,7 @@ def internal_project_add():
     due_date = _parse_date(raw_due_date)
     timeline_days = _normalize_project_timeline_days(request.form.get("timeline_days"))
     industry_category = _normalize_industry_category(request.form.get("industry_category"))
+    template_variables_raw = (request.form.get("template_variables") or "").strip()
 
     client_id_raw = (request.form.get("client_id") or "").strip()
     owner_id_raw = (request.form.get("owner_id") or "").strip()
@@ -1929,6 +2713,13 @@ def internal_project_add():
 
     if raw_due_date and not due_date:
         flash("Provide a valid due date.", "warning")
+        return redirect(url_for("main.internal_projects"))
+
+    runtime_template_variables, template_variables_error = _parse_project_template_runtime_variables(
+        template_variables_raw
+    )
+    if template_variables_error or runtime_template_variables is None:
+        flash(template_variables_error or "Invalid template variables.", "warning")
         return redirect(url_for("main.internal_projects"))
 
     if not due_date:
@@ -2008,20 +2799,38 @@ def internal_project_add():
     if create_starter_plan:
         owner_display_name = owner_record.full_name if owner_record else client_record.account_owner
         starter_plan_template = _load_project_starter_plan_template(industry_category)
-        _create_project_starter_tasks(
+        _apply_project_starter_plan(
             project_record,
             timeline_days=timeline_days,
             owner_display_name=owner_display_name,
             plan_template=starter_plan_template,
+            runtime_variables=runtime_template_variables,
         )
     db.session.commit()
     success_notes = [f"Project '{name}' created for {client_record.name}."]
     if created_new_client:
         success_notes.append("New client profile added.")
     if create_starter_plan:
-        success_notes.append("Starter delivery plan generated.")
+        success_notes.append("Automation template applied.")
     flash(" ".join(success_notes), "success")
     return redirect(url_for("main.internal_projects", client_id=redirect_client_id))
+
+
+@main_bp.route("/internal/projects/<int:project_id>/delete", methods=["POST"])
+@internal_senior_required
+def internal_project_delete(project_id: int):
+    project = db.session.get(InternalProject, project_id)
+    if not project:
+        flash("Project not found.", "warning")
+        return redirect(url_for("main.internal_projects"))
+
+    client_id = project.client_id
+    project_name = project.name
+    _prepare_project_for_delete(project)
+    db.session.delete(project)
+    db.session.commit()
+    flash(f"Project '{project_name}' deleted.", "success")
+    return redirect(_project_list_redirect(client_id))
 
 
 @main_bp.route("/internal/projects/<int:project_id>")
@@ -2123,6 +2932,15 @@ def internal_project_workspace(project_id: int):
         "in_flight": sum(1 for deliverable in deliverables if not deliverable.is_delivered),
     }
     latest_update = project.latest_status_update
+    senior_user = _internal_user_is_senior(getattr(g, "internal_user", None))
+
+    def editable_record_from_query(query_key: str, records: list):
+        if not senior_user:
+            return None
+        record_id = _parse_positive_int(request.args.get(query_key))
+        if not record_id:
+            return None
+        return next((record for record in records if record.id == record_id), None)
 
     return render_template(
         "internal/project_workspace.html",
@@ -2151,6 +2969,11 @@ def internal_project_workspace(project_id: int):
         team_workload_cards=team_workload_cards,
         today=today,
         value_estimate_input=_serialize_currency(project.value_estimate),
+        editable_milestone=editable_record_from_query("edit_milestone_id", milestones),
+        editable_deliverable=editable_record_from_query("edit_deliverable_id", deliverables),
+        editable_risk=editable_record_from_query("edit_risk_id", risks),
+        editable_stakeholder=editable_record_from_query("edit_stakeholder_id", stakeholders),
+        editable_status_update=editable_record_from_query("edit_status_update_id", status_updates),
     )
 
 
@@ -2250,6 +3073,54 @@ def internal_project_status_update_add(project_id: int):
     return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
 
 
+@main_bp.route("/internal/projects/<int:project_id>/status-updates/<int:update_id>/update", methods=["POST"])
+@internal_senior_required
+def internal_project_status_update_edit(project_id: int, update_id: int):
+    status_update = db.session.get(InternalProjectStatusUpdate, update_id)
+    anchor = "#status-updates"
+    if not status_update or status_update.project_id != project_id:
+        flash("Status update not found.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor))
+
+    headline = " ".join((request.form.get("headline") or "").strip().split())
+    summary = (request.form.get("summary") or "").strip()
+    wins = (request.form.get("wins") or "").strip()
+    risks_text = (request.form.get("risks") or "").strip()
+    next_steps = (request.form.get("next_steps") or "").strip()
+    progress_percent = _normalize_progress_percent(request.form.get("progress_percent"))
+
+    if not headline or not summary:
+        flash("Status headline and summary are required.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_status_update_id=update_id))
+    if progress_percent is None:
+        flash("Progress percent must be between 0 and 100.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_status_update_id=update_id))
+
+    status_update.headline = headline
+    status_update.summary = summary
+    status_update.wins = wins or None
+    status_update.risks = risks_text or None
+    status_update.next_steps = next_steps or None
+    status_update.progress_percent = progress_percent
+    db.session.commit()
+    flash("Project status update updated.", "success")
+    return redirect(_project_workspace_url(project_id, anchor))
+
+
+@main_bp.route("/internal/projects/<int:project_id>/status-updates/<int:update_id>/delete", methods=["POST"])
+@internal_senior_required
+def internal_project_status_update_delete(project_id: int, update_id: int):
+    status_update = db.session.get(InternalProjectStatusUpdate, update_id)
+    if not status_update or status_update.project_id != project_id:
+        flash("Status update not found.", "warning")
+        return redirect(_project_workspace_url(project_id, "#status-updates"))
+
+    db.session.delete(status_update)
+    db.session.commit()
+    flash("Project status update deleted.", "success")
+    return redirect(_project_workspace_url(project_id, "#status-updates"))
+
+
 @main_bp.route("/internal/projects/<int:project_id>/milestones/add", methods=["POST"])
 @internal_login_required
 def internal_project_milestone_add(project_id: int):
@@ -2300,6 +3171,53 @@ def internal_project_milestone_update_status(project_id: int, milestone_id: int)
     db.session.commit()
     flash("Milestone status updated.", "success")
     return redirect(f"{url_for('main.internal_project_workspace', project_id=project_id)}#milestones")
+
+
+@main_bp.route("/internal/projects/<int:project_id>/milestones/<int:milestone_id>/update", methods=["POST"])
+@internal_senior_required
+def internal_project_milestone_update(project_id: int, milestone_id: int):
+    milestone = db.session.get(InternalProjectMilestone, milestone_id)
+    anchor = "#milestones"
+    if not milestone or milestone.project_id != project_id:
+        flash("Milestone not found.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor))
+
+    title = " ".join((request.form.get("title") or "").strip().split())
+    owner_name = " ".join((request.form.get("owner_name") or "").strip().split())
+    status = _normalize_internal_milestone_status(request.form.get("status"))
+    due_date_raw = (request.form.get("due_date") or "").strip()
+    due_date = _parse_date(due_date_raw)
+    notes = (request.form.get("notes") or "").strip()
+
+    if not title or not owner_name:
+        flash("Milestone title and owner are required.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_milestone_id=milestone_id))
+    if due_date_raw and not due_date:
+        flash("Provide a valid milestone due date.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_milestone_id=milestone_id))
+
+    milestone.title = title
+    milestone.owner_name = owner_name
+    milestone.status = status
+    milestone.due_date = due_date
+    milestone.notes = notes or None
+    db.session.commit()
+    flash("Milestone updated.", "success")
+    return redirect(_project_workspace_url(project_id, anchor))
+
+
+@main_bp.route("/internal/projects/<int:project_id>/milestones/<int:milestone_id>/delete", methods=["POST"])
+@internal_senior_required
+def internal_project_milestone_delete(project_id: int, milestone_id: int):
+    milestone = db.session.get(InternalProjectMilestone, milestone_id)
+    if not milestone or milestone.project_id != project_id:
+        flash("Milestone not found.", "warning")
+        return redirect(_project_workspace_url(project_id, "#milestones"))
+
+    db.session.delete(milestone)
+    db.session.commit()
+    flash("Milestone deleted.", "success")
+    return redirect(_project_workspace_url(project_id, "#milestones"))
 
 
 @main_bp.route("/internal/projects/<int:project_id>/deliverables/add", methods=["POST"])
@@ -2359,6 +3277,58 @@ def internal_project_deliverable_update_status(project_id: int, deliverable_id: 
     return redirect(f"{url_for('main.internal_project_workspace', project_id=project_id)}#deliverables")
 
 
+@main_bp.route("/internal/projects/<int:project_id>/deliverables/<int:deliverable_id>/update", methods=["POST"])
+@internal_senior_required
+def internal_project_deliverable_update(project_id: int, deliverable_id: int):
+    deliverable = db.session.get(InternalProjectDeliverable, deliverable_id)
+    anchor = "#deliverables"
+    if not deliverable or deliverable.project_id != project_id:
+        flash("Deliverable not found.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor))
+
+    title = " ".join((request.form.get("title") or "").strip().split())
+    owner_name = " ".join((request.form.get("owner_name") or "").strip().split())
+    status = _normalize_internal_deliverable_status(request.form.get("status"))
+    due_date_raw = (request.form.get("due_date") or "").strip()
+    due_date = _parse_date(due_date_raw)
+    link = (request.form.get("link") or "").strip()
+    description = (request.form.get("description") or "").strip()
+
+    if not title or not owner_name or not description:
+        flash("Deliverable title, owner, and description are required.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_deliverable_id=deliverable_id))
+    if due_date_raw and not due_date:
+        flash("Provide a valid deliverable due date.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_deliverable_id=deliverable_id))
+    if link and not _is_safe_resource_link(link):
+        flash("Deliverable link must be a relative path or an http/https URL.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_deliverable_id=deliverable_id))
+
+    deliverable.title = title
+    deliverable.owner_name = owner_name
+    deliverable.status = status
+    deliverable.due_date = due_date
+    deliverable.link = link or None
+    deliverable.description = description
+    db.session.commit()
+    flash("Deliverable updated.", "success")
+    return redirect(_project_workspace_url(project_id, anchor))
+
+
+@main_bp.route("/internal/projects/<int:project_id>/deliverables/<int:deliverable_id>/delete", methods=["POST"])
+@internal_senior_required
+def internal_project_deliverable_delete(project_id: int, deliverable_id: int):
+    deliverable = db.session.get(InternalProjectDeliverable, deliverable_id)
+    if not deliverable or deliverable.project_id != project_id:
+        flash("Deliverable not found.", "warning")
+        return redirect(_project_workspace_url(project_id, "#deliverables"))
+
+    db.session.delete(deliverable)
+    db.session.commit()
+    flash("Deliverable deleted.", "success")
+    return redirect(_project_workspace_url(project_id, "#deliverables"))
+
+
 @main_bp.route("/internal/projects/<int:project_id>/risks/add", methods=["POST"])
 @internal_login_required
 def internal_project_risk_add(project_id: int):
@@ -2413,6 +3383,55 @@ def internal_project_risk_update_status(project_id: int, risk_id: int):
     return redirect(f"{url_for('main.internal_project_workspace', project_id=project_id)}#risks")
 
 
+@main_bp.route("/internal/projects/<int:project_id>/risks/<int:risk_id>/update", methods=["POST"])
+@internal_senior_required
+def internal_project_risk_update(project_id: int, risk_id: int):
+    risk = db.session.get(InternalProjectRisk, risk_id)
+    anchor = "#risks"
+    if not risk or risk.project_id != project_id:
+        flash("Risk not found.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor))
+
+    title = " ".join((request.form.get("title") or "").strip().split())
+    owner_name = " ".join((request.form.get("owner_name") or "").strip().split())
+    severity = _normalize_internal_risk_severity(request.form.get("severity"))
+    status = _normalize_internal_risk_status(request.form.get("status"))
+    mitigation = (request.form.get("mitigation") or "").strip()
+    due_date_raw = (request.form.get("due_date") or "").strip()
+    due_date = _parse_date(due_date_raw)
+
+    if not title or not owner_name or not mitigation:
+        flash("Risk title, owner, and mitigation are required.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_risk_id=risk_id))
+    if due_date_raw and not due_date:
+        flash("Provide a valid target date for the risk plan.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_risk_id=risk_id))
+
+    risk.title = title
+    risk.owner_name = owner_name
+    risk.severity = severity
+    risk.status = status
+    risk.mitigation = mitigation
+    risk.due_date = due_date
+    db.session.commit()
+    flash("Risk updated.", "success")
+    return redirect(_project_workspace_url(project_id, anchor))
+
+
+@main_bp.route("/internal/projects/<int:project_id>/risks/<int:risk_id>/delete", methods=["POST"])
+@internal_senior_required
+def internal_project_risk_delete(project_id: int, risk_id: int):
+    risk = db.session.get(InternalProjectRisk, risk_id)
+    if not risk or risk.project_id != project_id:
+        flash("Risk not found.", "warning")
+        return redirect(_project_workspace_url(project_id, "#risks"))
+
+    db.session.delete(risk)
+    db.session.commit()
+    flash("Risk deleted.", "success")
+    return redirect(_project_workspace_url(project_id, "#risks"))
+
+
 @main_bp.route("/internal/projects/<int:project_id>/stakeholders/add", methods=["POST"])
 @internal_login_required
 def internal_project_stakeholder_add(project_id: int):
@@ -2433,6 +3452,9 @@ def internal_project_stakeholder_add(project_id: int):
     if not name or not role_title or not organisation:
         flash("Stakeholder name, role, and organisation are required.", "warning")
         return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+    if email and not _is_valid_public_email(email):
+        flash("Enter a valid stakeholder email address.", "warning")
+        return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
 
     db.session.add(
         InternalProjectStakeholder(
@@ -2449,6 +3471,56 @@ def internal_project_stakeholder_add(project_id: int):
     db.session.commit()
     flash("Stakeholder added to the project register.", "success")
     return redirect(f"{url_for('main.internal_project_workspace', project_id=project.id)}{anchor}")
+
+
+@main_bp.route("/internal/projects/<int:project_id>/stakeholders/<int:stakeholder_id>/update", methods=["POST"])
+@internal_senior_required
+def internal_project_stakeholder_update(project_id: int, stakeholder_id: int):
+    stakeholder = db.session.get(InternalProjectStakeholder, stakeholder_id)
+    anchor = "#stakeholders"
+    if not stakeholder or stakeholder.project_id != project_id:
+        flash("Stakeholder not found.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor))
+
+    name = " ".join((request.form.get("name") or "").strip().split())
+    role_title = " ".join((request.form.get("role_title") or "").strip().split())
+    email = (request.form.get("email") or "").strip().lower()
+    organisation = " ".join((request.form.get("organisation") or "").strip().split())
+    stakeholder_type = _normalize_internal_stakeholder_type(request.form.get("stakeholder_type"))
+    influence_level = _normalize_internal_stakeholder_influence(request.form.get("influence_level"))
+    notes = (request.form.get("notes") or "").strip()
+
+    if not name or not role_title or not organisation:
+        flash("Stakeholder name, role, and organisation are required.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_stakeholder_id=stakeholder_id))
+    if email and not _is_valid_public_email(email):
+        flash("Enter a valid stakeholder email address.", "warning")
+        return redirect(_project_workspace_url(project_id, anchor, edit_stakeholder_id=stakeholder_id))
+
+    stakeholder.name = name
+    stakeholder.role_title = role_title
+    stakeholder.email = email or None
+    stakeholder.organisation = organisation
+    stakeholder.stakeholder_type = stakeholder_type
+    stakeholder.influence_level = influence_level
+    stakeholder.notes = notes or None
+    db.session.commit()
+    flash("Stakeholder updated.", "success")
+    return redirect(_project_workspace_url(project_id, anchor))
+
+
+@main_bp.route("/internal/projects/<int:project_id>/stakeholders/<int:stakeholder_id>/delete", methods=["POST"])
+@internal_senior_required
+def internal_project_stakeholder_delete(project_id: int, stakeholder_id: int):
+    stakeholder = db.session.get(InternalProjectStakeholder, stakeholder_id)
+    if not stakeholder or stakeholder.project_id != project_id:
+        flash("Stakeholder not found.", "warning")
+        return redirect(_project_workspace_url(project_id, "#stakeholders"))
+
+    db.session.delete(stakeholder)
+    db.session.commit()
+    flash("Stakeholder deleted.", "success")
+    return redirect(_project_workspace_url(project_id, "#stakeholders"))
 
 
 @main_bp.route("/internal/messages")
@@ -2681,6 +3753,7 @@ def internal_todos():
     view_mode = (request.args.get("view") or "nested").strip().lower()
     if view_mode not in {"nested", "priority"}:
         view_mode = "nested"
+    current_user_is_senior = _internal_user_is_senior(getattr(g, "internal_user", None))
     selected_project_id: int | None = None
     selected_project_raw = (request.args.get("project_id") or "").strip()
     if selected_project_raw:
@@ -2705,6 +3778,8 @@ def internal_todos():
         .order_by(InternalTask.created_at.asc())
         .all()
     )
+    editable_task_id = _parse_positive_int(request.args.get("edit_task_id")) if current_user_is_senior else None
+    editable_task = next((task for task in tasks if task.id == editable_task_id), None)
 
     if selected_project_id:
         top_level_tasks_by_project: dict[int, list[InternalTask]] = {selected_project_id: []}
@@ -2719,6 +3794,8 @@ def internal_todos():
             top_level_tasks_by_project.setdefault(task.project_id, []).append(task)
         if not task.is_done:
             queue_tasks.append(task)
+            parent_task_options.append(task)
+        elif editable_task and task.id == editable_task.parent_task_id:
             parent_task_options.append(task)
 
     for project_id, task_list in top_level_tasks_by_project.items():
@@ -2771,21 +3848,17 @@ def internal_todos():
         task_priorities=INTERNAL_TASK_PRIORITIES,
         active_internal_users=active_internal_users,
         default_task_due_date=default_task_due_date,
+        editable_task=editable_task,
     )
 
 
 @main_bp.route("/internal/todos/add", methods=["POST"])
 @internal_login_required
 def internal_todo_add():
-    view_mode = (request.form.get("view_mode") or "nested").strip().lower()
-    project_scope = (request.form.get("project_scope") or "").strip()
-    redirect_kwargs = {"view": view_mode}
-    try:
-        project_scope_id = int(project_scope) if project_scope else None
-    except ValueError:
-        project_scope_id = None
-    if project_scope_id:
-        redirect_kwargs["project_id"] = project_scope_id
+    redirect_kwargs = _internal_todos_redirect_kwargs(
+        request.form.get("view_mode"),
+        request.form.get("project_scope"),
+    )
     redirect_target = url_for("main.internal_todos", **redirect_kwargs)
 
     title = (request.form.get("title") or "").strip()
@@ -2849,15 +3922,10 @@ def internal_todo_add():
 @main_bp.route("/internal/todos/<int:task_id>/status", methods=["POST"])
 @internal_login_required
 def internal_todo_update_status(task_id: int):
-    view_mode = (request.form.get("view_mode") or "nested").strip().lower()
-    project_scope = (request.form.get("project_scope") or "").strip()
-    redirect_kwargs = {"view": view_mode}
-    try:
-        project_scope_id = int(project_scope) if project_scope else None
-    except ValueError:
-        project_scope_id = None
-    if project_scope_id:
-        redirect_kwargs["project_id"] = project_scope_id
+    redirect_kwargs = _internal_todos_redirect_kwargs(
+        request.form.get("view_mode"),
+        request.form.get("project_scope"),
+    )
     task = db.session.get(InternalTask, task_id)
     if not task:
         flash("Task not found.", "warning")
@@ -2872,15 +3940,10 @@ def internal_todo_update_status(task_id: int):
 @main_bp.route("/internal/todos/<int:task_id>/priority", methods=["POST"])
 @internal_login_required
 def internal_todo_update_priority(task_id: int):
-    view_mode = (request.form.get("view_mode") or "nested").strip().lower()
-    project_scope = (request.form.get("project_scope") or "").strip()
-    redirect_kwargs = {"view": view_mode}
-    try:
-        project_scope_id = int(project_scope) if project_scope else None
-    except ValueError:
-        project_scope_id = None
-    if project_scope_id:
-        redirect_kwargs["project_id"] = project_scope_id
+    redirect_kwargs = _internal_todos_redirect_kwargs(
+        request.form.get("view_mode"),
+        request.form.get("project_scope"),
+    )
     task = db.session.get(InternalTask, task_id)
     if not task:
         flash("Task not found.", "warning")
@@ -2892,10 +3955,121 @@ def internal_todo_update_priority(task_id: int):
     return redirect(url_for("main.internal_todos", **redirect_kwargs))
 
 
+@main_bp.route("/internal/todos/<int:task_id>/update", methods=["POST"])
+@internal_senior_required
+def internal_todo_update(task_id: int):
+    task = db.session.get(InternalTask, task_id)
+    redirect_kwargs = _internal_todos_redirect_kwargs(
+        request.form.get("view_mode"),
+        request.form.get("project_scope"),
+    )
+    if not task:
+        flash("Task not found.", "warning")
+        return redirect(url_for("main.internal_todos", **redirect_kwargs))
+
+    edit_redirect_kwargs = dict(redirect_kwargs)
+    edit_redirect_kwargs["edit_task_id"] = task.id
+    edit_redirect_target = url_for("main.internal_todos", **edit_redirect_kwargs)
+
+    title = (request.form.get("title") or "").strip()
+    assignee = (request.form.get("assignee") or "").strip()
+    priority = _normalize_internal_task_priority(request.form.get("priority"))
+    status = _normalize_internal_task_status(request.form.get("status"))
+    due_date = _parse_date(request.form.get("due_date"))
+    project_id = request.form.get("project_id")
+    parent_task_id = request.form.get("parent_task_id")
+
+    if not title:
+        flash("Task title is required.", "warning")
+        return redirect(edit_redirect_target)
+
+    if not assignee:
+        flash("Task assignee is required.", "warning")
+        return redirect(edit_redirect_target)
+
+    try:
+        project_pk = int(project_id or "")
+    except ValueError:
+        flash("Choose a valid project for the task.", "warning")
+        return redirect(edit_redirect_target)
+
+    project = db.session.get(InternalProject, project_pk)
+    if not project:
+        flash("Selected project does not exist.", "warning")
+        return redirect(edit_redirect_target)
+
+    parent_task = None
+    if parent_task_id:
+        try:
+            parent_pk = int(parent_task_id)
+        except ValueError:
+            flash("Invalid parent task.", "warning")
+            return redirect(edit_redirect_target)
+
+        parent_task = db.session.get(InternalTask, parent_pk)
+        if not parent_task:
+            flash("Parent task not found.", "warning")
+            return redirect(edit_redirect_target)
+        if parent_task.id == task.id:
+            flash("A task cannot be its own parent.", "warning")
+            return redirect(edit_redirect_target)
+        if parent_task.project_id != project.id:
+            flash("Parent task must belong to the same project.", "warning")
+            return redirect(edit_redirect_target)
+
+        current_parent = parent_task
+        while current_parent:
+            if current_parent.id == task.id:
+                flash("A task cannot be nested inside one of its own subtasks.", "warning")
+                return redirect(edit_redirect_target)
+            current_parent = current_parent.parent_task
+
+    if task.subtasks and task.project_id != project.id:
+        flash("Move or delete this task's subtasks before changing its project.", "warning")
+        return redirect(edit_redirect_target)
+
+    task.project = project
+    task.parent_task = parent_task
+    task.title = title
+    task.assignee = assignee
+    task.priority = priority
+    task.status = status
+    task.due_date = due_date
+    db.session.commit()
+    flash("Task details updated.", "success")
+    return redirect(url_for("main.internal_todos", **redirect_kwargs))
+
+
+@main_bp.route("/internal/todos/<int:task_id>/delete", methods=["POST"])
+@internal_senior_required
+def internal_todo_delete(task_id: int):
+    redirect_kwargs = _internal_todos_redirect_kwargs(
+        request.form.get("view_mode"),
+        request.form.get("project_scope"),
+    )
+    task = db.session.get(InternalTask, task_id)
+    if not task:
+        flash("Task not found.", "warning")
+        return redirect(url_for("main.internal_todos", **redirect_kwargs))
+
+    def task_family_size(current_task: InternalTask) -> int:
+        return 1 + sum(task_family_size(child) for child in current_task.subtasks)
+
+    deleted_count = task_family_size(task)
+    db.session.delete(task)
+    db.session.commit()
+    if deleted_count > 1:
+        flash(f"Task deleted, including {deleted_count - 1} nested subtasks.", "success")
+    else:
+        flash("Task deleted.", "success")
+    return redirect(url_for("main.internal_todos", **redirect_kwargs))
+
+
 @main_bp.route("/internal/docs")
 @main_bp.route("/internal/docs/<string:doc_slug>")
 @internal_login_required
 def internal_docs(doc_slug: str | None = None):
+    current_user_is_senior = _internal_user_is_senior(getattr(g, "internal_user", None))
     query_term = (request.args.get("q") or "").strip()
     query_term_lower = query_term.lower()
     selected_status = (request.args.get("status") or "all").strip().lower()
@@ -2977,6 +4151,7 @@ def internal_docs(doc_slug: str | None = None):
     }
     selected_page_body = _render_internal_doc_body(selected_page.body) if selected_page else None
     selected_page_outline = _internal_doc_outline(selected_page.body) if selected_page else []
+    doc_form_page = selected_page if current_user_is_senior else None
     page_status_options = [{"value": "all", "label": "All statuses"}] + [
         {"value": status, "label": status.title()} for status in INTERNAL_DOC_STATUSES
     ]
@@ -2991,6 +4166,7 @@ def internal_docs(doc_slug: str | None = None):
         selected_page=selected_page,
         selected_page_body=selected_page_body,
         selected_page_outline=selected_page_outline,
+        doc_form_page=doc_form_page,
         summary_metrics=summary_metrics,
         query_term=query_term,
         selected_status=selected_status,
@@ -3043,7 +4219,7 @@ def internal_doc_add():
 
 
 @main_bp.route("/internal/docs/<int:page_id>/update", methods=["POST"])
-@internal_login_required
+@internal_senior_required
 def internal_doc_update(page_id: int):
     page = db.session.get(InternalDocPage, page_id)
     if not page:
@@ -3094,9 +4270,35 @@ def internal_doc_update(page_id: int):
     return redirect(url_for("main.internal_docs", doc_slug=page.slug))
 
 
+@main_bp.route("/internal/docs/<int:page_id>/delete", methods=["POST"])
+@internal_senior_required
+def internal_doc_delete(page_id: int):
+    page = db.session.get(InternalDocPage, page_id)
+    if not page:
+        flash("Doc page not found.", "warning")
+        return redirect(url_for("main.internal_docs"))
+
+    parent_slug = page.parent.slug if page.parent else None
+
+    def page_family_size(current_page: InternalDocPage) -> int:
+        return 1 + sum(page_family_size(child) for child in current_page.children)
+
+    deleted_count = page_family_size(page)
+    db.session.delete(page)
+    db.session.commit()
+    if deleted_count > 1:
+        flash(f"Workspace page deleted, including {deleted_count - 1} nested child pages.", "success")
+    else:
+        flash("Workspace page deleted.", "success")
+    if parent_slug:
+        return redirect(url_for("main.internal_docs", doc_slug=parent_slug))
+    return redirect(url_for("main.internal_docs"))
+
+
 @main_bp.route("/internal/resources")
 @internal_login_required
 def internal_resources():
+    current_user_is_senior = _internal_user_is_senior(getattr(g, "internal_user", None))
     query_term = (request.args.get("q") or "").strip()
     query_term_lower = query_term.lower()
     selected_category = (request.args.get("category") or "all").strip().lower()
@@ -3171,6 +4373,12 @@ def internal_resources():
             continue
         filtered_resources.append(resource)
 
+    editable_resource_id = _parse_positive_int(request.args.get("edit_id")) if current_user_is_senior else None
+    editable_resource = next((resource for resource in resources if resource.id == editable_resource_id), None)
+    editable_resource_uploaded_filename = (
+        _internal_resource_uploaded_filename(editable_resource.link) if editable_resource else None
+    )
+
     resources_by_category_unsorted: dict[str, list[InternalResource]] = {}
     for resource in filtered_resources:
         category_key = _category_label(resource.category)
@@ -3238,6 +4446,11 @@ def internal_resources():
         summary_metrics=summary_metrics,
         projects=projects,
         tasks=tasks,
+        editable_resource=editable_resource,
+        editable_resource_project_ids={project.id for project in editable_resource.projects} if editable_resource else set(),
+        editable_resource_task_ids={task.id for task in editable_resource.tasks} if editable_resource else set(),
+        editable_resource_tags=", ".join(editable_resource.tag_names) if editable_resource else "",
+        editable_resource_uploaded_filename=editable_resource_uploaded_filename,
         resource_upload_accept=",".join(f".{item}" for item in sorted(RESOURCE_UPLOAD_ALLOWED_EXTENSIONS)),
         resource_upload_limit_mb=_resource_upload_limit_label(),
     )
@@ -3257,6 +4470,7 @@ def internal_resource_file_download(filename: str):
 @main_bp.route("/internal/resources/add", methods=["POST"])
 @internal_login_required
 def internal_resource_add():
+    redirect_target = url_for("main.internal_resources", **_internal_resources_redirect_kwargs())
     title = (request.form.get("title") or "").strip()
     link = (request.form.get("link") or "").strip()
     uploaded_file = request.files.get("document_file")
@@ -3266,26 +4480,16 @@ def internal_resource_add():
     tag_names = _normalize_resource_tags(request.form.get("tags"))
     project_ids = _parse_int_list(request.form.getlist("project_ids"))
     task_ids = _parse_int_list(request.form.getlist("task_ids"))
-    project_scope = (request.form.get("project_scope") or "").strip()
 
     if not title or not description:
         flash("Title and description are required to add a resource.", "warning")
-        return redirect(url_for("main.internal_resources"))
+        return redirect(redirect_target)
     if bool(link) and has_uploaded_file:
         flash("Provide either a document link or a file upload, not both.", "warning")
-        return redirect(url_for("main.internal_resources"))
+        return redirect(redirect_target)
     if not link and not has_uploaded_file:
         flash("Add either a document link or a file upload.", "warning")
-        return redirect(url_for("main.internal_resources"))
-    if has_uploaded_file:
-        uploaded_filename, upload_error = _save_resource_upload(uploaded_file)
-        if upload_error:
-            flash(upload_error, "warning")
-            return redirect(url_for("main.internal_resources"))
-        link = url_for("main.internal_resource_file_download", filename=uploaded_filename)
-    elif not _is_safe_resource_link(link):
-        flash("Resource link must be a relative path or an http/https URL.", "warning")
-        return redirect(url_for("main.internal_resources"))
+        return redirect(redirect_target)
 
     projects: list[InternalProject] = []
     tasks: list[InternalTask] = []
@@ -3293,25 +4497,24 @@ def internal_resource_add():
         projects = InternalProject.query.filter(InternalProject.id.in_(project_ids)).all()
         if len(projects) != len(project_ids):
             flash("One or more selected projects are invalid.", "warning")
-            return redirect(url_for("main.internal_resources"))
+            return redirect(redirect_target)
     if task_ids:
         tasks = InternalTask.query.filter(InternalTask.id.in_(task_ids)).all()
         if len(tasks) != len(task_ids):
             flash("One or more selected tasks are invalid.", "warning")
-            return redirect(url_for("main.internal_resources"))
+            return redirect(redirect_target)
 
-    existing_tags = (
-        InternalResourceTag.query.filter(InternalResourceTag.name.in_(tag_names)).all() if tag_names else []
-    )
-    existing_tags_by_name = {tag.name: tag for tag in existing_tags}
-    resource_tags: list[InternalResourceTag] = []
-    for tag_name in tag_names:
-        tag = existing_tags_by_name.get(tag_name)
-        if not tag:
-            tag = InternalResourceTag(name=tag_name)
-            db.session.add(tag)
-            existing_tags_by_name[tag_name] = tag
-        resource_tags.append(tag)
+    if has_uploaded_file:
+        uploaded_filename, upload_error = _save_resource_upload(uploaded_file)
+        if upload_error:
+            flash(upload_error, "warning")
+            return redirect(redirect_target)
+        link = url_for("main.internal_resource_file_download", filename=uploaded_filename)
+    elif not _is_safe_resource_link(link):
+        flash("Resource link must be a relative path or an http/https URL.", "warning")
+        return redirect(redirect_target)
+
+    resource_tags = _internal_resource_tag_records(tag_names)
 
     resource = InternalResource(
         title=title,
@@ -3325,13 +4528,98 @@ def internal_resource_add():
     db.session.add(resource)
     db.session.commit()
     flash("Resource added to the knowledge library.", "success")
-    redirect_kwargs = {"q": title}
-    try:
-        project_scope_id = int(project_scope) if project_scope else None
-    except ValueError:
-        project_scope_id = None
-    if project_scope_id:
-        redirect_kwargs["project_id"] = project_scope_id
+    return redirect(
+        url_for(
+            "main.internal_resources",
+            **_internal_resources_redirect_kwargs(default_query=title),
+        )
+    )
+
+
+@main_bp.route("/internal/resources/<int:resource_id>/update", methods=["POST"])
+@internal_senior_required
+def internal_resource_update(resource_id: int):
+    redirect_kwargs = _internal_resources_redirect_kwargs()
+    resource = db.session.get(InternalResource, resource_id)
+    if not resource:
+        flash("Resource not found.", "warning")
+        return redirect(url_for("main.internal_resources", **redirect_kwargs))
+
+    edit_redirect_kwargs = _internal_resources_redirect_kwargs(edit_resource_id=resource.id)
+    edit_redirect_target = url_for("main.internal_resources", **edit_redirect_kwargs)
+
+    title = (request.form.get("title") or "").strip()
+    link = (request.form.get("link") or "").strip()
+    uploaded_file = request.files.get("document_file")
+    has_uploaded_file = bool(uploaded_file and (uploaded_file.filename or "").strip())
+    description = (request.form.get("description") or "").strip()
+    category = _normalize_resource_category(request.form.get("category"))
+    tag_names = _normalize_resource_tags(request.form.get("tags"))
+    project_ids = _parse_int_list(request.form.getlist("project_ids"))
+    task_ids = _parse_int_list(request.form.getlist("task_ids"))
+
+    if not title or not description:
+        flash("Title and description are required to update a resource.", "warning")
+        return redirect(edit_redirect_target)
+    if bool(link) and has_uploaded_file:
+        flash("Provide either a document link or a file upload, not both.", "warning")
+        return redirect(edit_redirect_target)
+
+    projects: list[InternalProject] = []
+    tasks: list[InternalTask] = []
+    if project_ids:
+        projects = InternalProject.query.filter(InternalProject.id.in_(project_ids)).all()
+        if len(projects) != len(project_ids):
+            flash("One or more selected projects are invalid.", "warning")
+            return redirect(edit_redirect_target)
+    if task_ids:
+        tasks = InternalTask.query.filter(InternalTask.id.in_(task_ids)).all()
+        if len(tasks) != len(task_ids):
+            flash("One or more selected tasks are invalid.", "warning")
+            return redirect(edit_redirect_target)
+
+    next_link = resource.link
+    if has_uploaded_file:
+        uploaded_filename, upload_error = _save_resource_upload(uploaded_file)
+        if upload_error:
+            flash(upload_error, "warning")
+            return redirect(edit_redirect_target)
+        next_link = url_for("main.internal_resource_file_download", filename=uploaded_filename)
+    elif link:
+        if not _is_safe_resource_link(link):
+            flash("Resource link must be a relative path or an http/https URL.", "warning")
+            return redirect(edit_redirect_target)
+        next_link = link
+
+    previous_link = resource.link
+    resource.title = title
+    resource.link = next_link
+    resource.category = category
+    resource.description = description
+    resource.projects = projects
+    resource.tasks = tasks
+    resource.tags = _internal_resource_tag_records(tag_names)
+    db.session.commit()
+    if previous_link != next_link:
+        _delete_internal_resource_upload(previous_link)
+    flash("Resource updated.", "success")
+    return redirect(url_for("main.internal_resources", **_internal_resources_redirect_kwargs(default_query=title)))
+
+
+@main_bp.route("/internal/resources/<int:resource_id>/delete", methods=["POST"])
+@internal_senior_required
+def internal_resource_delete(resource_id: int):
+    redirect_kwargs = _internal_resources_redirect_kwargs()
+    resource = db.session.get(InternalResource, resource_id)
+    if not resource:
+        flash("Resource not found.", "warning")
+        return redirect(url_for("main.internal_resources", **redirect_kwargs))
+
+    previous_link = resource.link
+    db.session.delete(resource)
+    db.session.commit()
+    _delete_internal_resource_upload(previous_link)
+    flash("Resource deleted.", "success")
     return redirect(url_for("main.internal_resources", **redirect_kwargs))
 
 
@@ -3383,12 +4671,37 @@ def contact():
     budget = (request.form.get("budget") or "").strip()
     message_body = (request.form.get("message") or "").strip()
     return_to = _safe_public_return_target(request.form.get("return_to"))
+    form_state = {
+        "name": name,
+        "email": email,
+        "role": role,
+        "company": company,
+        "phone": phone,
+        "timeline": timeline,
+        "budget": budget,
+        "message": message_body,
+        "service": (request.form.get("service") or "0").strip() or "0",
+    }
+    form_redirect_target = return_to or url_for("main.enquire", _anchor="enquiry-form")
     honeypot = (request.form.get("website") or "").strip()
     if honeypot:
+        _clear_public_contact_feedback()
         flash("Thank you. Your enquiry has been received.", "success")
-        return redirect(return_to or url_for("main.home", _anchor="contact"))
+        return redirect(form_redirect_target)
 
     service_id = request.form.get("service")
+    errors: dict[str, str] = {}
+    if not name:
+        errors["name"] = "Enter your full name."
+    if not _is_valid_public_email(email):
+        errors["email"] = "Enter a valid work email address."
+    if not message_body:
+        errors["message"] = "Add a short description of the workflow problem you want solved."
+
+    if errors:
+        _store_public_contact_feedback(form_state, errors)
+        flash("Please correct the enquiry form and try again.", "warning")
+        return redirect(form_redirect_target)
 
     if service_id and service_id != "0":
         try:
@@ -3422,11 +4735,13 @@ def contact():
         msg.reply_to = email
     try:
         mail.send(msg)  # <--- This actually sends it!
+        _clear_public_contact_feedback()
         flash(f"Thank you, {name or 'there'}. We will contact you regarding '{service_name}'.", "success")
     except Exception as e:
         print(f"EMAIL ERROR: {e}")
+        _store_public_contact_feedback(form_state)
         flash("Message saved, but we couldn't send the email confirmation.", "warning")
-    return redirect(return_to or url_for("main.home", _anchor="contact"))
+    return redirect(form_redirect_target)
 
 
 @main_bp.route("/healthz")

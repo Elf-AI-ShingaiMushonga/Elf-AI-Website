@@ -1,0 +1,21 @@
+<div class="fixed top-24 right-4 sm:right-6 z-50 w-full max-w-md">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div
+              data-flash
+              data-dismiss-ms="6400"
+              class="px-6 py-4 rounded-lg shadow-lg mb-4 flex items-center justify-between animate-fade-in-down border-l-4 {{ 'bg-amber-600 text-white border-amber-300' if category == 'warning' else 'bg-rose-600 text-white border-rose-300' if category == 'error' else 'bg-blue-600 text-white border-blue-300' }}"
+          >
+            <div>
+                <i class="fa-solid {{ 'fa-triangle-exclamation' if category == 'warning' else 'fa-circle-exclamation' if category == 'error' else 'fa-check-circle' }} mr-2"></i>
+                {{ message }}
+            </div>
+            <button type="button" data-flash-close class="focus-ring" aria-label="Dismiss message">
+                <i class="fa-solid fa-times"></i>
+            </button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+</div>

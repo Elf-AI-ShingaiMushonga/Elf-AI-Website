@@ -1,3 +1,5 @@
+import re
+
 from extension import mail
 
 
@@ -63,7 +65,7 @@ def test_contact_general_inquiry_redirects(client):
         follow_redirects=False,
     )
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/#contact")
+    assert response.headers["Location"].endswith("/enquire#enquiry-form")
 
 
 def test_contact_specific_service_redirects(client):
@@ -73,7 +75,7 @@ def test_contact_specific_service_redirects(client):
         follow_redirects=False,
     )
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/#contact")
+    assert response.headers["Location"].endswith("/enquire#enquiry-form")
 
 
 def test_contact_redirects_to_safe_return_target(client):
@@ -101,7 +103,7 @@ def test_contact_ignores_unsafe_return_target(client):
         follow_redirects=False,
     )
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/#contact")
+    assert response.headers["Location"].endswith("/enquire#enquiry-form")
 
 
 def test_contact_ignores_internal_return_target(client):
@@ -115,14 +117,14 @@ def test_contact_ignores_internal_return_target(client):
         follow_redirects=False,
     )
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/#contact")
+    assert response.headers["Location"].endswith("/enquire#enquiry-form")
 
 
 def test_contact_sets_single_success_flash(client, monkeypatch):
     monkeypatch.setattr(mail, "send", lambda _msg: None)
     response = client.post(
         "/contact",
-        data={"name": "Pat", "email": "pat@example.com", "message": "Hello", "service": "0"},
+        data={"name": "Pat", "email": "pat@example.com", "message": "Need help with workflow automation.", "service": "0"},
         follow_redirects=False,
     )
     assert response.status_code == 302
@@ -148,5 +150,50 @@ def test_contact_honeypot_skips_mail_send(client, monkeypatch):
         follow_redirects=False,
     )
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/#contact")
+    assert response.headers["Location"].endswith("/enquire#enquiry-form")
     assert send_called is False
+
+
+def test_contact_validation_errors_are_rendered_back_on_enquiry_page(client):
+    response = client.post(
+        "/contact",
+        data={
+            "name": "",
+            "email": "not-an-email",
+            "message": "",
+            "company": "ELF Test",
+            "timeline": "this-quarter",
+            "service": "1",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/enquire#enquiry-form")
+
+    enquiry_response = client.get("/enquire")
+    html = enquiry_response.get_data(as_text=True)
+    assert enquiry_response.status_code == 200
+    assert "Please correct the enquiry form and try again." in html
+    assert "Enter your full name." in html
+    assert "Enter a valid work email address." in html
+    assert "Add a short description of the workflow problem you want solved." in html
+    assert 'value="ELF Test"' in html
+    assert 'value="not-an-email"' in html
+    assert 'option value="this-quarter" selected' in html
+    assert re.search(r'<option value="1"\s+selected', html) is not None
+
+
+def test_contact_success_redirect_defaults_to_enquiry_form(client, monkeypatch):
+    monkeypatch.setattr(mail, "send", lambda _msg: None)
+
+    response = client.post(
+        "/contact",
+        data={
+            "name": "Pat",
+            "email": "pat@example.com",
+            "message": "Need help reducing turnaround time in our intake workflow.",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/enquire#enquiry-form")

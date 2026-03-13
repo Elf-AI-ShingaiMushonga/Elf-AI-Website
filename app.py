@@ -123,7 +123,19 @@ def create_app(config_name: str | None = None) -> Flask:
         "--role",
         default="consultant",
         show_default=True,
-        type=click.Choice(["admin", "consultant", "operations", "analyst"], case_sensitive=False),
+        type=click.Choice(
+            [
+                "admin",
+                "consultant",
+                "senior-consultant",
+                "operations",
+                "analyst",
+                "senior-analyst",
+                "manager",
+                "director",
+            ],
+            case_sensitive=False,
+        ),
     )
     def create_internal_user_command(email: str, full_name: str, password: str, role: str):
         normalized_email = email.strip().lower()

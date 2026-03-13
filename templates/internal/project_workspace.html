@@ -165,6 +165,12 @@
             </div>
             <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Update Overview</button>
         </form>
+        {% if current_internal_user_is_senior %}
+        <form action="{{ url_for('main.internal_project_delete', project_id=project.id) }}" method="post" class="mt-3" onsubmit="return confirm('Delete this project and its full workspace?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-semibold transition">Delete Project</button>
+        </form>
+        {% endif %}
     </article>
 
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
@@ -232,15 +238,26 @@
                         <p class="text-sm text-slate-300 mt-3">{{ milestone.notes }}</p>
                         {% endif %}
                     </div>
-                    <form action="{{ url_for('main.internal_project_milestone_update_status', project_id=project.id, milestone_id=milestone.id) }}" method="post" class="flex gap-2 lg:min-w-[220px]">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <select name="status" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                            {% for status in milestone_statuses %}
-                            <option value="{{ status }}" {% if milestone.status == status %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Save</button>
-                    </form>
+                    <div class="space-y-2 lg:min-w-[220px]">
+                        <form action="{{ url_for('main.internal_project_milestone_update_status', project_id=project.id, milestone_id=milestone.id) }}" method="post" class="flex gap-2">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="status" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                                {% for status in milestone_statuses %}
+                                <option value="{{ status }}" {% if milestone.status == status %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Save</button>
+                        </form>
+                        {% if current_internal_user_is_senior %}
+                        <div class="flex gap-2">
+                            <a href="{{ url_for('main.internal_project_workspace', project_id=project.id, edit_milestone_id=milestone.id) }}#milestones" class="flex-1 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-center text-xs font-semibold text-slate-100 transition">Edit</a>
+                            <form action="{{ url_for('main.internal_project_milestone_delete', project_id=project.id, milestone_id=milestone.id) }}" method="post" class="flex-1" onsubmit="return confirm('Delete this milestone?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="w-full px-3 py-2 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-xs font-semibold text-white transition">Delete</button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
             {% else %}
@@ -248,24 +265,35 @@
             {% endfor %}
         </div>
 
-        <form action="{{ url_for('main.internal_project_milestone_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+        <form action="{{ url_for('main.internal_project_milestone_update', project_id=project.id, milestone_id=editable_milestone.id) if editable_milestone else url_for('main.internal_project_milestone_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Add Milestone</p>
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-xs uppercase tracking-[0.12em] text-slate-500">{{ 'Edit Milestone' if editable_milestone else 'Add Milestone' }}</p>
+                {% if editable_milestone %}
+                <a href="{{ url_for('main.internal_project_workspace', project_id=project.id) }}#milestones" class="text-xs text-blue-300 hover:text-blue-200 transition">Cancel</a>
+                {% endif %}
+            </div>
             <div class="grid sm:grid-cols-2 gap-3">
-                <input name="title" type="text" required maxlength="200" placeholder="e.g. Pilot signed off" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
-                <input name="owner_name" type="text" required maxlength="120" value="{{ current_internal_user.full_name if current_internal_user else '' }}" placeholder="Owner" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <input name="title" type="text" required maxlength="200" value="{{ editable_milestone.title if editable_milestone else '' }}" placeholder="e.g. Pilot signed off" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                <input name="owner_name" type="text" required maxlength="120" value="{{ editable_milestone.owner_name if editable_milestone else current_internal_user.full_name if current_internal_user else '' }}" placeholder="Owner" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
             </div>
             <div class="grid sm:grid-cols-2 gap-3">
                 <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                     {% for status in milestone_statuses %}
-                    <option value="{{ status }}" {% if status == 'planned' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                    <option value="{{ status }}" {% if editable_milestone and editable_milestone.status == status %}selected{% elif not editable_milestone and status == 'planned' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
                     {% endfor %}
                 </select>
-                <input name="due_date" type="date" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <input name="due_date" type="date" value="{{ editable_milestone.due_date.isoformat() if editable_milestone and editable_milestone.due_date else '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
             </div>
-            <textarea name="notes" rows="3" maxlength="2000" placeholder="What should be true when this milestone is complete?" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
-            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Add Milestone</button>
+            <textarea name="notes" rows="3" maxlength="2000" placeholder="What should be true when this milestone is complete?" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">{{ editable_milestone.notes if editable_milestone else '' }}</textarea>
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">{{ 'Save Milestone' if editable_milestone else 'Add Milestone' }}</button>
         </form>
+        {% if editable_milestone %}
+        <form action="{{ url_for('main.internal_project_milestone_delete', project_id=project.id, milestone_id=editable_milestone.id) }}" method="post" class="mt-3" onsubmit="return confirm('Delete this milestone?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-semibold transition">Delete Milestone</button>
+        </form>
+        {% endif %}
     </article>
 
     <article id="deliverables" class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
@@ -291,15 +319,26 @@
                         <p class="text-xs text-slate-400 mt-1">{{ deliverable.owner_name }}{% if deliverable.due_date %} · Due {{ deliverable.due_date.strftime('%d %b %Y') }}{% endif %}</p>
                         <p class="text-sm text-slate-300 mt-3">{{ deliverable.description }}</p>
                     </div>
-                    <form action="{{ url_for('main.internal_project_deliverable_update_status', project_id=project.id, deliverable_id=deliverable.id) }}" method="post" class="flex gap-2 lg:min-w-[220px]">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <select name="status" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                            {% for status in deliverable_statuses %}
-                            <option value="{{ status }}" {% if deliverable.status == status %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Save</button>
-                    </form>
+                    <div class="space-y-2 lg:min-w-[220px]">
+                        <form action="{{ url_for('main.internal_project_deliverable_update_status', project_id=project.id, deliverable_id=deliverable.id) }}" method="post" class="flex gap-2">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="status" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                                {% for status in deliverable_statuses %}
+                                <option value="{{ status }}" {% if deliverable.status == status %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Save</button>
+                        </form>
+                        {% if current_internal_user_is_senior %}
+                        <div class="flex gap-2">
+                            <a href="{{ url_for('main.internal_project_workspace', project_id=project.id, edit_deliverable_id=deliverable.id) }}#deliverables" class="flex-1 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-center text-xs font-semibold text-slate-100 transition">Edit</a>
+                            <form action="{{ url_for('main.internal_project_deliverable_delete', project_id=project.id, deliverable_id=deliverable.id) }}" method="post" class="flex-1" onsubmit="return confirm('Delete this deliverable?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="w-full px-3 py-2 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-xs font-semibold text-white transition">Delete</button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
             {% else %}
@@ -307,25 +346,36 @@
             {% endfor %}
         </div>
 
-        <form action="{{ url_for('main.internal_project_deliverable_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+        <form action="{{ url_for('main.internal_project_deliverable_update', project_id=project.id, deliverable_id=editable_deliverable.id) if editable_deliverable else url_for('main.internal_project_deliverable_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Add Deliverable</p>
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-xs uppercase tracking-[0.12em] text-slate-500">{{ 'Edit Deliverable' if editable_deliverable else 'Add Deliverable' }}</p>
+                {% if editable_deliverable %}
+                <a href="{{ url_for('main.internal_project_workspace', project_id=project.id) }}#deliverables" class="text-xs text-blue-300 hover:text-blue-200 transition">Cancel</a>
+                {% endif %}
+            </div>
             <div class="grid sm:grid-cols-2 gap-3">
-                <input name="title" type="text" required maxlength="200" placeholder="e.g. Weekly executive update" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
-                <input name="owner_name" type="text" required maxlength="120" value="{{ current_internal_user.full_name if current_internal_user else '' }}" placeholder="Owner" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <input name="title" type="text" required maxlength="200" value="{{ editable_deliverable.title if editable_deliverable else '' }}" placeholder="e.g. Weekly executive update" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                <input name="owner_name" type="text" required maxlength="120" value="{{ editable_deliverable.owner_name if editable_deliverable else current_internal_user.full_name if current_internal_user else '' }}" placeholder="Owner" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
             </div>
             <div class="grid sm:grid-cols-2 gap-3">
                 <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                     {% for status in deliverable_statuses %}
-                    <option value="{{ status }}" {% if status == 'planned' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                    <option value="{{ status }}" {% if editable_deliverable and editable_deliverable.status == status %}selected{% elif not editable_deliverable and status == 'planned' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
                     {% endfor %}
                 </select>
-                <input name="due_date" type="date" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <input name="due_date" type="date" value="{{ editable_deliverable.due_date.isoformat() if editable_deliverable and editable_deliverable.due_date else '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
             </div>
-            <input name="link" type="text" maxlength="500" placeholder="Optional: https://... or /internal/..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
-            <textarea name="description" rows="3" maxlength="3000" required placeholder="Definition of done, format, and expected audience." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
-            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Add Deliverable</button>
+            <input name="link" type="text" maxlength="500" value="{{ editable_deliverable.link if editable_deliverable and editable_deliverable.link else '' }}" placeholder="Optional: https://... or /internal/..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+            <textarea name="description" rows="3" maxlength="3000" required placeholder="Definition of done, format, and expected audience." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">{{ editable_deliverable.description if editable_deliverable else '' }}</textarea>
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">{{ 'Save Deliverable' if editable_deliverable else 'Add Deliverable' }}</button>
         </form>
+        {% if editable_deliverable %}
+        <form action="{{ url_for('main.internal_project_deliverable_delete', project_id=project.id, deliverable_id=editable_deliverable.id) }}" method="post" class="mt-3" onsubmit="return confirm('Delete this deliverable?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-semibold transition">Delete Deliverable</button>
+        </form>
+        {% endif %}
     </article>
 </section>
 
@@ -347,7 +397,16 @@
                         <p class="text-sm font-semibold text-white">{{ update.headline }}</p>
                         <p class="text-xs text-slate-400 mt-1">{{ update.created_at.strftime('%d %b %Y') if update.created_at else '' }}{% if update.author %} · {{ update.author.full_name }}{% endif %}</p>
                     </div>
-                    <span class="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-200">{{ update.progress_percent }}% progress</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-200">{{ update.progress_percent }}% progress</span>
+                        {% if current_internal_user_is_senior %}
+                        <a href="{{ url_for('main.internal_project_workspace', project_id=project.id, edit_status_update_id=update.id) }}#status-updates" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-100 transition">Edit</a>
+                        <form action="{{ url_for('main.internal_project_status_update_delete', project_id=project.id, update_id=update.id) }}" method="post" onsubmit="return confirm('Delete this status update?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-[11px] font-semibold text-white transition">Delete</button>
+                        </form>
+                        {% endif %}
+                    </div>
                 </div>
                 <p class="text-sm text-slate-300">{{ update.summary }}</p>
                 {% if update.wins %}
@@ -374,21 +433,32 @@
             {% endfor %}
         </div>
 
-        <form action="{{ url_for('main.internal_project_status_update_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+        <form action="{{ url_for('main.internal_project_status_update_edit', project_id=project.id, update_id=editable_status_update.id) if editable_status_update else url_for('main.internal_project_status_update_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Log New Update</p>
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-xs uppercase tracking-[0.12em] text-slate-500">{{ 'Edit Update' if editable_status_update else 'Log New Update' }}</p>
+                {% if editable_status_update %}
+                <a href="{{ url_for('main.internal_project_workspace', project_id=project.id) }}#status-updates" class="text-xs text-blue-300 hover:text-blue-200 transition">Cancel</a>
+                {% endif %}
+            </div>
             <div class="grid sm:grid-cols-[1fr_120px] gap-3">
-                <input name="headline" type="text" required maxlength="200" placeholder="Headline for this reporting cycle" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
-                <input name="progress_percent" type="number" min="0" max="100" value="{{ project.progress_percent }}" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <input name="headline" type="text" required maxlength="200" value="{{ editable_status_update.headline if editable_status_update else '' }}" placeholder="Headline for this reporting cycle" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                <input name="progress_percent" type="number" min="0" max="100" value="{{ editable_status_update.progress_percent if editable_status_update else project.progress_percent }}" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
             </div>
-            <textarea name="summary" rows="3" maxlength="3000" required placeholder="What changed, what matters, and what leadership should know." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+            <textarea name="summary" rows="3" maxlength="3000" required placeholder="What changed, what matters, and what leadership should know." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">{{ editable_status_update.summary if editable_status_update else '' }}</textarea>
             <div class="grid sm:grid-cols-2 gap-3">
-                <textarea name="wins" rows="3" maxlength="2000" placeholder="Wins / completed work" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
-                <textarea name="risks" rows="3" maxlength="2000" placeholder="Risks / issues to watch" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
+                <textarea name="wins" rows="3" maxlength="2000" placeholder="Wins / completed work" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">{{ editable_status_update.wins if editable_status_update and editable_status_update.wins else '' }}</textarea>
+                <textarea name="risks" rows="3" maxlength="2000" placeholder="Risks / issues to watch" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">{{ editable_status_update.risks if editable_status_update and editable_status_update.risks else '' }}</textarea>
             </div>
-            <textarea name="next_steps" rows="3" maxlength="2000" placeholder="Next actions and expected owner commitments" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
-            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Publish Update</button>
+            <textarea name="next_steps" rows="3" maxlength="2000" placeholder="Next actions and expected owner commitments" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">{{ editable_status_update.next_steps if editable_status_update and editable_status_update.next_steps else '' }}</textarea>
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">{{ 'Save Update' if editable_status_update else 'Publish Update' }}</button>
         </form>
+        {% if editable_status_update %}
+        <form action="{{ url_for('main.internal_project_status_update_delete', project_id=project.id, update_id=editable_status_update.id) }}" method="post" class="mt-3" onsubmit="return confirm('Delete this status update?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-semibold transition">Delete Update</button>
+        </form>
+        {% endif %}
     </article>
 
     <div class="space-y-6">
@@ -413,15 +483,26 @@
                             <p class="text-xs text-slate-400 mt-1">{{ risk.owner_name }}{% if risk.due_date %} · Target {{ risk.due_date.strftime('%d %b %Y') }}{% endif %}</p>
                             <p class="text-sm text-slate-300 mt-3">{{ risk.mitigation }}</p>
                         </div>
-                        <form action="{{ url_for('main.internal_project_risk_update_status', project_id=project.id, risk_id=risk.id) }}" method="post" class="flex gap-2 sm:min-w-[220px]">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <select name="status" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                                {% for status in risk_statuses %}
-                                <option value="{{ status }}" {% if risk.status == status %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Save</button>
-                        </form>
+                        <div class="space-y-2 sm:min-w-[220px]">
+                            <form action="{{ url_for('main.internal_project_risk_update_status', project_id=project.id, risk_id=risk.id) }}" method="post" class="flex gap-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <select name="status" class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                                    {% for status in risk_statuses %}
+                                    <option value="{{ status }}" {% if risk.status == status %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Save</button>
+                            </form>
+                            {% if current_internal_user_is_senior %}
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('main.internal_project_workspace', project_id=project.id, edit_risk_id=risk.id) }}#risks" class="flex-1 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-center text-xs font-semibold text-slate-100 transition">Edit</a>
+                                <form action="{{ url_for('main.internal_project_risk_delete', project_id=project.id, risk_id=risk.id) }}" method="post" class="flex-1" onsubmit="return confirm('Delete this risk?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="w-full px-3 py-2 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-xs font-semibold text-white transition">Delete</button>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </article>
                 {% else %}
@@ -429,29 +510,40 @@
                 {% endfor %}
             </div>
 
-            <form action="{{ url_for('main.internal_project_risk_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <form action="{{ url_for('main.internal_project_risk_update', project_id=project.id, risk_id=editable_risk.id) if editable_risk else url_for('main.internal_project_risk_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Add Risk</p>
-                <input name="title" type="text" required maxlength="200" placeholder="Risk statement" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs uppercase tracking-[0.12em] text-slate-500">{{ 'Edit Risk' if editable_risk else 'Add Risk' }}</p>
+                    {% if editable_risk %}
+                    <a href="{{ url_for('main.internal_project_workspace', project_id=project.id) }}#risks" class="text-xs text-blue-300 hover:text-blue-200 transition">Cancel</a>
+                    {% endif %}
+                </div>
+                <input name="title" type="text" required maxlength="200" value="{{ editable_risk.title if editable_risk else '' }}" placeholder="Risk statement" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
                 <div class="grid sm:grid-cols-2 gap-3">
-                    <input name="owner_name" type="text" required maxlength="120" value="{{ current_internal_user.full_name if current_internal_user else '' }}" placeholder="Owner" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                    <input name="due_date" type="date" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <input name="owner_name" type="text" required maxlength="120" value="{{ editable_risk.owner_name if editable_risk else current_internal_user.full_name if current_internal_user else '' }}" placeholder="Owner" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <input name="due_date" type="date" value="{{ editable_risk.due_date.isoformat() if editable_risk and editable_risk.due_date else '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                 </div>
                 <div class="grid sm:grid-cols-2 gap-3">
                     <select name="severity" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                         {% for severity in risk_severities %}
-                        <option value="{{ severity }}" {% if severity == 'medium' %}selected{% endif %}>{{ severity|title }}</option>
+                        <option value="{{ severity }}" {% if editable_risk and editable_risk.severity == severity %}selected{% elif not editable_risk and severity == 'medium' %}selected{% endif %}>{{ severity|title }}</option>
                         {% endfor %}
                     </select>
                     <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                         {% for status in risk_statuses %}
-                        <option value="{{ status }}" {% if status == 'open' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
+                        <option value="{{ status }}" {% if editable_risk and editable_risk.status == status %}selected{% elif not editable_risk and status == 'open' %}selected{% endif %}>{{ status|replace('-', ' ')|title }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <textarea name="mitigation" rows="3" maxlength="2000" required placeholder="Mitigation plan, trigger, and review path" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
-                <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Add Risk</button>
+                <textarea name="mitigation" rows="3" maxlength="2000" required placeholder="Mitigation plan, trigger, and review path" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">{{ editable_risk.mitigation if editable_risk else '' }}</textarea>
+                <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">{{ 'Save Risk' if editable_risk else 'Add Risk' }}</button>
             </form>
+            {% if editable_risk %}
+            <form action="{{ url_for('main.internal_project_risk_delete', project_id=project.id, risk_id=editable_risk.id) }}" method="post" class="mt-3" onsubmit="return confirm('Delete this risk?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-semibold transition">Delete Risk</button>
+            </form>
+            {% endif %}
         </article>
 
         <article id="stakeholders" class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
@@ -466,50 +558,74 @@
             <div class="space-y-3 mb-5">
                 {% for stakeholder in stakeholders %}
                 <article class="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
-                    <div class="flex flex-wrap items-center gap-2 mb-1">
-                        <p class="text-sm font-semibold text-white">{{ stakeholder.name }}</p>
-                        <span class="text-[11px] px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ stakeholder.influence_level|replace('-', ' ')|title }}</span>
-                        <span class="text-[11px] px-2 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-200">{{ stakeholder.stakeholder_type|title }}</span>
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                <p class="text-sm font-semibold text-white">{{ stakeholder.name }}</p>
+                                <span class="text-[11px] px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">{{ stakeholder.influence_level|replace('-', ' ')|title }}</span>
+                                <span class="text-[11px] px-2 py-1 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-200">{{ stakeholder.stakeholder_type|title }}</span>
+                            </div>
+                            <p class="text-sm text-slate-300">{{ stakeholder.role_title }} · {{ stakeholder.organisation }}</p>
+                            {% if stakeholder.email %}
+                            <p class="text-xs text-slate-400 mt-1">{{ stakeholder.email }}</p>
+                            {% endif %}
+                            {% if stakeholder.notes %}
+                            <p class="text-sm text-slate-400 mt-3">{{ stakeholder.notes }}</p>
+                            {% endif %}
+                        </div>
+                        {% if current_internal_user_is_senior %}
+                        <div class="flex gap-2">
+                            <a href="{{ url_for('main.internal_project_workspace', project_id=project.id, edit_stakeholder_id=stakeholder.id) }}#stakeholders" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-100 transition">Edit</a>
+                            <form action="{{ url_for('main.internal_project_stakeholder_delete', project_id=project.id, stakeholder_id=stakeholder.id) }}" method="post" onsubmit="return confirm('Delete this stakeholder?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-[11px] font-semibold text-white transition">Delete</button>
+                            </form>
+                        </div>
+                        {% endif %}
                     </div>
-                    <p class="text-sm text-slate-300">{{ stakeholder.role_title }} · {{ stakeholder.organisation }}</p>
-                    {% if stakeholder.email %}
-                    <p class="text-xs text-slate-400 mt-1">{{ stakeholder.email }}</p>
-                    {% endif %}
-                    {% if stakeholder.notes %}
-                    <p class="text-sm text-slate-400 mt-3">{{ stakeholder.notes }}</p>
-                    {% endif %}
                 </article>
                 {% else %}
                 <p class="text-sm text-slate-400">No stakeholders recorded yet.</p>
                 {% endfor %}
             </div>
 
-            <form action="{{ url_for('main.internal_project_stakeholder_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+            <form action="{{ url_for('main.internal_project_stakeholder_update', project_id=project.id, stakeholder_id=editable_stakeholder.id) if editable_stakeholder else url_for('main.internal_project_stakeholder_add', project_id=project.id) }}" method="post" class="space-y-3 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Add Stakeholder</p>
-                <div class="grid sm:grid-cols-2 gap-3">
-                    <input name="name" type="text" required maxlength="120" placeholder="Name" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
-                    <input name="role_title" type="text" required maxlength="120" placeholder="Role" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs uppercase tracking-[0.12em] text-slate-500">{{ 'Edit Stakeholder' if editable_stakeholder else 'Add Stakeholder' }}</p>
+                    {% if editable_stakeholder %}
+                    <a href="{{ url_for('main.internal_project_workspace', project_id=project.id) }}#stakeholders" class="text-xs text-blue-300 hover:text-blue-200 transition">Cancel</a>
+                    {% endif %}
                 </div>
                 <div class="grid sm:grid-cols-2 gap-3">
-                    <input name="organisation" type="text" required maxlength="160" value="{{ project.client.name }}" placeholder="Organisation" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                    <input name="email" type="email" maxlength="255" placeholder="Email (optional)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                    <input name="name" type="text" required maxlength="120" value="{{ editable_stakeholder.name if editable_stakeholder else '' }}" placeholder="Name" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                    <input name="role_title" type="text" required maxlength="120" value="{{ editable_stakeholder.role_title if editable_stakeholder else '' }}" placeholder="Role" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <input name="organisation" type="text" required maxlength="160" value="{{ editable_stakeholder.organisation if editable_stakeholder else project.client.name }}" placeholder="Organisation" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <input name="email" type="email" maxlength="255" value="{{ editable_stakeholder.email if editable_stakeholder and editable_stakeholder.email else '' }}" placeholder="Email (optional)" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
                 </div>
                 <div class="grid sm:grid-cols-2 gap-3">
                     <select name="stakeholder_type" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                         {% for stakeholder_type in stakeholder_types %}
-                        <option value="{{ stakeholder_type }}" {% if stakeholder_type == 'client' %}selected{% endif %}>{{ stakeholder_type|title }}</option>
+                        <option value="{{ stakeholder_type }}" {% if editable_stakeholder and editable_stakeholder.stakeholder_type == stakeholder_type %}selected{% elif not editable_stakeholder and stakeholder_type == 'client' %}selected{% endif %}>{{ stakeholder_type|title }}</option>
                         {% endfor %}
                     </select>
                     <select name="influence_level" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                         {% for influence_level in stakeholder_influence_levels %}
-                        <option value="{{ influence_level }}" {% if influence_level == 'core' %}selected{% endif %}>{{ influence_level|replace('-', ' ')|title }}</option>
+                        <option value="{{ influence_level }}" {% if editable_stakeholder and editable_stakeholder.influence_level == influence_level %}selected{% elif not editable_stakeholder and influence_level == 'core' %}selected{% endif %}>{{ influence_level|replace('-', ' ')|title }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <textarea name="notes" rows="3" maxlength="1500" placeholder="Decision rights, communication preference, or constraints" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition"></textarea>
-                <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Add Stakeholder</button>
+                <textarea name="notes" rows="3" maxlength="1500" placeholder="Decision rights, communication preference, or constraints" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">{{ editable_stakeholder.notes if editable_stakeholder and editable_stakeholder.notes else '' }}</textarea>
+                <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">{{ 'Save Stakeholder' if editable_stakeholder else 'Add Stakeholder' }}</button>
             </form>
+            {% if editable_stakeholder %}
+            <form action="{{ url_for('main.internal_project_stakeholder_delete', project_id=project.id, stakeholder_id=editable_stakeholder.id) }}" method="post" class="mt-3" onsubmit="return confirm('Delete this stakeholder?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-semibold transition">Delete Stakeholder</button>
+            </form>
+            {% endif %}
         </article>
     </div>
 </section>

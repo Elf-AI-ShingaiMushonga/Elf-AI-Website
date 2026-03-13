@@ -7,6 +7,7 @@ class BaseConfig:
     SESSION_COOKIE_SAMESITE = "Lax"
     PREFERRED_URL_SCHEME = "https"
     SITE_URL = os.getenv("SITE_URL", "https://elf-ai.co.za").rstrip("/")
+    PUBLIC_DEMO_URL = os.getenv("PUBLIC_DEMO_URL", "https://elf-ai-demo.co.za").strip()
 
 
 class DevelopmentConfig(BaseConfig):

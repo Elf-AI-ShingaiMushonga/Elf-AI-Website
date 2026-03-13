@@ -30,19 +30,7 @@
 <body class="public-shell bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
     <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
     {% include "partials/public_nav.html" %}
-
-    <div class="fixed top-24 right-4 sm:right-6 z-50 w-full max-w-md">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div data-flash data-dismiss-ms="6400" class="px-6 py-4 rounded-lg shadow-lg mb-4 flex items-center justify-between animate-fade-in-down border-l-4 {{ 'bg-amber-600 text-white border-amber-300' if category == 'warning' else 'bg-blue-600 text-white border-blue-300' }}">
-                <div><i class="fa-solid {{ 'fa-triangle-exclamation' if category == 'warning' else 'fa-check-circle' }} mr-2"></i> {{ message }}</div>
-                <button type="button" data-flash-close class="focus-ring"><i class="fa-solid fa-times"></i></button>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-    </div>
+    {% include "partials/public_flash.html" %}
 
     <main id="main-content" class="public-main">
     <header class="relative min-h-[90vh] w-full overflow-hidden border-b border-slate-800 pt-32 md:pt-28">
@@ -68,12 +56,12 @@
                 </h1>
 
                 <p class="text-base sm:text-lg md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto">
-                    AI-augmented solutions for your human needs.
+                    AI-augmented systems built around real operational problems.
                 </p>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <a href="/enquire" class="px-8 sm:px-10 py-4 bg-blue-500 text-slate-950 font-bold rounded-full hover:bg-blue-400 transition shadow-lg shadow-blue-900/30">Book a Meeting</a>
-                    <a href="https://elf-ai-demo.co.za" target="_blank" rel="noopener noreferrer" class="px-8 sm:px-10 py-4 border border-slate-400 text-white font-medium rounded-full hover:bg-white hover:text-slate-900 transition">View Demos</a>
+                    <a href="{{ url_for('main.enquire') }}" class="px-8 sm:px-10 py-4 bg-blue-500 text-slate-950 font-bold rounded-full hover:bg-blue-400 transition shadow-lg shadow-blue-900/30">Book a Meeting</a>
+                    <a href="{{ public_demo_url() }}" target="_blank" rel="noopener noreferrer" class="px-8 sm:px-10 py-4 border border-slate-400 text-white font-medium rounded-full hover:bg-white hover:text-slate-900 transition">View Demos</a>
                 </div>
             </div>
         </div>
@@ -84,14 +72,14 @@
             </a>
         </div>
     </header>
-    <section class="py-12 bg-slate-900 border-b border-slate-800">
+    <section id="how-we-work" class="py-12 bg-slate-900 border-b border-slate-800">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-6">
                 <div>
                     <h2 class="text-3xl md:text-4xl font-bold text-white">Standard Delivery Process</h2>
                     <p class="text-slate-400 mt-2 max-w-2xl">A streamlined project structure.</p>
                 </div>
-                <a href="/enquire" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition text-sm font-semibold w-fit">
+                <a href="{{ url_for('main.enquire') }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition text-sm font-semibold w-fit">
                     Schedule Discovery
                     <i class="fa-solid fa-arrow-right"></i>
                 </a>
@@ -130,15 +118,15 @@
                 </article>
                 <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
                     <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">Are We A Fit?</p>
-                    <p class="text-white font-semibold">Elf empowers future-focused SMEs looking to actualise ideas and reduce execution work</p>
+                    <p class="text-white font-semibold">ELF-AI fits future-focused SMEs that want to reduce execution drag and ship practical solutions quickly.</p>
                 </article>
                 <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
                     <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">How Fast?</p>
-                    <p class="text-white font-semibold">Your Time is valuable. Expect a MVP delivered within the week.</p>
+                    <p class="text-white font-semibold">Your time is valuable. Expect an MVP within a week for tightly scoped workflow wedges.</p>
                 </article>
                 <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5 card-hover">
                     <p class="text-xs uppercase tracking-[0.18em] text-slate-400 mb-2">How Is Success Measured?</p>
-                    <p class="text-white font-semibold">Elf values data, promising an metric orientated approach to success.</p>
+                    <p class="text-white font-semibold">We measure cost, turnaround time, adoption, and output quality against a named baseline.</p>
                 </article>
             </div>
         </div>
@@ -162,7 +150,7 @@
                     </li>
                     <li class="flex items-start gap-4 p-3.5 bg-slate-900 border border-slate-800 rounded-xl text-left max-w-xl mx-auto">
                         <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">2</span>
-                        <span class="text-slate-300 text-sm">Solution designed by Elf and iterated on to deliver a custom solution.</span>
+                        <span class="text-slate-300 text-sm">Solution designed by ELF-AI and iterated until the workflow is fit for production.</span>
                     </li>
                     <li class="flex items-start gap-4 p-3.5 bg-slate-900 border border-slate-800 rounded-xl text-left max-w-xl mx-auto">
                         <span class="w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center flex-shrink-0">3</span>
@@ -216,7 +204,7 @@
                 {% endfor %}
 
                 {% if not ns.has_consult %}
-                <a href="/enquire" class="block h-full w-full max-w-3xl">
+                <a href="{{ url_for('main.enquire') }}" class="block h-full w-full max-w-3xl">
                     <div class="p-6 rounded-2xl bg-slate-800 border border-slate-700 hover:border-blue-500 transition group flex flex-col h-full cursor-pointer relative">
                         <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition text-blue-500">
                             <i class="fa-solid fa-arrow-right"></i>

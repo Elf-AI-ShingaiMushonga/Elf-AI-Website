@@ -6,6 +6,12 @@
 <section class="mb-8">
     <h1 class="text-3xl font-black text-white mb-3">Project Operations</h1>
     <p class="text-slate-400 max-w-3xl">Move from intake to execution with clear ownership and stage control.</p>
+    {% if selected_client %}
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+        <span class="px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/25 text-sm text-blue-200">Client scope: {{ selected_client.name }}</span>
+        <a href="{{ url_for('main.internal_projects') }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">Clear scope</a>
+    </div>
+    {% endif %}
 </section>
 
 <section class="grid xl:grid-cols-[1.2fr_0.8fr] gap-6">
@@ -109,6 +115,12 @@
                     <a href="{{ url_for('main.internal_messages') }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">Project Channel</a>
                     {% endif %}
                     <a href="{{ url_for('main.internal_resources', project_id=card.project.id) }}" class="px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">Project Docs</a>
+                    {% if current_internal_user_is_senior %}
+                    <form action="{{ url_for('main.internal_project_delete', project_id=card.project.id) }}" method="post" onsubmit="return confirm('Delete this project and its workspace?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="px-3 py-1.5 rounded-full bg-rose-600/90 hover:bg-rose-500 text-white text-xs font-semibold transition">Delete</button>
+                    </form>
+                    {% endif %}
                 </div>
 
                 {% if card.latest_update %}
@@ -249,7 +261,7 @@
                     <option value="{{ category }}">{{ category|replace('-', ' ')|title }}</option>
                     {% endfor %}
                 </datalist>
-                <p class="text-[11px] text-slate-500">Controls which starter task template is used.</p>
+                <p class="text-[11px] text-slate-500">Controls which automation template is used for milestones, deliverables, tasks, and docs.</p>
             </div>
             <div class="space-y-2">
                 <div class="flex items-center justify-between gap-3">
@@ -269,12 +281,24 @@
                 <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Delivery Summary</label>
                 <textarea name="summary" rows="4" maxlength="3000" required placeholder="Scope, target outcome, and first milestone." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition"></textarea>
             </div>
+            <div class="space-y-2">
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Template Variables</label>
+                <textarea name="template_variables" rows="4" spellcheck="false" placeholder='{"success_metric":"Reduce intake time by 30%","delivery_scope":"Matter intake routing pilot"}' class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-blue-500 transition"></textarea>
+                <p class="text-[11px] text-slate-500">Optional JSON object used to replace <code>{% raw %}{{ variable_name }}{% endraw %}</code> placeholders inside the automation template.</p>
+                {% if starter_plan_variables %}
+                <div class="flex flex-wrap gap-2">
+                    {% for variable in starter_plan_variables %}
+                    <span class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300">{{ variable.key }}{% if variable.default %} · default{% endif %}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
             <label class="rounded-xl border border-slate-800 bg-slate-950/70 p-3 flex items-start gap-3">
                 <input name="create_starter_plan" type="hidden" value="0">
                 <input name="create_starter_plan" type="checkbox" value="1" checked class="mt-0.5">
                 <span>
-                    <span class="text-sm text-slate-100 font-semibold">Generate starter delivery plan</span>
-                    <span class="block text-xs text-slate-400 mt-1">Creates starter tasks in nested and priority views.</span>
+                    <span class="text-sm text-slate-100 font-semibold">Apply automation template</span>
+                    <span class="block text-xs text-slate-400 mt-1">Generates milestones, deliverables, tasks, and workspace docs for the new project.</span>
                 </span>
             </label>
             <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Create Project</button>
@@ -282,14 +306,14 @@
 
         <div class="mt-5 rounded-xl border border-slate-800 bg-slate-950/70 p-3">
             <p class="text-xs uppercase tracking-[0.12em] text-slate-500 mb-2">Next Step</p>
-            <p class="text-xs text-slate-300">After kickoff, open Messages, then run delivery from To-Do views.</p>
+            <p class="text-xs text-slate-300">After kickoff, review the generated workspace pack, then run delivery from the project workspace and To-Do views.</p>
         </div>
 
         <div id="starter-plan-template" class="mt-5 rounded-xl border border-slate-800 bg-slate-950/70 p-4">
             <div class="flex items-start justify-between gap-3 mb-3">
                 <div>
-                    <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Starter Plan Template</p>
-                    <p class="text-xs text-slate-400 mt-1">Used when "Generate starter delivery plan" is enabled for the selected industry category.</p>
+                    <p class="text-xs uppercase tracking-[0.12em] text-slate-500">Project Automation Template</p>
+                    <p class="text-xs text-slate-400 mt-1">Used when "Apply automation template" is enabled for the selected industry category.</p>
                 </div>
                 {% if starter_plan_updated_at %}
                 <p class="text-[11px] text-slate-500 text-right">
@@ -322,6 +346,42 @@
                 <p class="text-[11px] text-slate-500">Active: {{ starter_plan_category_label }} ({{ 'Custom override' if starter_plan_source == 'custom' else 'Default template' }})</p>
             </form>
 
+            <div class="grid grid-cols-4 gap-3 mb-3">
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-1">Tasks</p>
+                    <p class="text-sm font-semibold text-slate-100">{{ starter_plan_stats.tasks }}</p>
+                </div>
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-1">Milestones</p>
+                    <p class="text-sm font-semibold text-slate-100">{{ starter_plan_stats.milestones }}</p>
+                </div>
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-1">Deliverables</p>
+                    <p class="text-sm font-semibold text-slate-100">{{ starter_plan_stats.deliverables }}</p>
+                </div>
+                <div class="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                    <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-1">Docs</p>
+                    <p class="text-sm font-semibold text-slate-100">{{ starter_plan_stats.documents }}</p>
+                </div>
+            </div>
+
+            {% if starter_plan_variables %}
+            <div class="mb-3 rounded-xl border border-slate-800 bg-slate-900 p-3">
+                <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-2">Template Variables</p>
+                <div class="flex flex-wrap gap-2">
+                    {% for variable in starter_plan_variables %}
+                    <span class="px-2.5 py-1 rounded-full bg-slate-950 border border-slate-800 text-[11px] text-slate-300">
+                        {{ variable.key }}
+                        {% if variable.default %}
+                        · {{ variable.default }}
+                        {% endif %}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if current_internal_user_is_senior %}
             <form action="{{ url_for('main.internal_project_starter_plan_update') }}" method="post" class="space-y-3">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="starter_plan_category" value="{{ starter_plan_category }}">
@@ -331,8 +391,14 @@
                     spellcheck="false"
                     class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-blue-500 transition"
                 >{{ starter_plan_template_text }}</textarea>
-                <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 text-sm font-semibold transition">Save Starter Template</button>
+                <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 text-sm font-semibold transition">Save Automation Template</button>
             </form>
+            {% else %}
+            <div class="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                Senior users can update automation templates. The active template remains visible here for reference.
+            </div>
+            <pre class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 px-3 py-3 text-xs text-slate-100">{{ starter_plan_template_text }}</pre>
+            {% endif %}
         </div>
     </article>
 </section>

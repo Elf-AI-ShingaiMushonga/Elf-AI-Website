@@ -21,9 +21,18 @@
                 </p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center justify-end gap-2">
                 <span class="text-xs px-2.5 py-1 rounded-full {{ internal_priority_class(task.priority) }} bg-slate-900 border border-slate-700">{{ task.priority|title }}</span>
                 <span class="text-xs px-2.5 py-1 rounded-full {{ internal_status_class(task.status) }}">{{ task.status|replace('-', ' ')|title }}</span>
+                {% if current_internal_user_is_senior %}
+                <a href="{{ url_for('main.internal_todos', view=view_mode, project_id=project_scope, edit_task_id=task.id) if project_scope else url_for('main.internal_todos', view=view_mode, edit_task_id=task.id) }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Edit</a>
+                <form action="{{ url_for('main.internal_todo_delete', task_id=task.id) }}" method="post" onsubmit="return confirm('Delete this task and any subtasks?');">
+                    <input type="hidden" name="view_mode" value="{{ view_mode }}">
+                    <input type="hidden" name="project_scope" value="{{ project_scope if project_scope else '' }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="px-3 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-xs font-semibold text-white transition">Delete</button>
+                </form>
+                {% endif %}
             </div>
         </div>
 
@@ -143,7 +152,12 @@
 
     <article id="new-task" class="rounded-2xl border border-slate-800 bg-slate-900 p-5" data-todo-composer data-collapsed-default="true">
         <div class="flex items-center justify-between gap-3">
-            <h2 class="text-lg font-bold text-white">Add Task</h2>
+            <div>
+                <h2 class="text-lg font-bold text-white">{{ 'Edit Task' if editable_task else 'Add Task' }}</h2>
+                {% if editable_task %}
+                <p class="text-xs text-slate-400 mt-1">Senior-only full edit for "{{ editable_task.title }}".</p>
+                {% endif %}
+            </div>
             <button
                 type="button"
                 data-todo-composer-toggle
@@ -156,7 +170,7 @@
             </button>
         </div>
         <div id="new-task-form-panel" class="mt-4" data-todo-composer-content>
-        <form action="{{ url_for('main.internal_todo_add') }}" method="post" class="space-y-3" data-task-form>
+        <form action="{{ url_for('main.internal_todo_update', task_id=editable_task.id) if editable_task else url_for('main.internal_todo_add') }}" method="post" class="space-y-3" data-task-form>
             <input type="hidden" name="view_mode" value="{{ view_mode }}">
             <input type="hidden" name="project_scope" value="{{ selected_project_id if selected_project_id else '' }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -164,9 +178,9 @@
             <div class="space-y-2">
                 <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Project</label>
                 <select name="project_id" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                    <option value="" disabled {% if not selected_project_id %}selected{% endif %}>Select project</option>
+                    <option value="" disabled {% if not editable_task and not selected_project_id %}selected{% endif %}>Select project</option>
                     {% for project in projects %}
-                    <option value="{{ project.id }}" {% if selected_project_id and selected_project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
+                    <option value="{{ project.id }}" {% if editable_task and editable_task.project_id == project.id %}selected{% elif selected_project_id and selected_project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -176,20 +190,22 @@
                 <select name="parent_task_id" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                     <option value="">None (top-level task)</option>
                     {% for task in parent_task_options %}
-                    <option value="{{ task.id }}">{{ task.project.name }} · {{ task.title }}</option>
+                    {% if not editable_task or task.id != editable_task.id %}
+                    <option value="{{ task.id }}" {% if editable_task and editable_task.parent_task_id == task.id %}selected{% endif %}>{{ task.project.name }} · {{ task.title }}</option>
+                    {% endif %}
                     {% endfor %}
                 </select>
             </div>
 
             <div class="space-y-2">
                 <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Task Title</label>
-                <input name="title" type="text" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <input name="title" type="text" required value="{{ editable_task.title if editable_task else '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
             </div>
 
             <div class="grid sm:grid-cols-2 gap-3">
                 <div class="space-y-2">
                     <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Assignee</label>
-                    <input name="assignee" type="text" list="todo-assignee-options" value="{{ current_internal_user.full_name if current_internal_user else '' }}" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                    <input name="assignee" type="text" list="todo-assignee-options" value="{{ editable_task.assignee if editable_task else current_internal_user.full_name if current_internal_user else '' }}" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                     <datalist id="todo-assignee-options">
                         {% for user in active_internal_users %}
                         <option value="{{ user.full_name }}"></option>
@@ -201,7 +217,7 @@
                     <input
                         name="due_date"
                         type="date"
-                        value="{{ default_task_due_date.isoformat() }}"
+                        value="{{ editable_task.due_date.isoformat() if editable_task and editable_task.due_date else default_task_due_date.isoformat() }}"
                         data-task-due-date
                         class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition"
                     >
@@ -218,24 +234,35 @@
                 <div class="space-y-2">
                     <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Priority</label>
                     <select name="priority" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                        <option value="high">High</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="low">Low</option>
+                        <option value="high" {% if editable_task and editable_task.priority == 'high' %}selected{% endif %}>High</option>
+                        <option value="medium" {% if not editable_task or editable_task.priority == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="low" {% if editable_task and editable_task.priority == 'low' %}selected{% endif %}>Low</option>
                     </select>
                 </div>
                 <div class="space-y-2">
                     <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Status</label>
                     <select name="status" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
-                        <option value="todo" selected>Todo</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="blocked">Blocked</option>
-                        <option value="done">Done</option>
+                        <option value="todo" {% if not editable_task or editable_task.status == 'todo' %}selected{% endif %}>Todo</option>
+                        <option value="in-progress" {% if editable_task and editable_task.status == 'in-progress' %}selected{% endif %}>In Progress</option>
+                        <option value="blocked" {% if editable_task and editable_task.status == 'blocked' %}selected{% endif %}>Blocked</option>
+                        <option value="done" {% if editable_task and editable_task.status == 'done' %}selected{% endif %}>Done</option>
                     </select>
                 </div>
             </div>
 
-            <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Save Task</button>
+            <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">{{ 'Save Task Changes' if editable_task else 'Save Task' }}</button>
         </form>
+        {% if editable_task %}
+        <div class="mt-3 grid grid-cols-2 gap-3">
+            <a href="{{ url_for('main.internal_todos', view=view_mode, project_id=selected_project_id) if selected_project_id else url_for('main.internal_todos', view=view_mode) }}" class="px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-center text-sm font-semibold text-slate-100 transition">Cancel Edit</a>
+            <form action="{{ url_for('main.internal_todo_delete', task_id=editable_task.id) }}" method="post" onsubmit="return confirm('Delete this task and any subtasks?');">
+                <input type="hidden" name="view_mode" value="{{ view_mode }}">
+                <input type="hidden" name="project_scope" value="{{ selected_project_id if selected_project_id else '' }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-semibold transition">Delete Task</button>
+            </form>
+        </div>
+        {% endif %}
         </div>
     </article>
 </section>
@@ -278,6 +305,15 @@
                 <div class="flex items-center gap-2">
                     <span class="text-xs px-2.5 py-1 rounded-full {{ internal_priority_class(task.priority) }} bg-slate-900 border border-slate-700">{{ task.priority|title }}</span>
                     <span class="text-xs px-2.5 py-1 rounded-full {{ internal_status_class(task.status) }}">{{ task.status|replace('-', ' ')|title }}</span>
+                    {% if current_internal_user_is_senior %}
+                    <a href="{{ url_for('main.internal_todos', view=view_mode, project_id=selected_project_id, edit_task_id=task.id) if selected_project_id else url_for('main.internal_todos', view=view_mode, edit_task_id=task.id) }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-100 transition">Edit</a>
+                    <form action="{{ url_for('main.internal_todo_delete', task_id=task.id) }}" method="post" onsubmit="return confirm('Delete this task and any subtasks?');">
+                        <input type="hidden" name="view_mode" value="{{ view_mode }}">
+                        <input type="hidden" name="project_scope" value="{{ selected_project_id if selected_project_id else '' }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-xs font-semibold text-white transition">Delete</button>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
 

@@ -36,10 +36,14 @@ def _csrf_token_for_path(client, path: str) -> str:
 
 
 def _login(client):
+    return _login_as(client, "internal-admin@elf-ai.co.za")
+
+
+def _login_as(client, email: str):
     csrf_token = _csrf_token_for_path(client, "/internal/login")
     return client.post(
         "/internal/login",
-        data={"email": "internal-admin@elf-ai.co.za", "password": "secret-password", "csrf_token": csrf_token},
+        data={"email": email, "password": "secret-password", "csrf_token": csrf_token},
         follow_redirects=False,
     )
 
@@ -217,6 +221,82 @@ def test_internal_client_add(client):
         assert created_client.industry == "Healthcare"
 
 
+def test_internal_client_update_and_delete_for_senior(client):
+    _login(client)
+
+    with client.application.app_context():
+        client_record = InternalClient.query.filter_by(name="Test Client").first()
+        assert client_record is not None
+        client_id = client_record.id
+
+    csrf_token = _csrf_token_for_path(client, "/internal/clients")
+    update_response = client.post(
+        f"/internal/clients/{client_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Updated Test Client",
+            "industry": "Finance",
+            "account_owner": "Operations Analyst",
+            "status": "paused",
+            "notes": "Updated during client maintenance flow.",
+        },
+        follow_redirects=False,
+    )
+    assert update_response.status_code == 302
+    assert update_response.headers["Location"].endswith("/internal/clients")
+
+    with client.application.app_context():
+        updated_client = db.session.get(InternalClient, client_id)
+        assert updated_client is not None
+        assert updated_client.name == "Updated Test Client"
+        assert updated_client.industry == "Finance"
+        assert updated_client.account_owner == "Operations Analyst"
+        assert updated_client.status == "paused"
+
+    delete_response = client.post(
+        f"/internal/clients/{client_id}/delete",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    assert delete_response.status_code == 302
+    assert delete_response.headers["Location"].endswith("/internal/clients")
+
+    with client.application.app_context():
+        assert db.session.get(InternalClient, client_id) is None
+
+
+def test_internal_client_update_requires_senior_access(client):
+    _login_as(client, "delivery-consultant@elf-ai.co.za")
+
+    with client.application.app_context():
+        client_record = InternalClient.query.filter_by(name="Test Client").first()
+        assert client_record is not None
+        client_id = client_record.id
+        original_name = client_record.name
+
+    csrf_token = _csrf_token_for_path(client, "/internal/clients")
+    response = client.post(
+        f"/internal/clients/{client_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Blocked Client Edit",
+            "industry": "Legal",
+            "account_owner": "Delivery Consultant",
+            "status": "active",
+            "notes": "",
+        },
+        headers={"Referer": "http://localhost/internal/clients"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/internal/clients")
+
+    with client.application.app_context():
+        unchanged_client = db.session.get(InternalClient, client_id)
+        assert unchanged_client is not None
+        assert unchanged_client.name == original_name
+
+
 def test_internal_project_add(client):
     _login(client)
     csrf_token = _csrf_token_for_path(client, "/internal/projects")
@@ -247,6 +327,104 @@ def test_internal_project_add(client):
         created_project = InternalProject.query.filter_by(name="Internal Delivery Sprint").first()
         assert created_project is not None
         assert created_project.client_id == client_record.id
+
+
+def test_internal_projects_page_filters_by_client_scope(client):
+    _login(client)
+
+    with client.application.app_context():
+        second_client = InternalClient(
+            name="Scoped Client",
+            industry="Retail",
+            account_owner="Internal Admin",
+            status="active",
+        )
+        db.session.add(second_client)
+        db.session.flush()
+        scoped_project = InternalProject(
+            name="Scoped Client Project",
+            client=second_client,
+            owner=InternalUser.query.filter_by(email="internal-admin@elf-ai.co.za").first(),
+            stage="discovery",
+            status="on-track",
+            summary="Project that should appear only in scoped view.",
+        )
+        db.session.add(scoped_project)
+        db.session.commit()
+        second_client_id = second_client.id
+
+    response = client.get(f"/internal/projects?client_id={second_client_id}")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Client scope: Scoped Client" in html
+    assert "Scoped Client Project" in html
+    assert "Test Internal Project" not in html
+
+
+def test_internal_project_delete_for_senior(client):
+    _login(client)
+
+    with client.application.app_context():
+        client_record = InternalClient.query.filter_by(name="Test Client").first()
+        owner_record = InternalUser.query.filter_by(email="internal-admin@elf-ai.co.za").first()
+        assert client_record is not None
+        assert owner_record is not None
+        project = InternalProject(
+            name="Disposable Project",
+            client=client_record,
+            owner=owner_record,
+            stage="delivery",
+            status="on-track",
+            summary="Project used to test delete flow.",
+        )
+        db.session.add(project)
+        db.session.flush()
+        db.session.add(
+            InternalTask(
+                project=project,
+                title="Disposable Task",
+                assignee="Internal Admin",
+                priority="high",
+                status="todo",
+            )
+        )
+        db.session.commit()
+        project_id = project.id
+        client_id = client_record.id
+
+    csrf_token = _csrf_token_for_path(client, f"/internal/projects/{project_id}")
+    response = client.post(
+        f"/internal/projects/{project_id}/delete",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(f"/internal/projects?client_id={client_id}")
+
+    with client.application.app_context():
+        assert db.session.get(InternalProject, project_id) is None
+
+
+def test_internal_project_delete_requires_senior_access(client):
+    _login_as(client, "delivery-consultant@elf-ai.co.za")
+
+    with client.application.app_context():
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        assert project is not None
+        project_id = project.id
+
+    csrf_token = _csrf_token_for_path(client, f"/internal/projects/{project_id}")
+    response = client.post(
+        f"/internal/projects/{project_id}/delete",
+        data={"csrf_token": csrf_token},
+        headers={"Referer": f"http://localhost/internal/projects/{project_id}"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(f"/internal/projects/{project_id}")
+
+    with client.application.app_context():
+        assert db.session.get(InternalProject, project_id) is not None
 
 
 def test_internal_project_add_uses_default_timeline_and_starter_plan(client):
@@ -289,6 +467,12 @@ def test_internal_project_add_uses_default_timeline_and_starter_plan(client):
         assert "Kickoff and Discovery" in project_task_titles
         assert "Solution Build and Validation" in project_task_titles
         assert "Value Review and Scale Plan" in project_task_titles
+        milestone_titles = {milestone.title for milestone in created_project.milestones}
+        deliverable_titles = {deliverable.title for deliverable in created_project.deliverables}
+        doc_titles = {page.title for page in created_project.doc_pages}
+        assert "Timeline Defaults Project kickoff approved" in milestone_titles
+        assert "Timeline Defaults Project kickoff pack" in deliverable_titles
+        assert "Timeline Defaults Project Brief" in doc_titles
 
 
 def test_internal_project_add_can_create_client_inline(client):
@@ -394,6 +578,9 @@ def test_internal_project_add_can_disable_starter_plan(client):
         created_project = InternalProject.query.filter_by(name="No Starter Plan Project").first()
         assert created_project is not None
         assert len(created_project.tasks) == 0
+        assert len(created_project.milestones) == 0
+        assert len(created_project.deliverables) == 0
+        assert len(created_project.doc_pages) == 0
 
 
 def test_internal_project_workspace_page(client):
@@ -598,6 +785,197 @@ def test_internal_project_workspace_inline_status_updates(client):
         assert db.session.get(InternalProjectRisk, risk_id).status == "mitigated"
 
 
+def test_internal_project_workspace_senior_can_edit_and_delete_operating_records(client):
+    _login(client)
+
+    with client.application.app_context():
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        milestone = InternalProjectMilestone.query.filter_by(title="Pilot Review").first()
+        deliverable = InternalProjectDeliverable.query.filter_by(title="Weekly Client Update").first()
+        risk = InternalProjectRisk.query.filter_by(title="Edge-case routing may delay launch").first()
+        stakeholder = InternalProjectStakeholder.query.filter_by(name="Casey Client").first()
+        status_update = InternalProjectStatusUpdate.query.filter_by(headline="Pilot execution is underway").first()
+        assert project is not None
+        assert milestone is not None
+        assert deliverable is not None
+        assert risk is not None
+        assert stakeholder is not None
+        assert status_update is not None
+        project_id = project.id
+        milestone_id = milestone.id
+        deliverable_id = deliverable.id
+        risk_id = risk.id
+        stakeholder_id = stakeholder.id
+        status_update_id = status_update.id
+
+    csrf_token = _csrf_token_for_path(client, f"/internal/projects/{project_id}")
+
+    milestone_response = client.post(
+        f"/internal/projects/{project_id}/milestones/{milestone_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Pilot Review Complete",
+            "owner_name": "Delivery Lead",
+            "status": "done",
+            "due_date": (date.today() + timedelta(days=9)).isoformat(),
+            "notes": "All pilot review actions are complete.",
+        },
+        follow_redirects=False,
+    )
+    assert milestone_response.status_code == 302
+
+    deliverable_response = client.post(
+        f"/internal/projects/{project_id}/deliverables/{deliverable_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Executive Client Update",
+            "owner_name": "Delivery Lead",
+            "status": "delivered",
+            "due_date": (date.today() + timedelta(days=10)).isoformat(),
+            "link": "https://example.com/executive-update",
+            "description": "Final executive update shared with the client sponsor.",
+        },
+        follow_redirects=False,
+    )
+    assert deliverable_response.status_code == 302
+
+    risk_response = client.post(
+        f"/internal/projects/{project_id}/risks/{risk_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Routing regression risk closed",
+            "owner_name": "Internal Admin",
+            "severity": "low",
+            "status": "closed",
+            "due_date": (date.today() + timedelta(days=3)).isoformat(),
+            "mitigation": "Regression tests expanded and launch checklist signed off.",
+        },
+        follow_redirects=False,
+    )
+    assert risk_response.status_code == 302
+
+    stakeholder_response = client.post(
+        f"/internal/projects/{project_id}/stakeholders/{stakeholder_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "name": "Casey Sponsor",
+            "role_title": "Programme Sponsor",
+            "organisation": "Test Client",
+            "email": "casey.sponsor@example.com",
+            "stakeholder_type": "client",
+            "influence_level": "decision-maker",
+            "notes": "Approves launch and budget changes.",
+        },
+        follow_redirects=False,
+    )
+    assert stakeholder_response.status_code == 302
+
+    status_update_response = client.post(
+        f"/internal/projects/{project_id}/status-updates/{status_update_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "headline": "Pilot execution is complete",
+            "summary": "The team closed the pilot and prepared handover materials.",
+            "wins": "Pilot QA passed.",
+            "risks": "None outstanding.",
+            "next_steps": "Move to handover.",
+            "progress_percent": "88",
+        },
+        follow_redirects=False,
+    )
+    assert status_update_response.status_code == 302
+
+    with client.application.app_context():
+        updated_milestone = db.session.get(InternalProjectMilestone, milestone_id)
+        updated_deliverable = db.session.get(InternalProjectDeliverable, deliverable_id)
+        updated_risk = db.session.get(InternalProjectRisk, risk_id)
+        updated_stakeholder = db.session.get(InternalProjectStakeholder, stakeholder_id)
+        updated_status_update = db.session.get(InternalProjectStatusUpdate, status_update_id)
+        assert updated_milestone.title == "Pilot Review Complete"
+        assert updated_milestone.status == "done"
+        assert updated_deliverable.title == "Executive Client Update"
+        assert updated_deliverable.status == "delivered"
+        assert updated_risk.title == "Routing regression risk closed"
+        assert updated_risk.status == "closed"
+        assert updated_stakeholder.name == "Casey Sponsor"
+        assert updated_stakeholder.email == "casey.sponsor@example.com"
+        assert updated_status_update.headline == "Pilot execution is complete"
+        assert updated_status_update.progress_percent == 88
+
+    delete_milestone_response = client.post(
+        f"/internal/projects/{project_id}/milestones/{milestone_id}/delete",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    delete_deliverable_response = client.post(
+        f"/internal/projects/{project_id}/deliverables/{deliverable_id}/delete",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    delete_risk_response = client.post(
+        f"/internal/projects/{project_id}/risks/{risk_id}/delete",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    delete_stakeholder_response = client.post(
+        f"/internal/projects/{project_id}/stakeholders/{stakeholder_id}/delete",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    delete_status_update_response = client.post(
+        f"/internal/projects/{project_id}/status-updates/{status_update_id}/delete",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    assert delete_milestone_response.status_code == 302
+    assert delete_deliverable_response.status_code == 302
+    assert delete_risk_response.status_code == 302
+    assert delete_stakeholder_response.status_code == 302
+    assert delete_status_update_response.status_code == 302
+
+    with client.application.app_context():
+        assert db.session.get(InternalProjectMilestone, milestone_id) is None
+        assert db.session.get(InternalProjectDeliverable, deliverable_id) is None
+        assert db.session.get(InternalProjectRisk, risk_id) is None
+        assert db.session.get(InternalProjectStakeholder, stakeholder_id) is None
+        assert db.session.get(InternalProjectStatusUpdate, status_update_id) is None
+
+
+def test_internal_project_workspace_record_edits_require_senior_access(client):
+    _login_as(client, "delivery-consultant@elf-ai.co.za")
+
+    with client.application.app_context():
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        milestone = InternalProjectMilestone.query.filter_by(title="Pilot Review").first()
+        assert project is not None
+        assert milestone is not None
+        project_id = project.id
+        milestone_id = milestone.id
+        original_title = milestone.title
+
+    csrf_token = _csrf_token_for_path(client, f"/internal/projects/{project_id}")
+    response = client.post(
+        f"/internal/projects/{project_id}/milestones/{milestone_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Blocked Milestone Edit",
+            "owner_name": "Delivery Consultant",
+            "status": "done",
+            "due_date": "",
+            "notes": "This change should be blocked.",
+        },
+        headers={"Referer": f"http://localhost/internal/projects/{project_id}"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith(f"/internal/projects/{project_id}")
+
+    with client.application.app_context():
+        unchanged_milestone = db.session.get(InternalProjectMilestone, milestone_id)
+        assert unchanged_milestone is not None
+        assert unchanged_milestone.title == original_title
+
+
 def test_internal_docs_workspace_page(client):
     _login(client)
 
@@ -679,30 +1057,130 @@ def test_internal_docs_update_page(client):
         assert "Keep the client team aligned" in updated_page.body
 
 
-def test_internal_project_starter_plan_template_update_changes_generated_tasks_for_industry(client):
+def test_internal_docs_update_requires_senior_access(client):
+    _login_as(client, "delivery-consultant@elf-ai.co.za")
+    csrf_token = _csrf_token_for_path(client, "/internal/docs/delivery-handbook")
+
+    with client.application.app_context():
+        page = InternalDocPage.query.filter_by(slug="delivery-handbook").first()
+        assert page is not None
+        page_id = page.id
+        original_title = page.title
+
+    response = client.post(
+        f"/internal/docs/{page_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "title": "Unauthorized Edit",
+            "summary": "This update should be blocked.",
+            "body": "# Blocked",
+            "status": "draft",
+            "project_id": "",
+            "parent_id": "",
+        },
+        headers={"Referer": "http://localhost/internal/docs/delivery-handbook"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/internal/docs/delivery-handbook")
+
+    with client.application.app_context():
+        unchanged_page = db.session.get(InternalDocPage, page_id)
+        assert unchanged_page is not None
+        assert unchanged_page.title == original_title
+
+
+def test_internal_doc_delete_for_senior_user(client):
+    _login(client)
+    csrf_token = _csrf_token_for_path(client, "/internal/docs/delivery-handbook")
+
+    with client.application.app_context():
+        root_page = InternalDocPage.query.filter_by(slug="delivery-handbook").first()
+        child_page = InternalDocPage.query.filter_by(slug="project-brief").first()
+        assert root_page is not None
+        assert child_page is not None
+        root_page_id = root_page.id
+        child_page_id = child_page.id
+
+    response = client.post(
+        f"/internal/docs/{root_page_id}/delete",
+        data={"csrf_token": csrf_token},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/internal/docs")
+
+    with client.application.app_context():
+        assert db.session.get(InternalDocPage, root_page_id) is None
+        assert db.session.get(InternalDocPage, child_page_id) is None
+
+
+def test_internal_project_starter_plan_template_update_changes_generated_automation_pack_for_industry(client):
     _login(client)
     csrf_token = _csrf_token_for_path(client, "/internal/projects")
 
-    custom_template = [
-        {
-            "title": "Consultation Kickoff",
-            "priority": "high",
-            "due_percent": 25,
-            "subtasks": [
-                {"title": "Run discovery workshop", "due_percent": 10},
-                {"title": "Confirm target KPI baseline", "due_percent": 20},
-            ],
-        },
-        {
-            "title": "Implementation Rollout",
-            "priority": "medium",
-            "due_percent": 100,
-            "subtasks": [
-                {"title": "Launch production workflow", "due_percent": 85},
-                {"title": "Handover operations checklist", "due_percent": 100},
-            ],
-        },
-    ]
+    custom_template = {
+        "variables": [
+            {"key": "workstream", "default": "Legal intake triage"},
+            {"key": "executive_owner", "default": "Casey Sponsor"},
+        ],
+        "milestones": [
+            {
+                "title": "{{ project_name }} discovery sign-off",
+                "owner_name": "{{ executive_owner }}",
+                "status": "planned",
+                "due_percent": 30,
+                "notes": "Approve {{ workstream }} scope with {{ client_name }}.",
+            }
+        ],
+        "deliverables": [
+            {
+                "title": "{{ project_name }} blueprint",
+                "owner_name": "{{ owner_name }}",
+                "status": "planned",
+                "due_percent": 60,
+                "description": "Blueprint pack for {{ workstream }}.",
+                "link": "https://example.com/{{ project_name }}",
+            }
+        ],
+        "documents": [
+            {
+                "ref": "brief",
+                "title": "{{ project_name }} Automation Brief",
+                "summary": "Brief for {{ workstream }}.",
+                "status": "published",
+                "body": "# {{ project_name }}\n\n{{ workstream }} for {{ client_name }}.",
+            },
+            {
+                "parent_ref": "brief",
+                "title": "{{ project_name }} Checklist",
+                "summary": "Checklist for {{ workstream }}.",
+                "status": "draft",
+                "body": "# Checklist\n\n- [ ] Confirm {{ executive_owner }} availability",
+            },
+        ],
+        "tasks": [
+            {
+                "title": "Consultation Kickoff",
+                "priority": "high",
+                "assignee": "{{ owner_name }}",
+                "due_percent": 25,
+                "subtasks": [
+                    {"title": "Run discovery workshop", "due_percent": 10},
+                    {"title": "Confirm target KPI baseline", "due_percent": 20},
+                ],
+            },
+            {
+                "title": "Implementation Rollout",
+                "priority": "medium",
+                "due_percent": 100,
+                "subtasks": [
+                    {"title": "Launch production workflow", "due_percent": 85},
+                    {"title": "Handover operations checklist", "due_percent": 100},
+                ],
+            },
+        ],
+    }
 
     update_response = client.post(
         "/internal/projects/starter-plan",
@@ -740,6 +1218,7 @@ def test_internal_project_starter_plan_template_update_changes_generated_tasks_f
             "stage": "discovery",
             "status": "on-track",
             "summary": "Project created with custom starter plan template.",
+            "template_variables": json.dumps({"workstream": "Matter intake automation", "executive_owner": "Dana GC"}),
             "create_starter_plan": "1",
         },
         follow_redirects=False,
@@ -750,10 +1229,22 @@ def test_internal_project_starter_plan_template_update_changes_generated_tasks_f
         created_project = InternalProject.query.filter_by(name="Custom Starter Plan Project").first()
         assert created_project is not None
         task_titles = {task.title for task in created_project.tasks}
+        milestone_titles = {milestone.title for milestone in created_project.milestones}
+        milestone_notes = {milestone.notes for milestone in created_project.milestones}
+        deliverable_titles = {deliverable.title for deliverable in created_project.deliverables}
+        deliverable_descriptions = {deliverable.description for deliverable in created_project.deliverables}
+        document_titles = {page.title for page in created_project.doc_pages}
+        document_summaries = {page.summary for page in created_project.doc_pages}
         assert "Consultation Kickoff" in task_titles
         assert "Implementation Rollout" in task_titles
         assert "Kickoff and Discovery" not in task_titles
         assert created_project.industry_category == "legal"
+        assert "Custom Starter Plan Project discovery sign-off" in milestone_titles
+        assert "Approve Matter intake automation scope with Test Client." in milestone_notes
+        assert "Custom Starter Plan Project blueprint" in deliverable_titles
+        assert "Blueprint pack for Matter intake automation." in deliverable_descriptions
+        assert "Custom Starter Plan Project Automation Brief" in document_titles
+        assert "Brief for Matter intake automation." in document_summaries
 
 
 def test_internal_project_add_uses_default_industry_starter_plan(client):
@@ -791,6 +1282,9 @@ def test_internal_project_add_uses_default_industry_starter_plan(client):
         task_titles = {task.title for task in created_project.tasks}
         assert "Controls and Requirements Discovery" in task_titles
         assert "Kickoff and Discovery" not in task_titles
+        assert len(created_project.milestones) == 3
+        assert len(created_project.deliverables) == 3
+        assert len(created_project.doc_pages) == 2
 
 
 def test_internal_project_starter_plan_template_update_rejects_invalid_json(client):
@@ -1045,6 +1539,99 @@ def test_internal_todo_status_and_priority_updates(client):
         assert updated_task.priority == "low"
 
 
+def test_internal_todo_full_edit_and_delete_for_senior_user(client):
+    _login(client)
+
+    with client.application.app_context():
+        task = InternalTask.query.filter_by(title="Archive previous sprint artifacts").first()
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        assert task is not None
+        assert project is not None
+        task_id = task.id
+        project_id = project.id
+
+    edit_csrf_token = _csrf_token_for_path(client, f"/internal/todos?view=nested&project_id={project_id}&edit_task_id={task_id}")
+    update_response = client.post(
+        f"/internal/todos/{task_id}/update",
+        data={
+            "csrf_token": edit_csrf_token,
+            "view_mode": "nested",
+            "project_scope": str(project_id),
+            "project_id": str(project_id),
+            "parent_task_id": "",
+            "title": "Archive and review previous sprint artifacts",
+            "assignee": "Delivery Consultant",
+            "priority": "medium",
+            "status": "blocked",
+            "due_date": date.today().isoformat(),
+        },
+        follow_redirects=False,
+    )
+    assert update_response.status_code == 302
+    assert "/internal/todos?view=nested" in update_response.headers["Location"]
+    assert f"project_id={project_id}" in update_response.headers["Location"]
+
+    with client.application.app_context():
+        updated_task = db.session.get(InternalTask, task_id)
+        assert updated_task is not None
+        assert updated_task.title == "Archive and review previous sprint artifacts"
+        assert updated_task.assignee == "Delivery Consultant"
+        assert updated_task.priority == "medium"
+        assert updated_task.status == "blocked"
+
+    delete_csrf_token = _csrf_token_for_path(client, f"/internal/todos?view=nested&project_id={project_id}")
+    delete_response = client.post(
+        f"/internal/todos/{task_id}/delete",
+        data={
+            "csrf_token": delete_csrf_token,
+            "view_mode": "nested",
+            "project_scope": str(project_id),
+        },
+        follow_redirects=False,
+    )
+    assert delete_response.status_code == 302
+    assert "/internal/todos?view=nested" in delete_response.headers["Location"]
+
+    with client.application.app_context():
+        assert db.session.get(InternalTask, task_id) is None
+
+
+def test_internal_todo_full_edit_requires_senior_access(client):
+    _login_as(client, "delivery-consultant@elf-ai.co.za")
+    csrf_token = _csrf_token_for_path(client, "/internal/todos")
+
+    with client.application.app_context():
+        task = InternalTask.query.filter_by(title="Prepare weekly update").first()
+        assert task is not None
+        task_id = task.id
+        original_title = task.title
+
+    response = client.post(
+        f"/internal/todos/{task_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "view_mode": "nested",
+            "project_scope": "",
+            "project_id": str(task.project_id),
+            "parent_task_id": "",
+            "title": "Blocked Unauthorized Edit",
+            "assignee": "Delivery Consultant",
+            "priority": "low",
+            "status": "done",
+            "due_date": "",
+        },
+        headers={"Referer": "http://localhost/internal/todos?view=nested"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/internal/todos?view=nested")
+
+    with client.application.app_context():
+        unchanged_task = db.session.get(InternalTask, task_id)
+        assert unchanged_task is not None
+        assert unchanged_task.title == original_title
+
+
 def test_internal_resource_add_with_tags_and_links(client):
     _login(client)
     csrf_token = _csrf_token_for_path(client, "/internal/resources")
@@ -1134,6 +1721,108 @@ def test_internal_resource_add_requires_link_or_uploaded_file(client):
     with client.application.app_context():
         created_resource = InternalResource.query.filter_by(title="Missing Link Or File").first()
         assert created_resource is None
+
+
+def test_internal_resource_update_and_delete_for_senior_user(client):
+    _login(client)
+
+    with client.application.app_context():
+        resource = InternalResource.query.filter_by(title="Internal Playbook").first()
+        project = InternalProject.query.filter_by(name="Test Internal Project").first()
+        task = InternalTask.query.filter_by(title="Prepare weekly update").first()
+        assert resource is not None
+        assert project is not None
+        assert task is not None
+        resource_id = resource.id
+        project_id = project.id
+        task_id = task.id
+
+    edit_csrf_token = _csrf_token_for_path(client, f"/internal/resources?project_id={project_id}&edit_id={resource_id}")
+    update_response = client.post(
+        f"/internal/resources/{resource_id}/update",
+        data={
+            "csrf_token": edit_csrf_token,
+            "project_scope": str(project_id),
+            "redirect_q": "",
+            "redirect_category": "all",
+            "redirect_tag": "all",
+            "redirect_state": "all",
+            "title": "Updated Internal Playbook",
+            "link": "https://example.com/updated-playbook",
+            "category": "knowledge",
+            "description": "Updated internal delivery playbook",
+            "tags": "updated, playbook",
+            "project_ids": [str(project_id)],
+            "task_ids": [str(task_id)],
+        },
+        follow_redirects=False,
+    )
+    assert update_response.status_code == 302
+    assert "/internal/resources" in update_response.headers["Location"]
+
+    with client.application.app_context():
+        updated_resource = db.session.get(InternalResource, resource_id)
+        assert updated_resource is not None
+        assert updated_resource.title == "Updated Internal Playbook"
+        assert updated_resource.link == "https://example.com/updated-playbook"
+        assert updated_resource.category == "knowledge"
+        assert {tag.name for tag in updated_resource.tags} == {"updated", "playbook"}
+
+    delete_csrf_token = _csrf_token_for_path(client, f"/internal/resources?project_id={project_id}")
+    delete_response = client.post(
+        f"/internal/resources/{resource_id}/delete",
+        data={
+            "csrf_token": delete_csrf_token,
+            "project_scope": str(project_id),
+            "redirect_q": "",
+            "redirect_category": "all",
+            "redirect_tag": "all",
+            "redirect_state": "all",
+        },
+        follow_redirects=False,
+    )
+    assert delete_response.status_code == 302
+    assert "/internal/resources" in delete_response.headers["Location"]
+
+    with client.application.app_context():
+        assert db.session.get(InternalResource, resource_id) is None
+
+
+def test_internal_resource_update_requires_senior_access(client):
+    _login_as(client, "delivery-consultant@elf-ai.co.za")
+    csrf_token = _csrf_token_for_path(client, "/internal/resources")
+
+    with client.application.app_context():
+        resource = InternalResource.query.filter_by(title="Internal Playbook").first()
+        assert resource is not None
+        resource_id = resource.id
+        original_title = resource.title
+
+    response = client.post(
+        f"/internal/resources/{resource_id}/update",
+        data={
+            "csrf_token": csrf_token,
+            "project_scope": "",
+            "redirect_q": "",
+            "redirect_category": "all",
+            "redirect_tag": "all",
+            "redirect_state": "all",
+            "title": "Unauthorized Resource Edit",
+            "link": "https://example.com/blocked-edit",
+            "category": "operations",
+            "description": "This update should be blocked.",
+            "tags": "blocked",
+        },
+        headers={"Referer": "http://localhost/internal/resources"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/internal/resources")
+
+    with client.application.app_context():
+        unchanged_resource = db.session.get(InternalResource, resource_id)
+        assert unchanged_resource is not None
+        assert unchanged_resource.title == original_title
 
 
 def test_internal_resource_add_rejects_unsupported_uploaded_file_type(client):

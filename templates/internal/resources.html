@@ -175,9 +175,25 @@
                         data-status="{{ resource.category|lower }}"
                         data-filter-text="{{ resource.searchable_text }}"
                     >
-                        <a href="{{ resource.safe_link }}" target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-white hover:text-blue-300 transition">
-                            {{ resource.title }}
-                        </a>
+                        <div class="flex items-start justify-between gap-3">
+                            <a href="{{ resource.safe_link }}" target="_blank" rel="noopener noreferrer" class="text-sm font-semibold text-white hover:text-blue-300 transition">
+                                {{ resource.title }}
+                            </a>
+                            {% if current_internal_user_is_senior %}
+                            <div class="flex items-center gap-2">
+                                <a href="{{ url_for('main.internal_resources', q=query_term, category=selected_category, tag=selected_tag, state=selected_state, project_id=selected_project_filter, edit_id=resource.id) }}" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-100 transition">Edit</a>
+                                <form action="{{ url_for('main.internal_resource_delete', resource_id=resource.id) }}" method="post" onsubmit="return confirm('Delete this document from the knowledge library?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="project_scope" value="{{ selected_project_filter if selected_project_filter != 'all' else '' }}">
+                                    <input type="hidden" name="redirect_q" value="{{ query_term }}">
+                                    <input type="hidden" name="redirect_category" value="{{ selected_category }}">
+                                    <input type="hidden" name="redirect_tag" value="{{ selected_tag }}">
+                                    <input type="hidden" name="redirect_state" value="{{ selected_state }}">
+                                    <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-[11px] font-semibold text-white transition">Delete</button>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
                         <p class="text-xs text-slate-400 mt-1">{{ resource.description }}</p>
 
                         {% if resource.tags %}
@@ -222,40 +238,52 @@
     </article>
 
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-        <h2 class="text-xl font-bold text-white mb-4">Add Doc</h2>
-        <form action="{{ url_for('main.internal_resource_add') }}" method="post" enctype="multipart/form-data" class="space-y-3">
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <h2 class="text-xl font-bold text-white">{{ 'Edit Document' if editable_resource else 'Add Doc' }}</h2>
+            {% if editable_resource %}
+            <a href="{{ url_for('main.internal_resources', q=query_term, category=selected_category, tag=selected_tag, state=selected_state, project_id=selected_project_filter) }}" class="text-xs text-blue-300 hover:text-blue-200 transition">Create New</a>
+            {% endif %}
+        </div>
+        <form action="{{ url_for('main.internal_resource_update', resource_id=editable_resource.id) if editable_resource else url_for('main.internal_resource_add') }}" method="post" enctype="multipart/form-data" class="space-y-3">
             <input type="hidden" name="project_scope" value="{{ selected_project_filter if selected_project_filter != 'all' else '' }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="redirect_q" value="{{ query_term }}">
+            <input type="hidden" name="redirect_category" value="{{ selected_category }}">
+            <input type="hidden" name="redirect_tag" value="{{ selected_tag }}">
+            <input type="hidden" name="redirect_state" value="{{ selected_state }}">
             <p class="text-[11px] text-slate-500">Provide a document link or upload a file.</p>
             <div class="space-y-2">
                 <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Title</label>
-                <input name="title" type="text" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <input name="title" type="text" required value="{{ editable_resource.title if editable_resource else '' }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
             </div>
 
             <div class="space-y-2">
                 <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Document Link (Optional)</label>
-                <input name="link" type="text" placeholder="https://... or /internal/resources#..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <input name="link" type="text" value="{{ editable_resource.link if editable_resource and not editable_resource_uploaded_filename else '' }}" placeholder="https://... or /internal/resources#..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                {% if editable_resource_uploaded_filename %}
+                <p class="text-[11px] text-slate-500">Current uploaded file: {{ editable_resource_uploaded_filename }}. Leave this blank to keep the existing file.</p>
+                {% endif %}
             </div>
 
             <div class="space-y-2">
-                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Upload File (Optional)</label>
+                <label class="text-xs uppercase tracking-[0.12em] text-slate-400">{{ 'Replace File (Optional)' if editable_resource else 'Upload File (Optional)' }}</label>
                 <input name="document_file" type="file" accept="{{ resource_upload_accept }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition file:mr-3 file:rounded-md file:border-0 file:bg-slate-800 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-100 hover:file:bg-slate-700">
                 <p class="text-[11px] text-slate-500">Allowed: {{ resource_upload_accept }} · Max {{ resource_upload_limit_mb }} MB</p>
             </div>
 
             <div class="space-y-2">
                 <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Category</label>
-                <input name="category" type="text" value="operations" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <input name="category" type="text" value="{{ editable_resource.category if editable_resource else 'operations' }}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
             </div>
 
             <div class="space-y-2">
                 <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Tags</label>
-                <input name="tags" type="text" placeholder="playbook, onboarding, legal-ai" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
+                <input name="tags" type="text" value="{{ editable_resource_tags if editable_resource else '' }}" placeholder="playbook, onboarding, legal-ai" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
             </div>
 
             <div class="space-y-2">
                 <label class="text-xs uppercase tracking-[0.12em] text-slate-400">Description</label>
-                <textarea name="description" rows="3" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition"></textarea>
+                <textarea name="description" rows="3" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">{{ editable_resource.description if editable_resource else '' }}</textarea>
             </div>
 
             <div class="space-y-2">
@@ -263,7 +291,7 @@
                 <input type="search" data-option-filter-input data-option-filter-target="resource-project-options" placeholder="Filter projects..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
                 <select id="resource-project-options" name="project_ids" multiple class="w-full h-28 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                     {% for project in projects %}
-                    <option value="{{ project.id }}" {% if selected_project_filter == project.id|string %}selected{% endif %}>{{ project.name }} · {{ project.client.name }}</option>
+                    <option value="{{ project.id }}" {% if editable_resource and project.id in editable_resource_project_ids %}selected{% elif not editable_resource and selected_project_filter == project.id|string %}selected{% endif %}>{{ project.name }} · {{ project.client.name }}</option>
                     {% endfor %}
                 </select>
                 <p class="text-[11px] text-slate-500">Use Cmd/Ctrl + click for multiple projects.</p>
@@ -274,14 +302,25 @@
                 <input type="search" data-option-filter-input data-option-filter-target="resource-task-options" placeholder="Filter tasks..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition">
                 <select id="resource-task-options" name="task_ids" multiple class="w-full h-32 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-blue-500 transition">
                     {% for task in tasks %}
-                    <option value="{{ task.id }}">{{ task.project.name }} · {{ task.title }}</option>
+                    <option value="{{ task.id }}" {% if editable_resource and task.id in editable_resource_task_ids %}selected{% endif %}>{{ task.project.name }} · {{ task.title }}</option>
                     {% endfor %}
                 </select>
                 <p class="text-[11px] text-slate-500">Use Cmd/Ctrl + click for multiple tasks.</p>
             </div>
 
-            <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">Save Document</button>
+            <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition">{{ 'Save Document Changes' if editable_resource else 'Save Document' }}</button>
         </form>
+        {% if editable_resource %}
+        <form action="{{ url_for('main.internal_resource_delete', resource_id=editable_resource.id) }}" method="post" class="mt-3" onsubmit="return confirm('Delete this document from the knowledge library?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="project_scope" value="{{ selected_project_filter if selected_project_filter != 'all' else '' }}">
+            <input type="hidden" name="redirect_q" value="{{ query_term }}">
+            <input type="hidden" name="redirect_category" value="{{ selected_category }}">
+            <input type="hidden" name="redirect_tag" value="{{ selected_tag }}">
+            <input type="hidden" name="redirect_state" value="{{ selected_state }}">
+            <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white text-sm font-semibold transition">Delete Document</button>
+        </form>
+        {% endif %}
     </article>
 </section>
 {% endblock %}
