@@ -14,6 +14,18 @@ def test_security_headers_present(client):
     assert response.headers.get("X-Content-Type-Options") == "nosniff"
     assert response.headers.get("X-Frame-Options") == "DENY"
     assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+    assert response.headers.get("Content-Security-Policy") == "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+    assert response.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
+    assert response.headers.get("Cross-Origin-Resource-Policy") == "same-origin"
+    assert response.headers.get("X-Permitted-Cross-Domain-Policies") == "none"
+
+
+def test_internal_login_is_not_indexed_or_cached(client):
+    response = client.get("/internal/login")
+    assert response.status_code == 200
+    assert response.headers.get("X-Robots-Tag") == "noindex, nofollow"
+    assert response.headers.get("Cache-Control") == "no-store, max-age=0"
+    assert response.headers.get("Pragma") == "no-cache"
 
 
 def test_solutions(client):
@@ -197,3 +209,37 @@ def test_contact_success_redirect_defaults_to_enquiry_form(client, monkeypatch):
     )
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/enquire#enquiry-form")
+
+
+def test_404_page_is_branded_and_not_indexed(client):
+    response = client.get("/missing-page")
+    html = response.get_data(as_text=True)
+    assert response.status_code == 404
+    assert "Page not found" in html
+    assert "Return Home" in html
+    assert "Book a Meeting" in html
+    assert response.headers.get("X-Robots-Tag") == "noindex, nofollow"
+
+
+def test_500_page_is_branded(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "testing")
+    monkeypatch.setenv("DATABASE_URL", "sqlite://")
+    monkeypatch.setenv("SECRET_KEY", "test-secret")
+
+    from app import create_app
+
+    app = create_app("testing")
+    app.config["PROPAGATE_EXCEPTIONS"] = False
+
+    @app.route("/boom")
+    def boom():
+        raise RuntimeError("boom")
+
+    client = app.test_client()
+    response = client.get("/boom")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 500
+    assert "Something broke on our side" in html
+    assert "Return Home" in html
+    assert response.headers.get("X-Robots-Tag") == "noindex, nofollow"

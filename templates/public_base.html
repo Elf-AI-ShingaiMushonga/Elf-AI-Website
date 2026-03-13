@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo.title if seo else 'ELF-AI | AI Implementation Consultancy' }}</title>
+    <meta name="description" content="{{ seo.description if seo else 'ELF-AI helps businesses solve operational problems with practical AI systems, deployment support, and team enablement.' }}">
+    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
+    <meta name="robots" content="{{ seo.robots if seo and seo.robots else 'index, follow' }}">
+    <meta name="theme-color" content="#080d14">
+    <link rel="canonical" href="{{ seo.canonical if seo and seo.canonical else request.base_url }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
+    <meta property="og:title" content="{{ seo.title if seo else 'ELF-AI | AI Implementation Consultancy' }}">
+    <meta property="og:description" content="{{ seo.description if seo else 'ELF-AI helps businesses solve operational problems with practical AI systems, deployment support, and team enablement.' }}">
+    <meta property="og:url" content="{{ seo.canonical if seo and seo.canonical else request.base_url }}">
+    <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ seo.title if seo else 'ELF-AI | AI Implementation Consultancy' }}">
+    <meta name="twitter:description" content="{{ seo.description if seo else 'ELF-AI helps businesses solve operational problems with practical AI systems, deployment support, and team enablement.' }}">
+    <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
+    {% if seo and seo.structured_data %}
+    <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
+    {% endif %}
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Logo.png') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/Logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="{% block body_class %}public-shell bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white{% endblock %}">
+    <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
+    {% block page_shell %}
+    {% include "partials/public_nav.html" %}
+    {% include "partials/public_flash.html" %}
+    {% endblock %}
+
+    <main id="main-content" class="{% block main_class %}public-main{% endblock %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block page_footer %}
+    {% include "partials/public_footer.html" %}
+    {% endblock %}
+
+    <script src="{{ url_for('static', filename='elf.js') }}" defer></script>
+    {% block body_end %}{% endblock %}
+</body>
+</html>

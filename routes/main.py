@@ -104,6 +104,7 @@ INTERNAL_STAKEHOLDER_INFLUENCE_LEVELS = ("decision-maker", "core", "support", "o
 INTERNAL_DOC_STATUSES = ("published", "draft", "archived")
 INTERNAL_MESSAGE_CHANNEL_TYPES = ("project", "direct", "group")
 INTERNAL_RESOURCE_STATES = ("all", "linked", "unlinked", "untagged")
+INTERNAL_CALENDAR_EVENT_KINDS = ("all", "milestone", "deliverable", "task", "risk", "project")
 RESOURCE_CATEGORY_FALLBACK = "general"
 DEFAULT_PROJECT_TIMELINE_DAYS = 30
 PROJECT_TIMELINE_PRESETS = (14, 30, 45, 60, 90)
@@ -554,6 +555,29 @@ def _parse_date(value: str | None) -> date | None:
         return None
 
 
+def _parse_month(value: str | None) -> date | None:
+    candidate = (value or "").strip()
+    if not candidate:
+        return None
+    try:
+        return date.fromisoformat(f"{candidate}-01")
+    except ValueError:
+        return None
+
+
+def _month_start(value: date | None = None) -> date:
+    reference = value or date.today()
+    return reference.replace(day=1)
+
+
+def _next_month_start(value: date) -> date:
+    return (value.replace(day=28) + timedelta(days=4)).replace(day=1)
+
+
+def _previous_month_start(value: date) -> date:
+    return (value.replace(day=1) - timedelta(days=1)).replace(day=1)
+
+
 def _task_sort_key(task: InternalTask):
     priority_rank = INTERNAL_TASK_PRIORITY_RANK.get((task.priority or "").strip().lower(), 3)
     status_rank = INTERNAL_TASK_STATUS_RANK.get((task.status or "").strip().lower(), 4)
@@ -846,6 +870,59 @@ def _internal_risk_severity_class(severity: str | None) -> str:
     if normalized == "medium":
         return "bg-amber-500/20 text-amber-200 border border-amber-500/40"
     return "bg-blue-500/20 text-blue-200 border border-blue-500/40"
+
+
+def _internal_calendar_kind_meta(kind: str) -> dict[str, str]:
+    palette = {
+        "milestone": {
+            "label": "Milestone",
+            "icon": "fa-flag-checkered",
+            "badge_class": "bg-amber-500/10 text-amber-200 border border-amber-500/30",
+            "dot_class": "bg-amber-300",
+        },
+        "deliverable": {
+            "label": "Deliverable",
+            "icon": "fa-box-open",
+            "badge_class": "bg-emerald-500/10 text-emerald-200 border border-emerald-500/30",
+            "dot_class": "bg-emerald-300",
+        },
+        "task": {
+            "label": "Task",
+            "icon": "fa-list-check",
+            "badge_class": "bg-blue-500/10 text-blue-200 border border-blue-500/30",
+            "dot_class": "bg-blue-300",
+        },
+        "risk": {
+            "label": "Risk",
+            "icon": "fa-shield-halved",
+            "badge_class": "bg-rose-500/10 text-rose-200 border border-rose-500/30",
+            "dot_class": "bg-rose-300",
+        },
+        "project": {
+            "label": "Project",
+            "icon": "fa-diagram-project",
+            "badge_class": "bg-indigo-500/10 text-indigo-200 border border-indigo-500/30",
+            "dot_class": "bg-indigo-300",
+        },
+    }
+    return palette.get(kind, palette["task"])
+
+
+def _internal_calendar_event_sort_key(event: dict):
+    kind_rank = {
+        "milestone": 0,
+        "deliverable": 1,
+        "task": 2,
+        "risk": 3,
+        "project": 4,
+    }
+    return (
+        event.get("due_date") or date.max,
+        kind_rank.get(event.get("kind"), 9),
+        (event.get("project_name") or "").lower(),
+        (event.get("title") or "").lower(),
+        event.get("id") or "",
+    )
 
 
 def _normalize_project_timeline_days(raw_value: str | None) -> int:
@@ -2250,6 +2327,316 @@ def internal_dashboard():
     )
 
 
+@main_bp.route("/internal/calendar")
+@internal_login_required
+def internal_calendar():
+    today = date.today()
+    selected_month = _month_start(_parse_month(request.args.get("month")) or today)
+    month_end = _next_month_start(selected_month) - timedelta(days=1)
+    grid_start = selected_month - timedelta(days=selected_month.weekday())
+    grid_end = grid_start + timedelta(days=41)
+
+    kind_filter = (request.args.get("kind") or "all").strip().lower()
+    if kind_filter not in INTERNAL_CALENDAR_EVENT_KINDS:
+        kind_filter = "all"
+
+    def include_kind(kind: str) -> bool:
+        return kind_filter in {"all", kind}
+
+    visible_events: list[dict] = []
+
+    if include_kind("task"):
+        task_records = (
+            InternalTask.query.options(
+                selectinload(InternalTask.project).selectinload(InternalProject.client),
+            )
+            .filter(
+                InternalTask.status != "done",
+                InternalTask.due_date.isnot(None),
+                InternalTask.due_date >= grid_start,
+                InternalTask.due_date <= grid_end,
+            )
+            .order_by(InternalTask.due_date.asc(), InternalTask.created_at.asc())
+            .all()
+        )
+        for task in task_records:
+            kind_meta = _internal_calendar_kind_meta("task")
+            visible_events.append(
+                {
+                    "id": f"task-{task.id}",
+                    "kind": "task",
+                    "kind_label": kind_meta["label"],
+                    "kind_icon": kind_meta["icon"],
+                    "kind_badge_class": kind_meta["badge_class"],
+                    "kind_dot_class": kind_meta["dot_class"],
+                    "due_date": task.due_date,
+                    "title": task.title,
+                    "status_label": (task.status or "todo").replace("-", " ").title(),
+                    "status_class": _internal_status_class(task.status),
+                    "project_name": task.project.name if task.project else "",
+                    "project_id": task.project_id,
+                    "meta": f"{task.project.name if task.project else 'Unscoped'} · {(task.assignee or 'Unassigned').strip() or 'Unassigned'}",
+                    "href": url_for("main.internal_todos", view="priority", project_id=task.project_id),
+                }
+            )
+
+    if include_kind("milestone"):
+        milestone_records = (
+            InternalProjectMilestone.query.options(
+                selectinload(InternalProjectMilestone.project).selectinload(InternalProject.client),
+            )
+            .filter(
+                InternalProjectMilestone.status != "done",
+                InternalProjectMilestone.due_date.isnot(None),
+                InternalProjectMilestone.due_date >= grid_start,
+                InternalProjectMilestone.due_date <= grid_end,
+            )
+            .order_by(InternalProjectMilestone.due_date.asc(), InternalProjectMilestone.created_at.asc())
+            .all()
+        )
+        for milestone in milestone_records:
+            kind_meta = _internal_calendar_kind_meta("milestone")
+            visible_events.append(
+                {
+                    "id": f"milestone-{milestone.id}",
+                    "kind": "milestone",
+                    "kind_label": kind_meta["label"],
+                    "kind_icon": kind_meta["icon"],
+                    "kind_badge_class": kind_meta["badge_class"],
+                    "kind_dot_class": kind_meta["dot_class"],
+                    "due_date": milestone.due_date,
+                    "title": milestone.title,
+                    "status_label": (milestone.status or "planned").replace("-", " ").title(),
+                    "status_class": _internal_status_class(milestone.status),
+                    "project_name": milestone.project.name if milestone.project else "",
+                    "project_id": milestone.project_id,
+                    "meta": f"{milestone.project.name if milestone.project else 'No project'} · {milestone.owner_name}",
+                    "href": _project_workspace_url(milestone.project_id, "#milestones"),
+                }
+            )
+
+    if include_kind("deliverable"):
+        deliverable_records = (
+            InternalProjectDeliverable.query.options(
+                selectinload(InternalProjectDeliverable.project).selectinload(InternalProject.client),
+            )
+            .filter(
+                InternalProjectDeliverable.status != "delivered",
+                InternalProjectDeliverable.due_date.isnot(None),
+                InternalProjectDeliverable.due_date >= grid_start,
+                InternalProjectDeliverable.due_date <= grid_end,
+            )
+            .order_by(InternalProjectDeliverable.due_date.asc(), InternalProjectDeliverable.created_at.asc())
+            .all()
+        )
+        for deliverable in deliverable_records:
+            kind_meta = _internal_calendar_kind_meta("deliverable")
+            visible_events.append(
+                {
+                    "id": f"deliverable-{deliverable.id}",
+                    "kind": "deliverable",
+                    "kind_label": kind_meta["label"],
+                    "kind_icon": kind_meta["icon"],
+                    "kind_badge_class": kind_meta["badge_class"],
+                    "kind_dot_class": kind_meta["dot_class"],
+                    "due_date": deliverable.due_date,
+                    "title": deliverable.title,
+                    "status_label": (deliverable.status or "planned").replace("-", " ").title(),
+                    "status_class": _internal_status_class(deliverable.status),
+                    "project_name": deliverable.project.name if deliverable.project else "",
+                    "project_id": deliverable.project_id,
+                    "meta": f"{deliverable.project.name if deliverable.project else 'No project'} · {deliverable.owner_name}",
+                    "href": _project_workspace_url(deliverable.project_id, "#deliverables"),
+                }
+            )
+
+    if include_kind("risk"):
+        risk_records = (
+            InternalProjectRisk.query.options(
+                selectinload(InternalProjectRisk.project).selectinload(InternalProject.client),
+            )
+            .filter(
+                InternalProjectRisk.status != "closed",
+                InternalProjectRisk.due_date.isnot(None),
+                InternalProjectRisk.due_date >= grid_start,
+                InternalProjectRisk.due_date <= grid_end,
+            )
+            .order_by(InternalProjectRisk.due_date.asc(), InternalProjectRisk.created_at.asc())
+            .all()
+        )
+        for risk in risk_records:
+            kind_meta = _internal_calendar_kind_meta("risk")
+            visible_events.append(
+                {
+                    "id": f"risk-{risk.id}",
+                    "kind": "risk",
+                    "kind_label": kind_meta["label"],
+                    "kind_icon": kind_meta["icon"],
+                    "kind_badge_class": kind_meta["badge_class"],
+                    "kind_dot_class": kind_meta["dot_class"],
+                    "due_date": risk.due_date,
+                    "title": risk.title,
+                    "status_label": (risk.severity or "medium").title(),
+                    "status_class": _internal_risk_severity_class(risk.severity),
+                    "project_name": risk.project.name if risk.project else "",
+                    "project_id": risk.project_id,
+                    "meta": f"{risk.project.name if risk.project else 'No project'} · {(risk.status or 'open').replace('-', ' ').title()}",
+                    "href": _project_workspace_url(risk.project_id, "#risks"),
+                }
+            )
+
+    if include_kind("project"):
+        project_records = (
+            InternalProject.query.options(selectinload(InternalProject.client))
+            .filter(
+                InternalProject.status != "completed",
+                InternalProject.due_date.isnot(None),
+                InternalProject.due_date >= grid_start,
+                InternalProject.due_date <= grid_end,
+            )
+            .order_by(InternalProject.due_date.asc(), InternalProject.created_at.asc())
+            .all()
+        )
+        for project in project_records:
+            kind_meta = _internal_calendar_kind_meta("project")
+            visible_events.append(
+                {
+                    "id": f"project-{project.id}",
+                    "kind": "project",
+                    "kind_label": kind_meta["label"],
+                    "kind_icon": kind_meta["icon"],
+                    "kind_badge_class": kind_meta["badge_class"],
+                    "kind_dot_class": kind_meta["dot_class"],
+                    "due_date": project.due_date,
+                    "title": project.name,
+                    "status_label": (project.status or "on-track").replace("-", " ").title(),
+                    "status_class": _internal_status_class(project.status),
+                    "project_name": project.name,
+                    "project_id": project.id,
+                    "meta": f"{project.client.name if project.client else 'No client'} · {(project.stage or 'discovery').title()}",
+                    "href": url_for("main.internal_project_workspace", project_id=project.id),
+                }
+            )
+
+    visible_events = sorted(visible_events, key=_internal_calendar_event_sort_key)
+    events_by_date: dict[date, list[dict]] = {}
+    for event in visible_events:
+        events_by_date.setdefault(event["due_date"], []).append(event)
+
+    calendar_weeks: list[list[dict]] = []
+    for week_index in range(6):
+        week_days: list[dict] = []
+        for day_index in range(7):
+            calendar_day = grid_start + timedelta(days=(week_index * 7) + day_index)
+            day_events = events_by_date.get(calendar_day, [])
+            week_days.append(
+                {
+                    "date": calendar_day,
+                    "is_current_month": calendar_day.month == selected_month.month and calendar_day.year == selected_month.year,
+                    "is_today": calendar_day == today,
+                    "events": day_events,
+                    "visible_events": day_events[:3],
+                    "overflow_count": max(0, len(day_events) - 3),
+                }
+            )
+        calendar_weeks.append(week_days)
+
+    month_events = [
+        event for event in visible_events if selected_month <= event["due_date"] <= month_end
+    ]
+    month_event_counts = {
+        "task": InternalTask.query.filter(
+            InternalTask.status != "done",
+            InternalTask.due_date.isnot(None),
+            InternalTask.due_date >= selected_month,
+            InternalTask.due_date <= month_end,
+        ).count(),
+        "milestone": InternalProjectMilestone.query.filter(
+            InternalProjectMilestone.status != "done",
+            InternalProjectMilestone.due_date.isnot(None),
+            InternalProjectMilestone.due_date >= selected_month,
+            InternalProjectMilestone.due_date <= month_end,
+        ).count(),
+        "deliverable": InternalProjectDeliverable.query.filter(
+            InternalProjectDeliverable.status != "delivered",
+            InternalProjectDeliverable.due_date.isnot(None),
+            InternalProjectDeliverable.due_date >= selected_month,
+            InternalProjectDeliverable.due_date <= month_end,
+        ).count(),
+        "risk": InternalProjectRisk.query.filter(
+            InternalProjectRisk.status != "closed",
+            InternalProjectRisk.due_date.isnot(None),
+            InternalProjectRisk.due_date >= selected_month,
+            InternalProjectRisk.due_date <= month_end,
+        ).count(),
+        "project": InternalProject.query.filter(
+            InternalProject.status != "completed",
+            InternalProject.due_date.isnot(None),
+            InternalProject.due_date >= selected_month,
+            InternalProject.due_date <= month_end,
+        ).count(),
+    }
+    all_month_event_count = sum(month_event_counts.values())
+    month_project_ids = {event["project_id"] for event in month_events if event.get("project_id")}
+    overdue_count = sum(1 for event in month_events if event["due_date"] < today)
+    next_seven_days_count = sum(
+        1 for event in month_events if today <= event["due_date"] <= today + timedelta(days=6)
+    )
+    earliest_due = month_events[0]["due_date"] if month_events else None
+
+    def calendar_url(target_month: date, target_kind: str | None = None) -> str:
+        kwargs = {"month": target_month.strftime("%Y-%m")}
+        effective_kind = target_kind or kind_filter
+        if effective_kind != "all":
+            kwargs["kind"] = effective_kind
+        return url_for("main.internal_calendar", **kwargs)
+
+    kind_filters = [
+        {
+            "value": "all",
+            "label": "All items",
+            "count": all_month_event_count,
+            "href": calendar_url(selected_month, "all"),
+            "is_active": kind_filter == "all",
+        }
+    ]
+    for kind in INTERNAL_CALENDAR_EVENT_KINDS:
+        if kind == "all":
+            continue
+        kind_filters.append(
+            {
+                "value": kind,
+                "label": _internal_calendar_kind_meta(kind)["label"],
+                "count": month_event_counts.get(kind, 0),
+                "href": calendar_url(selected_month, kind),
+                "is_active": kind_filter == kind,
+            }
+        )
+
+    return render_template(
+        "internal/calendar.html",
+        selected_month=selected_month,
+        selected_month_label=selected_month.strftime("%B %Y"),
+        previous_month_url=calendar_url(_previous_month_start(selected_month)),
+        next_month_url=calendar_url(_next_month_start(selected_month)),
+        today_month_url=calendar_url(_month_start(today)),
+        weekday_labels=("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+        calendar_weeks=calendar_weeks,
+        month_events=month_events,
+        month_summary={
+            "items": len(month_events),
+            "projects": len(month_project_ids),
+            "overdue": overdue_count,
+            "next_seven_days": next_seven_days_count,
+            "earliest_due": earliest_due,
+        },
+        active_kind_filter=kind_filter,
+        active_kind_label="All items" if kind_filter == "all" else _internal_calendar_kind_meta(kind_filter)["label"],
+        kind_filters=kind_filters,
+        legend_items=[_internal_calendar_kind_meta(kind) for kind in INTERNAL_CALENDAR_EVENT_KINDS if kind != "all"],
+    )
+
+
 @main_bp.route("/internal/go")
 @internal_login_required
 def internal_go():
@@ -2295,6 +2682,8 @@ def internal_go():
         "tasks": url_for("main.internal_todos"),
         "priority": url_for("main.internal_todos", view="priority"),
         "priority queue": url_for("main.internal_todos", view="priority"),
+        "calendar": url_for("main.internal_calendar"),
+        "schedule": url_for("main.internal_calendar"),
         "projects": url_for("main.internal_projects"),
         "project": url_for("main.internal_projects"),
         "new project": f"{url_for('main.internal_projects')}#new-project",

@@ -1,38 +1,6 @@
-<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title if seo else 'ELF-AI | SME AI Implementation & Software Ownership' }}</title>
-    <meta name="description" content="{{ seo.description if seo else 'ELF-AI helps SMEs replace expensive SaaS with custom AI software they own, implemented fast and measured by ROI.' }}">
-    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/' }}">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
-    <meta property="og:title" content="{{ seo.title if seo else 'ELF-AI | SME AI Implementation & Software Ownership' }}">
-    <meta property="og:description" content="{{ seo.description if seo else 'ELF-AI helps SMEs replace expensive SaaS with custom AI software they own, implemented fast and measured by ROI.' }}">
-    <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/' }}">
-    <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title if seo else 'ELF-AI | SME AI Implementation & Software Ownership' }}">
-    <meta name="twitter:description" content="{{ seo.description if seo else 'ELF-AI helps SMEs replace expensive SaaS with custom AI software they own, implemented fast and measured by ROI.' }}">
-    <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
-    {% if seo and seo.structured_data %}
-    <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
-    {% endif %}
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Logo.png') }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='images/Logo.png') }}">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="public-shell bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
-    <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
-    {% include "partials/public_nav.html" %}
-    {% include "partials/public_flash.html" %}
+{% extends "public_base.html" %}
 
-    <main id="main-content" class="public-main">
+{% block content %}
     <header class="relative min-h-[90vh] w-full overflow-hidden border-b border-slate-800 pt-32 md:pt-28">
         <div id="carousel-container" class="absolute inset-0 w-full h-full z-0">
             {% for image in carousel_images %}
@@ -132,6 +100,33 @@
         </div>
     </section>
 
+    <section class="py-14 bg-slate-900 border-b border-slate-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-white">How Engagements Are Structured</h2>
+                <p class="text-slate-400 mt-2 max-w-3xl mx-auto">The buying process is explicit: wedge scope first, owned build second, support only if you need it.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-4">
+                <article class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                    <p class="text-[11px] uppercase tracking-[0.16em] text-blue-300 mb-2">Phase 1</p>
+                    <h3 class="text-white font-semibold mb-2">Scope the wedge</h3>
+                    <p class="text-sm text-slate-400">We isolate one painful workflow, define success metrics, and agree what good looks like before build starts.</p>
+                </article>
+                <article class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                    <p class="text-[11px] uppercase tracking-[0.16em] text-blue-300 mb-2">Phase 2</p>
+                    <h3 class="text-white font-semibold mb-2">Build for ownership</h3>
+                    <p class="text-sm text-slate-400">The implementation is delivered around your workflow and operating constraints, not locked into a generic vendor model.</p>
+                </article>
+                <article class="rounded-2xl border border-slate-800 bg-slate-950/70 p-5">
+                    <p class="text-[11px] uppercase tracking-[0.16em] text-blue-300 mb-2">Phase 3</p>
+                    <h3 class="text-white font-semibold mb-2">Operate with support</h3>
+                    <p class="text-sm text-slate-400">You can run the solution independently, with optional monitoring and managed support where it makes commercial sense.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+
     <section class="py-14 bg-slate-950 border-b border-slate-800">
         <div class="max-w-6xl mx-auto px-4 sm:px-6">
             <div class="max-w-4xl mx-auto text-center">
@@ -225,69 +220,4 @@
             </div>
         </div>
     </section>
-    </main>
-
-    {% include "partials/public_footer.html" %}
-
-    <script src="{{ url_for('static', filename='elf.js') }}" defer></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const slides = document.querySelectorAll('.carousel-slide');
-            const problemCycle = document.getElementById('problem-cycle');
-            const resultCycle = document.getElementById('result-cycle');
-            let currentSlide = 0;
-
-            if (slides.length > 0) {
-                slides[0].classList.remove('opacity-0');
-            }
-
-            if (problemCycle && resultCycle) {
-                const cyclePairs = [
-                    { problem: 'Delays', result: 'Speed' },
-                    { problem: 'Vendor Lock-In', result: 'Ownership' },
-                    { problem: 'High TCO', result: 'ROI' },
-                    { problem: 'Manual Work', result: 'Automation' },
-                ];
-                let cycleIndex = 0;
-                let cycleDirection = 1;
-
-                setInterval(() => {
-                    problemCycle.classList.add('opacity-0');
-                    resultCycle.classList.add('opacity-0');
-
-                    setTimeout(() => {
-                        cycleIndex += cycleDirection;
-                        if (cycleIndex === cyclePairs.length - 1 || cycleIndex === 0) {
-                            cycleDirection *= -1;
-                        }
-                        problemCycle.textContent = cyclePairs[cycleIndex].problem;
-                        resultCycle.textContent = cyclePairs[cycleIndex].result;
-                        problemCycle.classList.remove('opacity-0');
-                        resultCycle.classList.remove('opacity-0');
-                    }, 280);
-                }, 2400);
-            }
-
-            setInterval(() => {
-                if (slides.length === 0) return;
-                slides[currentSlide].classList.add('opacity-0');
-                currentSlide = (currentSlide + 1) % slides.length;
-                slides[currentSlide].classList.remove('opacity-0');
-            }, 5000);
-        });
-    </script>
-    <script>
-        window.addEventListener('scroll', function() {
-            const scrollElement = document.getElementById('scroll-indicator');
-            if (!scrollElement) return;
-
-            const fadeOutPoint = window.innerHeight / 2;
-            let currentOpacity = 1 - (window.scrollY / fadeOutPoint);
-
-            if (currentOpacity < 0) currentOpacity = 0;
-            scrollElement.style.opacity = currentOpacity;
-        });
-    </script>
-
-</body>
-</html>
+{% endblock %}

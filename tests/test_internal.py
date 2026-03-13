@@ -99,6 +99,10 @@ def test_internal_sections_access_when_logged_in(client):
     assert todos_response.status_code == 200
     assert "Nested To-Do Board" in todos_response.get_data(as_text=True)
 
+    calendar_response = client.get("/internal/calendar")
+    assert calendar_response.status_code == 200
+    assert "Delivery Calendar" in calendar_response.get_data(as_text=True)
+
     resources_response = client.get("/internal/resources")
     assert resources_response.status_code == 200
     assert "Internal Site Requirements" in resources_response.get_data(as_text=True)
@@ -124,6 +128,10 @@ def test_internal_omnibar_quick_target_navigation(client):
     response = client.get("/internal/go?q=projects", follow_redirects=False)
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/internal/projects")
+
+    calendar_response = client.get("/internal/go?q=calendar", follow_redirects=False)
+    assert calendar_response.status_code == 302
+    assert calendar_response.headers["Location"].endswith("/internal/calendar")
 
     docs_response = client.get("/internal/go?q=docs", follow_redirects=False)
     assert docs_response.status_code == 302
@@ -194,6 +202,26 @@ def test_internal_logout_get_not_allowed(client):
     _login(client)
     response = client.get("/internal/logout", follow_redirects=False)
     assert response.status_code == 405
+
+
+def test_internal_calendar_page_shows_due_work_and_kind_filter(client):
+    _login(client)
+
+    response = client.get("/internal/calendar")
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "Delivery Calendar" in html
+    assert "Prepare weekly update" in html
+    assert "Pilot Review" in html
+    assert "Weekly Client Update" in html
+    assert "Edge-case routing may delay launch" in html
+
+    filtered_response = client.get("/internal/calendar?kind=task")
+    filtered_html = filtered_response.get_data(as_text=True)
+    assert filtered_response.status_code == 200
+    assert "Prepare weekly update" in filtered_html
+    assert "Pilot Review" not in filtered_html
+    assert "Weekly Client Update" not in filtered_html
 
 
 def test_internal_client_add(client):

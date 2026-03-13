@@ -1,40 +1,10 @@
-<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title if seo else 'Contact ELF-AI | Book a Meeting' }}</title>
-    <meta name="description" content="{{ seo.description if seo else 'Book a Meeting with ELF-AI to scope an SME AI implementation with clear ownership and ROI metrics.' }}">
-    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/enquire' }}">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
-    <meta property="og:title" content="{{ seo.title if seo else 'Contact ELF-AI | Book a Meeting' }}">
-    <meta property="og:description" content="{{ seo.description if seo else 'Book a Meeting with ELF-AI to scope an SME AI implementation with clear ownership and ROI metrics.' }}">
-    <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/enquire' }}">
-    <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title if seo else 'Contact ELF-AI | Book a Meeting' }}">
-    <meta name="twitter:description" content="{{ seo.description if seo else 'Book a Meeting with ELF-AI to scope an SME AI implementation with clear ownership and ROI metrics.' }}">
-    <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
-    {% if seo and seo.structured_data %}
-    <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
-    {% endif %}
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Logo.png') }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='images/Logo.png') }}">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body class="public-shell bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
-    <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
-    {% include "partials/public_nav.html" %}
-    {% include "partials/public_flash.html" %}
+{% extends "public_base.html" %}
+
+{% block main_class %}public-main min-h-screen pt-32 md:pt-28 pb-16 px-4 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-14 items-start{% endblock %}
+
+{% block content %}
     {% set form_state = contact_form_state or {} %}
     {% set form_errors = contact_form_errors or {} %}
-
-    <main id="main-content" class="public-main min-h-screen pt-32 md:pt-28 pb-16 px-4 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
         <div class="space-y-10">
             <div>
                 <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-6">
@@ -104,10 +74,10 @@
                     </ul>
 
                     <p class="text-sm text-slate-400 uppercase tracking-widest mb-3">Direct Contact</p>
-                    <div class="flex items-center gap-4 text-white mb-2">
+                    <a href="mailto:shingai.mushonga@elf-ai.co.za" class="flex items-center gap-4 text-white mb-2 hover:text-blue-300 transition">
                         <i class="fa-solid fa-envelope text-blue-500"></i>
                         <span>shingai.mushonga@elf-ai.co.za</span>
-                    </div>
+                    </a>
                     <div class="flex items-center gap-4 text-white">
                         <i class="fa-solid fa-location-dot text-blue-500"></i>
                         <span>Gauteng, South Africa</span>
@@ -227,9 +197,4 @@
                 <p class="text-xs text-slate-500">Commercial and workflow details are treated as confidential and used only for scoping.</p>
             </form>
         </div>
-    </main>
-
-    {% include "partials/public_footer.html" %}
-    <script src="{{ url_for('static', filename='elf.js') }}" defer></script>
-</body>
-</html>
+{% endblock %}

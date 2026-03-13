@@ -70,6 +70,67 @@ function initScrollTopButton() {
   toggleVisibility();
 }
 
+function initHomeHero() {
+  const slides = Array.from(document.querySelectorAll(".carousel-slide"));
+  const problemCycle = document.getElementById("problem-cycle");
+  const resultCycle = document.getElementById("result-cycle");
+  const scrollIndicator = document.getElementById("scroll-indicator");
+
+  if (!slides.length && !problemCycle && !resultCycle && !scrollIndicator) return;
+
+  if (slides.length) {
+    slides[0].classList.remove("opacity-0");
+
+    if (slides.length > 1) {
+      let currentSlide = 0;
+      window.setInterval(() => {
+        slides[currentSlide].classList.add("opacity-0");
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.remove("opacity-0");
+      }, 5000);
+    }
+  }
+
+  if (problemCycle && resultCycle) {
+    const cyclePairs = [
+      { problem: "Delays", result: "Speed" },
+      { problem: "Vendor Lock-In", result: "Ownership" },
+      { problem: "High TCO", result: "ROI" },
+      { problem: "Manual Work", result: "Automation" },
+    ];
+    let cycleIndex = 0;
+    let cycleDirection = 1;
+
+    window.setInterval(() => {
+      problemCycle.classList.add("opacity-0");
+      resultCycle.classList.add("opacity-0");
+
+      window.setTimeout(() => {
+        cycleIndex += cycleDirection;
+        if (cycleIndex === cyclePairs.length - 1 || cycleIndex === 0) {
+          cycleDirection *= -1;
+        }
+
+        problemCycle.textContent = cyclePairs[cycleIndex].problem;
+        resultCycle.textContent = cyclePairs[cycleIndex].result;
+        problemCycle.classList.remove("opacity-0");
+        resultCycle.classList.remove("opacity-0");
+      }, 280);
+    }, 2400);
+  }
+
+  if (scrollIndicator) {
+    const updateIndicatorOpacity = () => {
+      const fadeOutPoint = window.innerHeight / 2;
+      const currentOpacity = Math.max(0, 1 - window.scrollY / fadeOutPoint);
+      scrollIndicator.style.opacity = String(currentOpacity);
+    };
+
+    window.addEventListener("scroll", updateIndicatorOpacity, { passive: true });
+    updateIndicatorOpacity();
+  }
+}
+
 function initFilterRoots() {
   const roots = document.querySelectorAll("[data-filter-root]");
   if (!roots.length) return;
@@ -448,6 +509,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   initAutoDismissFlashes();
+  initHomeHero();
   initScrollTopButton();
   initInternalOmnibar();
   initFilterRoots();

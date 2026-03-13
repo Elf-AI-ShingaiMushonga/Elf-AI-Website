@@ -58,6 +58,8 @@
             <option value="new client"></option>
             <option value="todos"></option>
             <option value="priority queue"></option>
+            <option value="calendar"></option>
+            <option value="schedule"></option>
             <option value="messages"></option>
             <option value="docs"></option>
             <option value="resources"></option>
@@ -74,6 +76,7 @@
             <div class="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs">
                 <a href="{{ url_for('main.internal_dashboard') }}" class="nav-pill {{ 'active' if request.path in ['/internal', '/internal/dashboard'] else '' }}">Dashboard</a>
                 <a href="{{ url_for('main.internal_todos') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/todos') else '' }}">To-Do</a>
+                <a href="{{ url_for('main.internal_calendar') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/calendar') else '' }}">Calendar</a>
                 <a href="{{ url_for('main.internal_projects') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/projects') else '' }}">Projects</a>
                 <a href="{{ url_for('main.internal_messages') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/messages') else '' }}">Messages</a>
                 <a href="{{ url_for('main.internal_docs') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/docs') else '' }}">Docs</a>
@@ -101,6 +104,7 @@
             <div class="mt-3 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs">
                 <a href="{{ url_for('main.internal_dashboard') }}" class="nav-pill {{ 'active' if request.path in ['/internal', '/internal/dashboard'] else '' }}">Dashboard</a>
                 <a href="{{ url_for('main.internal_todos') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/todos') else '' }}">To-Do</a>
+                <a href="{{ url_for('main.internal_calendar') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/calendar') else '' }}">Calendar</a>
                 <a href="{{ url_for('main.internal_projects') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/projects') else '' }}">Projects</a>
                 <a href="{{ url_for('main.internal_messages') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/messages') else '' }}">Messages</a>
                 <a href="{{ url_for('main.internal_docs') }}" class="nav-pill {{ 'active' if request.path.startswith('/internal/docs') else '' }}">Docs</a>
@@ -127,6 +131,10 @@
                 <a href="{{ url_for('main.internal_todos', view='priority') }}" class="quick-action-pill focus-ring">
                     <i class="fa-solid fa-bolt"></i>
                     Priority Queue
+                </a>
+                <a href="{{ url_for('main.internal_calendar') }}" class="quick-action-pill focus-ring">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    Delivery Calendar
                 </a>
                 <a href="{{ url_for('main.internal_resources') }}" class="quick-action-pill focus-ring">
                     <i class="fa-solid fa-book-open"></i>

@@ -7,7 +7,7 @@ from logging.handlers import RotatingFileHandler
 
 import click
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, render_template, request, session, url_for
 from flask_migrate import Migrate
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -38,6 +38,16 @@ def configure_logging(app: Flask) -> None:
 
 
 migrate = Migrate()
+
+
+def _content_security_policy() -> str:
+    directives = [
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "object-src 'none'",
+    ]
+    return "; ".join(directives)
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -92,15 +102,83 @@ def create_app(config_name: str | None = None) -> Flask:
     from routes import main_bp
     app.register_blueprint(main_bp)
 
+    def render_error_page(status_code: int):
+        is_internal_request = request.path.startswith("/internal")
+        error_config = {
+            404: {
+                "error_title": "Page not found",
+                "error_message": "The address you requested does not map to a live page. Use the main navigation or jump back to the right area.",
+                "error_icon": "fa-compass-drafting",
+            },
+            500: {
+                "error_title": "Something broke on our side",
+                "error_message": "The request reached the app, but the page could not be completed. The safest next step is to return to the main flow and try again.",
+                "error_icon": "fa-triangle-exclamation",
+            },
+        }
+        active_error = error_config.get(status_code, error_config[500])
+
+        if is_internal_request:
+            primary_cta_url = url_for("main.internal_dashboard") if session.get("internal_user_id") else url_for("main.internal_login")
+            primary_cta_label = "Return to Dashboard" if session.get("internal_user_id") else "Sign In"
+            secondary_cta_url = url_for("main.home")
+            secondary_cta_label = "Open Public Site"
+            error_eyebrow = "Internal Portal"
+        else:
+            primary_cta_url = url_for("main.home")
+            primary_cta_label = "Return Home"
+            secondary_cta_url = url_for("main.enquire")
+            secondary_cta_label = "Book a Meeting"
+            error_eyebrow = "Public Website"
+
+        seo = {
+            "title": f"{active_error['error_title']} | ELF-AI",
+            "description": active_error["error_message"],
+            "canonical": request.base_url,
+            "robots": "noindex, nofollow",
+            "site_name": "ELF-AI",
+        }
+        return render_template(
+            "error_page.html",
+            seo=seo,
+            status_code=status_code,
+            error_eyebrow=error_eyebrow,
+            primary_cta_url=primary_cta_url,
+            primary_cta_label=primary_cta_label,
+            secondary_cta_url=secondary_cta_url,
+            secondary_cta_label=secondary_cta_label,
+            **active_error,
+        )
+
     @app.after_request
     def apply_security_headers(response):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.headers.setdefault("Content-Security-Policy", _content_security_policy())
+        response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+        response.headers.setdefault("X-Permitted-Cross-Domain-Policies", "none")
+        response.headers.setdefault("Origin-Agent-Cluster", "?1")
+        if request.path.startswith("/internal"):
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+            response.headers.setdefault("Pragma", "no-cache")
+        elif response.status_code >= 400:
+            response.headers.setdefault("X-Robots-Tag", "noindex, nofollow")
         if app_env == "production":
             response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         return response
+
+    @app.errorhandler(404)
+    def not_found(_error):
+        return render_error_page(404), 404
+
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        app.logger.error("Unhandled application error for path=%s: %s", request.path, error)
+        return render_error_page(500), 500
 
     @app.cli.command("init-db")
     def init_db_command():

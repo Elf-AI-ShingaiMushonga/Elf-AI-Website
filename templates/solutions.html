@@ -1,38 +1,6 @@
-<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ seo.title if seo else 'AI Solutions | ELF-AI Implementation Modules' }}</title>
-    <meta name="description" content="{{ seo.description if seo else 'Explore ELF-AI solution modules, delivery process, and commercial model for SME AI implementation.' }}">
-    <meta name="keywords" content="{{ seo.keywords if seo else 'ELF-AI, AI consultancy' }}">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="{{ seo.canonical if seo else 'https://elf-ai.co.za/solutions' }}">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="{{ seo.site_name if seo else 'ELF-AI' }}">
-    <meta property="og:title" content="{{ seo.title if seo else 'AI Solutions | ELF-AI Implementation Modules' }}">
-    <meta property="og:description" content="{{ seo.description if seo else 'Explore ELF-AI solution modules, delivery process, and commercial model for SME AI implementation.' }}">
-    <meta property="og:url" content="{{ seo.canonical if seo else 'https://elf-ai.co.za/solutions' }}">
-    <meta property="og:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ seo.title if seo else 'AI Solutions | ELF-AI Implementation Modules' }}">
-    <meta name="twitter:description" content="{{ seo.description if seo else 'Explore ELF-AI solution modules, delivery process, and commercial model for SME AI implementation.' }}">
-    <meta name="twitter:image" content="{{ seo.og_image if seo else url_for('static', filename='images/hero1.png', _external=True) }}">
-    {% if seo and seo.structured_data %}
-    <script type="application/ld+json">{{ seo.structured_data | tojson }}</script>
-    {% endif %}
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/Logo.png') }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='images/Logo.png') }}">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="public-shell bg-slate-950 text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
-    <a href="#main-content" class="skip-link focus-ring">Skip to content</a>
-    {% include "partials/public_nav.html" %}
-    {% include "partials/public_flash.html" %}
+{% extends "public_base.html" %}
 
-    <main id="main-content" class="public-main">
+{% block content %}
     <header class="pt-32 md:pt-28 pb-20 px-4 sm:px-6 text-center bg-slate-900 border-b border-slate-800">
         <p class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-8">
             <i class="fa-solid fa-puzzle-piece"></i>
@@ -215,9 +183,4 @@
             <a href="{{ url_for('main.enquire') }}" class="px-8 py-4 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">Book a Meeting</a>
         </div>
     </section>
-    </main>
-
-    {% include "partials/public_footer.html" %}
-    <script src="{{ url_for('static', filename='elf.js') }}" defer></script>
-</body>
-</html>
+{% endblock %}
